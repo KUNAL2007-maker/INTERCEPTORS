@@ -1,0 +1,3914 @@
+{
+  "audit_metadata": {
+    "generated_at": "2026-08-27T17:06:13.035346+00:00",
+    "verifier_name": "Smart India Hackathon Resource Verification Engine",
+    "verifier_version": "2.4.0-production",
+    "total_link_occurrences_scanned": 194,
+    "total_unique_urls_tested": 180,
+    "valid_count": 98,
+    "redirected_count": 3,
+    "protected_active_count": 0,
+    "broken_count": 80,
+    "timeout_count": 0,
+    "error_count": 1,
+    "overall_health_score_pct": 54.44,
+    "average_latency_ms": 645.95,
+    "audit_duration_seconds": 27.96,
+    "domain_breakdown": {
+      "GitHub Repository / Asset": {
+        "total": 148,
+        "valid": 69,
+        "protected": 0,
+        "broken": 79,
+        "other": 0
+      },
+      "Live Web Deployment / Staging": {
+        "total": 1,
+        "valid": 0,
+        "protected": 0,
+        "broken": 1,
+        "other": 0
+      },
+      "General Web Resource": {
+        "total": 9,
+        "valid": 7,
+        "protected": 0,
+        "broken": 0,
+        "other": 2
+      },
+      "Technical Blog / Post-Mortem": {
+        "total": 1,
+        "valid": 1,
+        "protected": 0,
+        "broken": 0,
+        "other": 0
+      },
+      "Video Demonstration": {
+        "total": 20,
+        "valid": 20,
+        "protected": 0,
+        "broken": 0,
+        "other": 0
+      },
+      "Official Government / Ministry Portal": {
+        "total": 1,
+        "valid": 1,
+        "protected": 0,
+        "broken": 0,
+        "other": 0
+      }
+    }
+  },
+  "results": [
+    {
+      "target_url": "https://github.com/kunalkeshan/eVault-SIH-2023",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "CATALOG.md",
+          "line": 168,
+          "title": "Master Catalog: SIH Winning Resources & Champion Project Dossiers"
+        },
+        {
+          "file": "dossiers/cyber_blockchain/dossier_01_legal_ledger_evault.md",
+          "line": 13,
+          "title": "Legal Ledger (eVault) — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/kunalkeshan/eVault-SIH-2023",
+      "latency_ms": 1819.83,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:47.901797+00:00"
+    },
+    {
+      "target_url": "https://github.com/aritradhabal/TrailMine",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "CATALOG.md",
+          "line": 169,
+          "title": "Master Catalog: SIH Winning Resources & Champion Project Dossiers"
+        },
+        {
+          "file": "dossiers/cyber_blockchain/dossier_02_trailmine_ncb.md",
+          "line": 13,
+          "title": "TrailMine / TRA1LF1NDERS — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/aritradhabal/TrailMine",
+      "latency_ms": 1723.29,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:47.827041+00:00"
+    },
+    {
+      "target_url": "https://github.com/ashutosh7i/VoteChain",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "CATALOG.md",
+          "line": 170,
+          "title": "Master Catalog: SIH Winning Resources & Champion Project Dossiers"
+        },
+        {
+          "file": "dossiers/cyber_blockchain/dossier_08_votechain_decentralized_ballot.md",
+          "line": 13,
+          "title": "VoteChain / MargAI — SIH 2024 Grand Finale Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/ashutosh7i/VoteChain",
+      "latency_ms": 1837.1,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:47.941862+00:00"
+    },
+    {
+      "target_url": "https://github.com/vinaynesta/BlockWizz",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "CATALOG.md",
+          "line": 171,
+          "title": "Master Catalog: SIH Winning Resources & Champion Project Dossiers"
+        },
+        {
+          "file": "dossiers/cyber_blockchain/dossier_13_blockwizz_urban_infra.md",
+          "line": 13,
+          "title": "BlockWizz Property Tax & Land Registry Ledger — SIH 2022 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/vinaynesta/BlockWizz",
+      "latency_ms": 1805.33,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:47.911173+00:00"
+    },
+    {
+      "target_url": "https://github.com/SiddharthKumar268/Anveshak",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "CATALOG.md",
+          "line": 172,
+          "title": "Master Catalog: SIH Winning Resources & Champion Project Dossiers"
+        },
+        {
+          "file": "dossiers/cyber_blockchain/dossier_17_anveshak_threatshield.md",
+          "line": 13,
+          "title": "Anveshak ThreatShield — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/SiddharthKumar268/Anveshak",
+      "latency_ms": 1772.24,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:47.878749+00:00"
+    },
+    {
+      "target_url": "https://github.com/tani321/-finalbluecarbonnexus-blockchain",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "CATALOG.md",
+          "line": 173,
+          "title": "Master Catalog: SIH Winning Resources & Champion Project Dossiers"
+        },
+        {
+          "file": "dossiers/cyber_blockchain/dossier_20_bluecarbonnexus_mrv.md",
+          "line": 13,
+          "title": "BlueCarbonNexus MRV Blockchain Platform — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/tani321/-finalbluecarbonnexus-blockchain",
+      "latency_ms": 1690.99,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:47.798408+00:00"
+    },
+    {
+      "target_url": "https://github.com/mahajanhrishikesh/Levels",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "CATALOG.md",
+          "line": 174,
+          "title": "Master Catalog: SIH Winning Resources & Champion Project Dossiers"
+        },
+        {
+          "file": "dossiers/ai_software/dossier_23_levels_ground_water.md",
+          "line": 13,
+          "title": "Levels: Country-Wide Ground Water Level Analysis & Prediction Engine — SIH 2020 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/mahajanhrishikesh/Levels",
+      "latency_ms": 1789.4,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:47.897502+00:00"
+    },
+    {
+      "target_url": "https://github.com/pt3002/HexxCode-SIH-2023",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "CATALOG.md",
+          "line": 175,
+          "title": "Master Catalog: SIH Winning Resources & Champion Project Dossiers"
+        },
+        {
+          "file": "dossiers/ai_software/dossier_24_shiksha_niyojak_aicte.md",
+          "line": 13,
+          "title": "Shiksha Niyojak: AICTE Model Curriculum Design, Evaluation & Governance Portal — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/pt3002/HexxCode-SIH-2023",
+      "latency_ms": 1755.37,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:47.864260+00:00"
+    },
+    {
+      "target_url": "https://github.com/amansharma1916/Green-Atlas",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "CATALOG.md",
+          "line": 176,
+          "title": "Master Catalog: SIH Winning Resources & Champion Project Dossiers"
+        },
+        {
+          "file": "dossiers/ai_software/dossier_27_green_atlas_fra_webgis.md",
+          "line": 13,
+          "title": "Green Atlas: Forest Rights Act (FRA) WebGIS & OCR Cadastral Intelligence — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/amansharma1916/Green-Atlas",
+      "latency_ms": 1699.78,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:47.809343+00:00"
+    },
+    {
+      "target_url": "https://github.com/ArshTiwari2004/Signal-X",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "CATALOG.md",
+          "line": 177,
+          "title": "Master Catalog: SIH Winning Resources & Champion Project Dossiers"
+        },
+        {
+          "file": "dossiers/ai_software/dossier_31_signal_x_adaptive_traffic.md",
+          "line": 13,
+          "title": "Signal-X: Edge Vision Adaptive Traffic Optimization & Emergency Green Corridor — SIH 2024/2025 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/ArshTiwari2004/Signal-X",
+      "latency_ms": 1757.72,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:47.867925+00:00"
+    },
+    {
+      "target_url": "https://github.com/amanetize/SIH_23",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "CATALOG.md",
+          "line": 178,
+          "title": "Master Catalog: SIH Winning Resources & Champion Project Dossiers"
+        },
+        {
+          "file": "dossiers/ai_software/dossier_33_aicte_rag_portal.md",
+          "line": 13,
+          "title": "AICTE Stakeholder Approval AI & RAG Regulatory Intelligence Portal — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/amanetize/SIH_23",
+      "latency_ms": 1780.77,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:47.891504+00:00"
+    },
+    {
+      "target_url": "https://github.com/gauravmasand/Indian-Sign-Language-SIH",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "CATALOG.md",
+          "line": 179,
+          "title": "Master Catalog: SIH Winning Resources & Champion Project Dossiers"
+        },
+        {
+          "file": "dossiers/ai_software/dossier_36_mudra_isl_two_way.md",
+          "line": 16,
+          "title": "Mudra: Real-Time Bidirectional Indian Sign Language (ISL) AI & 3D Avatar Translator — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/gauravmasand/Indian-Sign-Language-SIH",
+      "latency_ms": 1709.27,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:47.820472+00:00"
+    },
+    {
+      "target_url": "https://github.com/shivamintheloop/KisanSeva2",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "CATALOG.md",
+          "line": 180,
+          "title": "Master Catalog: SIH Winning Resources & Champion Project Dossiers"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/shivamintheloop/KisanSeva2",
+      "latency_ms": 732.51,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:48.531778+00:00"
+    },
+    {
+      "target_url": "https://github.com/Yashcoder2802/VoiceYourID",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "CATALOG.md",
+          "line": 181,
+          "title": "Master Catalog: SIH Winning Resources & Champion Project Dossiers"
+        },
+        {
+          "file": "dossiers/ai_software/dossier_41_voiceyourid_biometrics.md",
+          "line": 13,
+          "title": "VoiceYourID: Contactless Voice Biometric Authentication & Anti-Spoofing Engine — SIH 2020 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/Yashcoder2802/VoiceYourID",
+      "latency_ms": 580.52,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:48.390001+00:00"
+    },
+    {
+      "target_url": "https://github.com/SnehaDeshmukh28",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_21_aquadb_marine_pfz.md",
+          "line": 13,
+          "title": "AquaDB: Marine Data Management & Spatial Potential Fishing Zone (PFZ) Predictor — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/SnehaDeshmukh28",
+      "latency_ms": 479.85,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:48.300483+00:00"
+    },
+    {
+      "target_url": "https://github.com/SnehaDeshmukh28/AquaDB-Marine-GIS",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_21_aquadb_marine_pfz.md",
+          "line": 14,
+          "title": "AquaDB: Marine Data Management & Spatial Potential Fishing Zone (PFZ) Predictor — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/SnehaDeshmukh28/AquaDB-Marine-GIS",
+      "latency_ms": 304.07,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:48.131774+00:00"
+    },
+    {
+      "target_url": "https://aquadb-incois.web.app",
+      "domain_category": "Live Web Deployment / Staging",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_21_aquadb_marine_pfz.md",
+          "line": 15,
+          "title": "AquaDB: Marine Data Management & Spatial Potential Fishing Zone (PFZ) Predictor — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://aquadb-incois.web.app",
+      "latency_ms": 84.13,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:47.948590+00:00"
+    },
+    {
+      "target_url": "https://github.com/tanisha1707",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_22_maitri_ai_isro.md",
+          "line": 13,
+          "title": "Maitri AI: Offline Multimodal Well-Being Assistant for Space Missions — SIH 2024/2025 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/tanisha1707",
+      "latency_ms": 562.73,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:48.430755+00:00"
+    },
+    {
+      "target_url": "https://github.com/tanisha1707/MaitriAI",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_22_maitri_ai_isro.md",
+          "line": 14,
+          "title": "Maitri AI: Offline Multimodal Well-Being Assistant for Space Missions — SIH 2024/2025 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/tanisha1707/MaitriAI",
+      "latency_ms": 331.04,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:48.209889+00:00"
+    },
+    {
+      "target_url": "https://github.com/mahajanhrishikesh/Levels/tree/master/frontend",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_23_levels_ground_water.md",
+          "line": 14,
+          "title": "Levels: Country-Wide Ground Water Level Analysis & Prediction Engine — SIH 2020 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/mahajanhrishikesh/Levels/tree/master/frontend",
+      "latency_ms": 479.5,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:48.371115+00:00"
+    },
+    {
+      "target_url": "https://github.com/pt3002/HexxCode-SIH-2023/tree/main/client",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_24_shiksha_niyojak_aicte.md",
+          "line": 14,
+          "title": "Shiksha Niyojak: AICTE Model Curriculum Design, Evaluation & Governance Portal — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/pt3002/HexxCode-SIH-2023/tree/main/client",
+      "latency_ms": 510.39,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:48.408075+00:00"
+    },
+    {
+      "target_url": "https://github.com/SagarTeotia1/NDRF-DEMO-SANGRAKSHAN",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_25_sangrakshan_cbrn_vr.md",
+          "line": 13,
+          "title": "Sangrakshan: CBRN Disaster Response Tactical AI-VR Simulator — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/SagarTeotia1/NDRF-DEMO-SANGRAKSHAN",
+      "latency_ms": 695.66,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:48.598107+00:00"
+    },
+    {
+      "target_url": "https://github.com/SagarTeotia1",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_25_sangrakshan_cbrn_vr.md",
+          "line": 14,
+          "title": "Sangrakshan: CBRN Disaster Response Tactical AI-VR Simulator — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/SagarTeotia1",
+      "latency_ms": 523.33,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:48.434629+00:00"
+    },
+    {
+      "target_url": "https://sagarteotia.in",
+      "domain_category": "General Web Resource",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_25_sangrakshan_cbrn_vr.md",
+          "line": 15,
+          "title": "Sangrakshan: CBRN Disaster Response Tactical AI-VR Simulator — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "REDIRECTED",
+      "http_status_code": 200,
+      "final_url": "https://www.sagarteotia.in/",
+      "latency_ms": 157.66,
+      "is_redirected": true,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "Vercel",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:48.099658+00:00"
+    },
+    {
+      "target_url": "https://github.com/Arjun-254/SIH1348_LichtDenCode",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_26_railwaybuddy_translator.md",
+          "line": 13,
+          "title": "RailwayBuddy: Multilingual Station Announcement & Real-Time Indic Translation Engine — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/Arjun-254/SIH1348_LichtDenCode",
+      "latency_ms": 629.46,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:48.578158+00:00"
+    },
+    {
+      "target_url": "https://github.com/Arjun-254/SIH1348_LichtDenCode/tree/main/backend",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_26_railwaybuddy_translator.md",
+          "line": 14,
+          "title": "RailwayBuddy: Multilingual Station Announcement & Real-Time Indic Translation Engine — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/Arjun-254/SIH1348_LichtDenCode/tree/main/backend",
+      "latency_ms": 608.03,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:48.707853+00:00"
+    },
+    {
+      "target_url": "https://github.com/amansharma1916/Green-Atlas/tree/main/backend",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_27_green_atlas_fra_webgis.md",
+          "line": 14,
+          "title": "Green Atlas: Forest Rights Act (FRA) WebGIS & OCR Cadastral Intelligence — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/amansharma1916/Green-Atlas/tree/main/backend",
+      "latency_ms": 579.6,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:48.711514+00:00"
+    },
+    {
+      "target_url": "https://github.com/madastra",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_28_mad_astra_metallurgy.md",
+          "line": 13,
+          "title": "Mad Astra: Industrial Metallurgy & Continuous Casting Optimization AI — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/madastra",
+      "latency_ms": 376.01,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:48.585989+00:00"
+    },
+    {
+      "target_url": "https://github.com/madastra/aluminum-casting-ai",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_28_mad_astra_metallurgy.md",
+          "line": 14,
+          "title": "Mad Astra: Industrial Metallurgy & Continuous Casting Optimization AI — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/madastra/aluminum-casting-ai",
+      "latency_ms": 314.67,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:48.615250+00:00"
+    },
+    {
+      "target_url": "https://medium.com/@madastra",
+      "domain_category": "Technical Blog / Post-Mortem",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_28_mad_astra_metallurgy.md",
+          "line": 18,
+          "title": "Mad Astra: Industrial Metallurgy & Continuous Casting Optimization AI — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://medium.com/@madastra",
+      "latency_ms": 590.35,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "cloudflare",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:48.961557+00:00"
+    },
+    {
+      "target_url": "https://github.com/muskangoyal0606/SIH_2024",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_29_asterominer_ai.md",
+          "line": 13,
+          "title": "AsteroMiner AI: Deep Learning Space Resource Prospector & Orbital Trajectory Optimizer — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/muskangoyal0606/SIH_2024",
+      "latency_ms": 622.27,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:49.012350+00:00"
+    },
+    {
+      "target_url": "https://github.com/muskangoyal0606/SIH_2024/tree/main/ml_pipeline",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_29_asterominer_ai.md",
+          "line": 14,
+          "title": "AsteroMiner AI: Deep Learning Space Resource Prospector & Orbital Trajectory Optimizer — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/muskangoyal0606/SIH_2024/tree/main/ml_pipeline",
+      "latency_ms": 428.18,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:48.836405+00:00"
+    },
+    {
+      "target_url": "https://github.com/radar-vision",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_30_radar_vision_fusion.md",
+          "line": 13,
+          "title": "Radar Vision: Multi-Modal Millimeter-Wave Radar & Optical Camera Sensor Fusion — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/radar-vision",
+      "latency_ms": 382.36,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:48.813206+00:00"
+    },
+    {
+      "target_url": "https://github.com/radar-vision/radar-camera-fusion",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_30_radar_vision_fusion.md",
+          "line": 14,
+          "title": "Radar Vision: Multi-Modal Millimeter-Wave Radar & Optical Camera Sensor Fusion — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/radar-vision/radar-camera-fusion",
+      "latency_ms": 352.77,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:48.787508+00:00"
+    },
+    {
+      "target_url": "https://github.com/ArshTiwari2004/Signal-X/tree/main/edge_cv",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_31_signal_x_adaptive_traffic.md",
+          "line": 14,
+          "title": "Signal-X: Edge Vision Adaptive Traffic Optimization & Emergency Green Corridor — SIH 2024/2025 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/ArshTiwari2004/Signal-X/tree/main/edge_cv",
+      "latency_ms": 452.25,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:48.984149+00:00"
+    },
+    {
+      "target_url": "https://github.com/iamakashrout/SIH-2023",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_32_automated_news_categorizer.md",
+          "line": 13,
+          "title": "Automated Digital News Crawling, Categorization & Sentiment Engine — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/iamakashrout/SIH-2023",
+      "latency_ms": 547.49,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:49.125761+00:00"
+    },
+    {
+      "target_url": "https://github.com/iamakashrout/SIH-2023/tree/main/ml_models",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_32_automated_news_categorizer.md",
+          "line": 14,
+          "title": "Automated Digital News Crawling, Categorization & Sentiment Engine — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/iamakashrout/SIH-2023/tree/main/ml_models",
+      "latency_ms": 489.16,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:49.075258+00:00"
+    },
+    {
+      "target_url": "https://github.com/amanetize/SIH_23/tree/main/rag_engine",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_33_aicte_rag_portal.md",
+          "line": 14,
+          "title": "AICTE Stakeholder Approval AI & RAG Regulatory Intelligence Portal — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/amanetize/SIH_23/tree/main/rag_engine",
+      "latency_ms": 448.06,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:49.046276+00:00"
+    },
+    {
+      "target_url": "https://github.com/Aditya5510/AyurVaidya",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_34_ayurvaidya_diagnostic.md",
+          "line": 13,
+          "title": "AyurVaidya: AI Ayurvedic Diagnostic Engine & Classical Pharmacopoeia Knowledge Graph — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/Aditya5510/AyurVaidya",
+      "latency_ms": 666.51,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:49.281872+00:00"
+    },
+    {
+      "target_url": "https://github.com/Aditya5510/AyurVaidya/tree/main/backend",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_34_ayurvaidya_diagnostic.md",
+          "line": 14,
+          "title": "AyurVaidya: AI Ayurvedic Diagnostic Engine & Classical Pharmacopoeia Knowledge Graph — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/Aditya5510/AyurVaidya/tree/main/backend",
+      "latency_ms": 515.97,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:49.225843+00:00"
+    },
+    {
+      "target_url": "https://github.com/uzibytes/Voco_App",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_35_voco_accessibility.md",
+          "line": 13,
+          "title": "VoCo: Audio-First Vocational Training & Voice AI Suite for Visually Impaired — SIH 2022 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/uzibytes/Voco_App",
+      "latency_ms": 541.41,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:49.253071+00:00"
+    },
+    {
+      "target_url": "https://github.com/Legit-Coder/Voco_World",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_35_voco_accessibility.md",
+          "line": 14,
+          "title": "VoCo: Audio-First Vocational Training & Voice AI Suite for Visually Impaired — SIH 2022 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/Legit-Coder/Voco_World",
+      "latency_ms": 329.93,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:49.117579+00:00"
+    },
+    {
+      "target_url": "https://github.com/gauravmasand/isl-server-sih",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_36_mudra_isl_two_way.md",
+          "line": 13,
+          "title": "Mudra: Real-Time Bidirectional Indian Sign Language (ISL) AI & 3D Avatar Translator — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/gauravmasand/isl-server-sih",
+      "latency_ms": 545.02,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:49.358362+00:00"
+    },
+    {
+      "target_url": "https://github.com/gauravmasand/SIH-ISL-Mobile-App-Flutter",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_36_mudra_isl_two_way.md",
+          "line": 15,
+          "title": "Mudra: Real-Time Bidirectional Indian Sign Language (ISL) AI & 3D Avatar Translator — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/gauravmasand/SIH-ISL-Mobile-App-Flutter",
+      "latency_ms": 543.51,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:49.380259+00:00"
+    },
+    {
+      "target_url": "https://github.com/prajwalchapke055/SIH-1505---Smart-India-Hackathon-2023",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_37_alha_industrial_drone.md",
+          "line": 13,
+          "title": "ALHA: Aerial Hazardous Atmosphere Detection & Gaussian Plume Dispersion Drone — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/prajwalchapke055/SIH-1505---Smart-India-Hackathon-2023",
+      "latency_ms": 656.87,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:49.618531+00:00"
+    },
+    {
+      "target_url": "https://github.com/prajwalchapke055",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_37_alha_industrial_drone.md",
+          "line": 14,
+          "title": "ALHA: Aerial Hazardous Atmosphere Detection & Gaussian Plume Dispersion Drone — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/prajwalchapke055",
+      "latency_ms": 418.86,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:49.403121+00:00"
+    },
+    {
+      "target_url": "https://github.com/RajnishPuri/KnitKraft",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_38_knitkraft_wool_supply_chain.md",
+          "line": 13,
+          "title": "KnitKraft: Farm-to-Fabric Wool Supply Chain & Computer Vision Grading Platform — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/RajnishPuri/KnitKraft",
+      "latency_ms": 663.18,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:49.675666+00:00"
+    },
+    {
+      "target_url": "https://github.com/RajnishPuri/KnitKraft/tree/main/KnitKraft_App",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_38_knitkraft_wool_supply_chain.md",
+          "line": 14,
+          "title": "KnitKraft: Farm-to-Fabric Wool Supply Chain & Computer Vision Grading Platform — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/RajnishPuri/KnitKraft/tree/main/KnitKraft_App",
+      "latency_ms": 579.29,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:49.625680+00:00"
+    },
+    {
+      "target_url": "https://github.com/shubhrai2811/SIH-2022-Fourier-Encoder-Decoder",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_39_fourier_acoustic_police_radio.md",
+          "line": 13,
+          "title": "Fourier: Acoustic Multimedia Modem for Analog Police Radio Sets — SIH 2022 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/shubhrai2811/SIH-2022-Fourier-Encoder-Decoder",
+      "latency_ms": 573.02,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:49.648387+00:00"
+    },
+    {
+      "target_url": "https://github.com/shubhrai2811/SIH-2022-Fourier-Encoder-Decoder/tree/main/dsp_engine",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_39_fourier_acoustic_police_radio.md",
+          "line": 14,
+          "title": "Fourier: Acoustic Multimedia Modem for Analog Police Radio Sets — SIH 2022 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/shubhrai2811/SIH-2022-Fourier-Encoder-Decoder/tree/main/dsp_engine",
+      "latency_ms": 454.76,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:49.572458+00:00"
+    },
+    {
+      "target_url": "https://github.com/droidbaker/KisanSeva2",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_40_kisanseva2_smart_agri.md",
+          "line": 13,
+          "title": "KisanSeva2: Rural Farm-to-Consumer & SHG Agricultural Logistics Platform — SIH 2020 Winning Project Dossier"
+        }
+      ],
+      "status": "REDIRECTED",
+      "http_status_code": 200,
+      "final_url": "https://github.com/shivamintheloop/KisanSeva2",
+      "latency_ms": 283.42,
+      "is_redirected": true,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:49.409301+00:00"
+    },
+    {
+      "target_url": "https://github.com/droidbaker/KisanSeva2/tree/master/app",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_40_kisanseva2_smart_agri.md",
+          "line": 14,
+          "title": "KisanSeva2: Rural Farm-to-Consumer & SHG Agricultural Logistics Platform — SIH 2020 Winning Project Dossier"
+        }
+      ],
+      "status": "REDIRECTED",
+      "http_status_code": 200,
+      "final_url": "https://github.com/shivamintheloop/KisanSeva2/tree/master/app",
+      "latency_ms": 697.76,
+      "is_redirected": true,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:49.923715+00:00"
+    },
+    {
+      "target_url": "https://github.com/Yashcoder2802/VoiceYourID/tree/master/backend",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_41_voiceyourid_biometrics.md",
+          "line": 14,
+          "title": "VoiceYourID: Contactless Voice Biometric Authentication & Anti-Spoofing Engine — SIH 2020 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/Yashcoder2802/VoiceYourID/tree/master/backend",
+      "latency_ms": 440.61,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:49.693798+00:00"
+    },
+    {
+      "target_url": "https://github.com/IIITKottayam",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_42_big_data_search_at980.md",
+          "line": 13,
+          "title": "High-Speed Big Data Forensic Search Engine (AT980) — SIH 2022 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/IIITKottayam",
+      "latency_ms": 587.32,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:49.869369+00:00"
+    },
+    {
+      "target_url": "https://github.com/sons-of-pitches-sih/at980-forensic-search",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_42_big_data_search_at980.md",
+          "line": 14,
+          "title": "High-Speed Big Data Forensic Search Engine (AT980) — SIH 2022 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/sons-of-pitches-sih/at980-forensic-search",
+      "latency_ms": 367.06,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:49.725536+00:00"
+    },
+    {
+      "target_url": "https://iiitkottayam.ac.in",
+      "domain_category": "General Web Resource",
+      "source_files": [
+        {
+          "file": "dossiers/ai_software/dossier_42_big_data_search_at980.md",
+          "line": 15,
+          "title": "High-Speed Big Data Forensic Search Engine (AT980) — SIH 2022 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://iiitkottayam.ac.in",
+      "latency_ms": 389.78,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html",
+      "server": "nginx",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:49.770167+00:00"
+    },
+    {
+      "target_url": "https://github.com/viperadnan-git/blockdoc",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_01_legal_ledger_evault.md",
+          "line": 15,
+          "title": "Legal Ledger (eVault) — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/viperadnan-git/blockdoc",
+      "latency_ms": 971.69,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:50.374936+00:00"
+    },
+    {
+      "target_url": "https://github.com/Aniket-Kumar-Paul/Blockchain-powered-immutable-legal-records-ledger",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_01_legal_ledger_evault.md",
+          "line": 16,
+          "title": "Legal Ledger (eVault) — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/Aniket-Kumar-Paul/Blockchain-powered-immutable-legal-records-ledger",
+      "latency_ms": 608.91,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:50.018413+00:00"
+    },
+    {
+      "target_url": "https://github.com/kunalkeshan/eVault-SIH-2023#live-preview",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_01_legal_ledger_evault.md",
+          "line": 17,
+          "title": "Legal Ledger (eVault) — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/kunalkeshan/eVault-SIH-2023#live-preview",
+      "latency_ms": 45.28,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:49.617917+00:00"
+    },
+    {
+      "target_url": "https://github.com/kunalkeshan/eVault-SIH-2023/tree/main/docs/presentation_deck.pdf",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_01_legal_ledger_evault.md",
+          "line": 18,
+          "title": "Legal Ledger (eVault) — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/kunalkeshan/eVault-SIH-2023/tree/main/docs/presentation_deck.pdf",
+      "latency_ms": 494.13,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:50.112786+00:00"
+    },
+    {
+      "target_url": "https://www.youtube.com/results?search_query=eVault+SIH+2023+blockchain+legal+records",
+      "domain_category": "Video Demonstration",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_01_legal_ledger_evault.md",
+          "line": 19,
+          "title": "Legal Ledger (eVault) — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://www.youtube.com/results?search_query=eVault+SIH+2023+blockchain+legal+records",
+      "latency_ms": 834.11,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "ESF",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:50.454274+00:00"
+    },
+    {
+      "target_url": "https://github.com/kunalkeshan/eVault-SIH-2023/blob/main/README.md",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_01_legal_ledger_evault.md",
+          "line": 20,
+          "title": "Legal Ledger (eVault) — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/kunalkeshan/eVault-SIH-2023/blob/main/README.md",
+      "latency_ms": 584.71,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:50.210892+00:00"
+    },
+    {
+      "target_url": "https://github.com/aritradhabal",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_02_trailmine_ncb.md",
+          "line": 15,
+          "title": "TrailMine / TRA1LF1NDERS — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/aritradhabal",
+      "latency_ms": 390.28,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:50.038803+00:00"
+    },
+    {
+      "target_url": "https://github.com/aritradhabal/TrailMine#readme",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_02_trailmine_ncb.md",
+          "line": 16,
+          "title": "TrailMine / TRA1LF1NDERS — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/aritradhabal/TrailMine#readme",
+      "latency_ms": 24.7,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:49.700617+00:00"
+    },
+    {
+      "target_url": "https://github.com/aritradhabal/TrailMine/tree/main/docs/TrailMine_NCB_Defense_Deck.pdf",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_02_trailmine_ncb.md",
+          "line": 17,
+          "title": "TrailMine / TRA1LF1NDERS — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/aritradhabal/TrailMine/tree/main/docs/TrailMine_NCB_Defense_Deck.pdf",
+      "latency_ms": 468.82,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:50.162737+00:00"
+    },
+    {
+      "target_url": "https://www.youtube.com/results?search_query=TrailMine+NCB+SIH+2024+cryptocurrency+tracker",
+      "domain_category": "Video Demonstration",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_02_trailmine_ncb.md",
+          "line": 18,
+          "title": "TrailMine / TRA1LF1NDERS — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://www.youtube.com/results?search_query=TrailMine+NCB+SIH+2024+cryptocurrency+tracker",
+      "latency_ms": 807.91,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "ESF",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:50.508789+00:00"
+    },
+    {
+      "target_url": "https://github.com/aritradhabal/TrailMine/blob/main/README.md",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_02_trailmine_ncb.md",
+          "line": 19,
+          "title": "TrailMine / TRA1LF1NDERS — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/aritradhabal/TrailMine/blob/main/README.md",
+      "latency_ms": 407.95,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:50.133635+00:00"
+    },
+    {
+      "target_url": "https://github.com/SankalpChordia/Defendify-CryptoTracker",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_03_defendify_cryptotracker.md",
+          "line": 13,
+          "title": "Defendify CryptoTracker — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/SankalpChordia/Defendify-CryptoTracker",
+      "latency_ms": 337.41,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:50.107684+00:00"
+    },
+    {
+      "target_url": "https://github.com/SankalpChordia",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_03_defendify_cryptotracker.md",
+          "line": 15,
+          "title": "Defendify CryptoTracker — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/SankalpChordia",
+      "latency_ms": 391.29,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:50.261289+00:00"
+    },
+    {
+      "target_url": "https://github.com/SankalpChordia/Defendify-CryptoTracker#demo",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_03_defendify_cryptotracker.md",
+          "line": 16,
+          "title": "Defendify CryptoTracker — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/SankalpChordia/Defendify-CryptoTracker#demo",
+      "latency_ms": 178.82,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:50.102716+00:00"
+    },
+    {
+      "target_url": "https://github.com/SankalpChordia/Defendify-CryptoTracker/tree/main/docs/NTRO_SIH1445_Presentation.pdf",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_03_defendify_cryptotracker.md",
+          "line": 17,
+          "title": "Defendify CryptoTracker — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/SankalpChordia/Defendify-CryptoTracker/tree/main/docs/NTRO_SIH1445_Presentation.pdf",
+      "latency_ms": 340.67,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:50.359226+00:00"
+    },
+    {
+      "target_url": "https://www.youtube.com/results?search_query=Defendify+CryptoTracker+SIH+2023+NTRO",
+      "domain_category": "Video Demonstration",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_03_defendify_cryptotracker.md",
+          "line": 18,
+          "title": "Defendify CryptoTracker — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://www.youtube.com/results?search_query=Defendify+CryptoTracker+SIH+2023+NTRO",
+      "latency_ms": 795.9,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "ESF",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:50.834936+00:00"
+    },
+    {
+      "target_url": "https://github.com/SankalpChordia/Defendify-CryptoTracker/blob/main/README.md",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_03_defendify_cryptotracker.md",
+          "line": 19,
+          "title": "Defendify CryptoTracker — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/SankalpChordia/Defendify-CryptoTracker/blob/main/README.md",
+      "latency_ms": 342.33,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:50.446977+00:00"
+    },
+    {
+      "target_url": "https://github.com/guneetsura/Cyph3r-DarkWeb-Crawler",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_04_cyph3r_darkweb.md",
+          "line": 13,
+          "title": "Cyph3r Dark Web Crawler — KAVACH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/guneetsura/Cyph3r-DarkWeb-Crawler",
+      "latency_ms": 333.66,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:50.441516+00:00"
+    },
+    {
+      "target_url": "https://github.com/guneetsura",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_04_cyph3r_darkweb.md",
+          "line": 15,
+          "title": "Cyph3r Dark Web Crawler — KAVACH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/guneetsura",
+      "latency_ms": 488.18,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:50.601129+00:00"
+    },
+    {
+      "target_url": "https://github.com/guneetsura/Cyph3r-DarkWeb-Crawler#readme",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_04_cyph3r_darkweb.md",
+          "line": 16,
+          "title": "Cyph3r Dark Web Crawler — KAVACH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/guneetsura/Cyph3r-DarkWeb-Crawler#readme",
+      "latency_ms": 306.9,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:50.440655+00:00"
+    },
+    {
+      "target_url": "https://github.com/guneetsura/Cyph3r-DarkWeb-Crawler/tree/main/docs/KAVACH_KVH06_Cyph3r.pdf",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_04_cyph3r_darkweb.md",
+          "line": 17,
+          "title": "Cyph3r Dark Web Crawler — KAVACH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/guneetsura/Cyph3r-DarkWeb-Crawler/tree/main/docs/KAVACH_KVH06_Cyph3r.pdf",
+      "latency_ms": 368.48,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:50.531337+00:00"
+    },
+    {
+      "target_url": "https://www.youtube.com/results?search_query=Cyph3r+KAVACH+2023+dark+web+crawler",
+      "domain_category": "Video Demonstration",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_04_cyph3r_darkweb.md",
+          "line": 18,
+          "title": "Cyph3r Dark Web Crawler — KAVACH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://www.youtube.com/results?search_query=Cyph3r+KAVACH+2023+dark+web+crawler",
+      "latency_ms": 618.07,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "ESF",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:50.829093+00:00"
+    },
+    {
+      "target_url": "https://github.com/guneetsura/Cyph3r-DarkWeb-Crawler/blob/main/README.md",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_04_cyph3r_darkweb.md",
+          "line": 19,
+          "title": "Cyph3r Dark Web Crawler — KAVACH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/guneetsura/Cyph3r-DarkWeb-Crawler/blob/main/README.md",
+      "latency_ms": 315.9,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:50.577291+00:00"
+    },
+    {
+      "target_url": "https://github.com/Team-Obviously/Fund-Trail-Analysis-Tool",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_05_team_obviously_fund_trail.md",
+          "line": 13,
+          "title": "Fund Trail Analysis Engine / Team Obviously — KAVACH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/Team-Obviously/Fund-Trail-Analysis-Tool",
+      "latency_ms": 342.21,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:50.701563+00:00"
+    },
+    {
+      "target_url": "https://github.com/somaiya-cyber/Fund-Trail-Engine",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_05_team_obviously_fund_trail.md",
+          "line": 15,
+          "title": "Fund Trail Analysis Engine / Team Obviously — KAVACH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/somaiya-cyber/Fund-Trail-Engine",
+      "latency_ms": 349.5,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:50.724602+00:00"
+    },
+    {
+      "target_url": "https://github.com/Team-Obviously/Fund-Trail-Analysis-Tool#live-demo",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_05_team_obviously_fund_trail.md",
+          "line": 16,
+          "title": "Fund Trail Analysis Engine / Team Obviously — KAVACH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/Team-Obviously/Fund-Trail-Analysis-Tool#live-demo",
+      "latency_ms": 256.27,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:50.697925+00:00"
+    },
+    {
+      "target_url": "https://github.com/Team-Obviously/Fund-Trail-Analysis-Tool/tree/main/docs/KAVACH_KVH12_FundTrail.pdf",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_05_team_obviously_fund_trail.md",
+          "line": 17,
+          "title": "Fund Trail Analysis Engine / Team Obviously — KAVACH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/Team-Obviously/Fund-Trail-Analysis-Tool/tree/main/docs/KAVACH_KVH12_FundTrail.pdf",
+      "latency_ms": 332.03,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:50.775318+00:00"
+    },
+    {
+      "target_url": "https://www.youtube.com/results?search_query=Fund+Trail+Analysis+Tool+KAVACH+2023",
+      "domain_category": "Video Demonstration",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_05_team_obviously_fund_trail.md",
+          "line": 18,
+          "title": "Fund Trail Analysis Engine / Team Obviously — KAVACH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://www.youtube.com/results?search_query=Fund+Trail+Analysis+Tool+KAVACH+2023",
+      "latency_ms": 649.34,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "ESF",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:51.097404+00:00"
+    },
+    {
+      "target_url": "https://github.com/Team-Obviously/Fund-Trail-Analysis-Tool/blob/main/README.md",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_05_team_obviously_fund_trail.md",
+          "line": 19,
+          "title": "Fund Trail Analysis Engine / Team Obviously — KAVACH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/Team-Obviously/Fund-Trail-Analysis-Tool/blob/main/README.md",
+      "latency_ms": 346.78,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:50.801713+00:00"
+    },
+    {
+      "target_url": "https://github.com/NFSU-Cyber/GridGladiators-PowerSOC",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_06_grid_gladiators_power_soc.md",
+          "line": 13,
+          "title": "Grid Gladiators Power SOC — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/NFSU-Cyber/GridGladiators-PowerSOC",
+      "latency_ms": 345.89,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:50.854848+00:00"
+    },
+    {
+      "target_url": "https://github.com/wazuh/wazuh",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_06_grid_gladiators_power_soc.md",
+          "line": 15,
+          "title": "Grid Gladiators Power SOC — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/wazuh/wazuh",
+      "latency_ms": 654.47,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:51.185930+00:00"
+    },
+    {
+      "target_url": "https://github.com/zeek/zeek",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_06_grid_gladiators_power_soc.md",
+          "line": 16,
+          "title": "Grid Gladiators Power SOC — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/zeek/zeek",
+      "latency_ms": 676.47,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:51.253890+00:00"
+    },
+    {
+      "target_url": "https://github.com/NFSU-Cyber/GridGladiators-PowerSOC#architecture",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_06_grid_gladiators_power_soc.md",
+          "line": 17,
+          "title": "Grid Gladiators Power SOC — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/NFSU-Cyber/GridGladiators-PowerSOC#architecture",
+      "latency_ms": 238.53,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:50.839779+00:00"
+    },
+    {
+      "target_url": "https://github.com/NFSU-Cyber/GridGladiators-PowerSOC/tree/main/docs/SIH1389_PowerSOC_Defense.pdf",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_06_grid_gladiators_power_soc.md",
+          "line": 18,
+          "title": "Grid Gladiators Power SOC — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/NFSU-Cyber/GridGladiators-PowerSOC/tree/main/docs/SIH1389_PowerSOC_Defense.pdf",
+      "latency_ms": 410.44,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:51.108547+00:00"
+    },
+    {
+      "target_url": "https://www.youtube.com/results?search_query=Grid+Gladiators+SIH+2023+Power+SOC",
+      "domain_category": "Video Demonstration",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_06_grid_gladiators_power_soc.md",
+          "line": 19,
+          "title": "Grid Gladiators Power SOC — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://www.youtube.com/results?search_query=Grid+Gladiators+SIH+2023+Power+SOC",
+      "latency_ms": 659.19,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "ESF",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:51.361290+00:00"
+    },
+    {
+      "target_url": "https://github.com/NFSU-Cyber/GridGladiators-PowerSOC/blob/main/README.md",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_06_grid_gladiators_power_soc.md",
+          "line": 20,
+          "title": "Grid Gladiators Power SOC — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/NFSU-Cyber/GridGladiators-PowerSOC/blob/main/README.md",
+      "latency_ms": 357.18,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:51.081935+00:00"
+    },
+    {
+      "target_url": "https://github.com/prathampoojari/AssetSentinels-DCIM",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_07_assetsentinels_dcim.md",
+          "line": 13,
+          "title": "AssetSentinels DCIM Security Manager — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/prathampoojari/AssetSentinels-DCIM",
+      "latency_ms": 315.39,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:51.090846+00:00"
+    },
+    {
+      "target_url": "https://github.com/prathampoojari",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_07_assetsentinels_dcim.md",
+          "line": 15,
+          "title": "AssetSentinels DCIM Security Manager — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/prathampoojari",
+      "latency_ms": 413.92,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:51.215728+00:00"
+    },
+    {
+      "target_url": "https://github.com/prathampoojari/AssetSentinels-DCIM#live-demo",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_07_assetsentinels_dcim.md",
+          "line": 16,
+          "title": "AssetSentinels DCIM Security Manager — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/prathampoojari/AssetSentinels-DCIM#live-demo",
+      "latency_ms": 256.65,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:51.085849+00:00"
+    },
+    {
+      "target_url": "https://github.com/prathampoojari/AssetSentinels-DCIM/tree/main/docs/SIH1461_AssetSentinels_Deck.pdf",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_07_assetsentinels_dcim.md",
+          "line": 17,
+          "title": "AssetSentinels DCIM Security Manager — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/prathampoojari/AssetSentinels-DCIM/tree/main/docs/SIH1461_AssetSentinels_Deck.pdf",
+      "latency_ms": 318.02,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:51.153194+00:00"
+    },
+    {
+      "target_url": "https://www.youtube.com/results?search_query=AssetSentinels+SIH+2023+SAKEC",
+      "domain_category": "Video Demonstration",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_07_assetsentinels_dcim.md",
+          "line": 18,
+          "title": "AssetSentinels DCIM Security Manager — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://www.youtube.com/results?search_query=AssetSentinels+SIH+2023+SAKEC",
+      "latency_ms": 717.54,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "ESF",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:51.558038+00:00"
+    },
+    {
+      "target_url": "https://github.com/prathampoojari/AssetSentinels-DCIM/blob/main/README.md",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_07_assetsentinels_dcim.md",
+          "line": 19,
+          "title": "AssetSentinels DCIM Security Manager — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/prathampoojari/AssetSentinels-DCIM/blob/main/README.md",
+      "latency_ms": 369.33,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:51.224341+00:00"
+    },
+    {
+      "target_url": "https://github.com/ashutosh7i",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_08_votechain_decentralized_ballot.md",
+          "line": 15,
+          "title": "VoteChain / MargAI — SIH 2024 Grand Finale Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/ashutosh7i",
+      "latency_ms": 620.86,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:51.703030+00:00"
+    },
+    {
+      "target_url": "https://github.com/ashutosh7i/VoteChain#demo",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_08_votechain_decentralized_ballot.md",
+          "line": 16,
+          "title": "VoteChain / MargAI — SIH 2024 Grand Finale Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/ashutosh7i/VoteChain#demo",
+      "latency_ms": 26.79,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:51.114674+00:00"
+    },
+    {
+      "target_url": "https://github.com/ashutosh7i/VoteChain/tree/main/docs/VoteChain_SIH2024_Pitch.pdf",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_08_votechain_decentralized_ballot.md",
+          "line": 17,
+          "title": "VoteChain / MargAI — SIH 2024 Grand Finale Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/ashutosh7i/VoteChain/tree/main/docs/VoteChain_SIH2024_Pitch.pdf",
+      "latency_ms": 504.43,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:51.595947+00:00"
+    },
+    {
+      "target_url": "https://www.youtube.com/results?search_query=VoteChain+SIH+2024+Aashutosh+Soni",
+      "domain_category": "Video Demonstration",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_08_votechain_decentralized_ballot.md",
+          "line": 18,
+          "title": "VoteChain / MargAI — SIH 2024 Grand Finale Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://www.youtube.com/results?search_query=VoteChain+SIH+2024+Aashutosh+Soni",
+      "latency_ms": 515.19,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "ESF",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:51.613150+00:00"
+    },
+    {
+      "target_url": "https://github.com/ashutosh7i/VoteChain/blob/main/README.md",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_08_votechain_decentralized_ballot.md",
+          "line": 19,
+          "title": "VoteChain / MargAI — SIH 2024 Grand Finale Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/ashutosh7i/VoteChain/blob/main/README.md",
+      "latency_ms": 651.69,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:51.760356+00:00"
+    },
+    {
+      "target_url": "https://github.com/SKCET-CyberSquad/DarkNet-Crypto-Footprinter",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_09_skcet_darknet_crypto_engine.md",
+          "line": 13,
+          "title": "SKCET DarkNet Crypto Intelligence Engine — NCB National Grand Champion Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/SKCET-CyberSquad/DarkNet-Crypto-Footprinter",
+      "latency_ms": 363.99,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:51.478792+00:00"
+    },
+    {
+      "target_url": "https://github.com/skcet-official",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_09_skcet_darknet_crypto_engine.md",
+          "line": 15,
+          "title": "SKCET DarkNet Crypto Intelligence Engine — NCB National Grand Champion Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/skcet-official",
+      "latency_ms": 303.7,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:51.457010+00:00"
+    },
+    {
+      "target_url": "https://github.com/SKCET-CyberSquad/DarkNet-Crypto-Footprinter#overview",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_09_skcet_darknet_crypto_engine.md",
+          "line": 16,
+          "title": "SKCET DarkNet Crypto Intelligence Engine — NCB National Grand Champion Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/SKCET-CyberSquad/DarkNet-Crypto-Footprinter#overview",
+      "latency_ms": 298.11,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:51.484162+00:00"
+    },
+    {
+      "target_url": "https://github.com/SKCET-CyberSquad/DarkNet-Crypto-Footprinter/tree/main/docs/NCB_GrandFinale_Dossier.pdf",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_09_skcet_darknet_crypto_engine.md",
+          "line": 17,
+          "title": "SKCET DarkNet Crypto Intelligence Engine — NCB National Grand Champion Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/SKCET-CyberSquad/DarkNet-Crypto-Footprinter/tree/main/docs/NCB_GrandFinale_Dossier.pdf",
+      "latency_ms": 310.85,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:51.526667+00:00"
+    },
+    {
+      "target_url": "https://www.youtube.com/results?search_query=SKCET+Darknet+Hackathon+Amit+Shah+NCB",
+      "domain_category": "Video Demonstration",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_09_skcet_darknet_crypto_engine.md",
+          "line": 18,
+          "title": "SKCET DarkNet Crypto Intelligence Engine — NCB National Grand Champion Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://www.youtube.com/results?search_query=SKCET+Darknet+Hackathon+Amit+Shah+NCB",
+      "latency_ms": 516.88,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "ESF",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:51.741346+00:00"
+    },
+    {
+      "target_url": "https://github.com/SKCET-CyberSquad/DarkNet-Crypto-Footprinter/blob/main/README.md",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_09_skcet_darknet_crypto_engine.md",
+          "line": 19,
+          "title": "SKCET DarkNet Crypto Intelligence Engine — NCB National Grand Champion Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/SKCET-CyberSquad/DarkNet-Crypto-Footprinter/blob/main/README.md",
+      "latency_ms": 309.86,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:51.563907+00:00"
+    },
+    {
+      "target_url": "https://github.com/vertexaisearch/ForensicFlow",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_10_forensicflow_ufdr.md",
+          "line": 13,
+          "title": "ForensicFlow UFDR Intelligence Platform — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/vertexaisearch/ForensicFlow",
+      "latency_ms": 307.87,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:51.669310+00:00"
+    },
+    {
+      "target_url": "https://github.com/vertexaisearch",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_10_forensicflow_ufdr.md",
+          "line": 15,
+          "title": "ForensicFlow UFDR Intelligence Platform — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/vertexaisearch",
+      "latency_ms": 321.3,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:51.778473+00:00"
+    },
+    {
+      "target_url": "https://github.com/vertexaisearch/ForensicFlow#readme",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_10_forensicflow_ufdr.md",
+          "line": 16,
+          "title": "ForensicFlow UFDR Intelligence Platform — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/vertexaisearch/ForensicFlow#readme",
+      "latency_ms": 186.81,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:51.665852+00:00"
+    },
+    {
+      "target_url": "https://github.com/vertexaisearch/ForensicFlow/tree/main/docs/ForensicFlow_SIH_Defense.pdf",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_10_forensicflow_ufdr.md",
+          "line": 17,
+          "title": "ForensicFlow UFDR Intelligence Platform — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/vertexaisearch/ForensicFlow/tree/main/docs/ForensicFlow_SIH_Defense.pdf",
+      "latency_ms": 335.64,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:51.820572+00:00"
+    },
+    {
+      "target_url": "https://www.youtube.com/results?search_query=ForensicFlow+UFDR+Analyzer+SIH",
+      "domain_category": "Video Demonstration",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_10_forensicflow_ufdr.md",
+          "line": 18,
+          "title": "ForensicFlow UFDR Intelligence Platform — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://www.youtube.com/results?search_query=ForensicFlow+UFDR+Analyzer+SIH",
+      "latency_ms": 667.67,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "ESF",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:52.194430+00:00"
+    },
+    {
+      "target_url": "https://github.com/vertexaisearch/ForensicFlow/blob/main/README.md",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_10_forensicflow_ufdr.md",
+          "line": 19,
+          "title": "ForensicFlow UFDR Intelligence Platform — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/vertexaisearch/ForensicFlow/blob/main/README.md",
+      "latency_ms": 320.72,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:51.879087+00:00"
+    },
+    {
+      "target_url": "https://github.com/DakshDadhania/Cryptonite-AntiPhishing",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_11_cryptonite_phishing_guard.md",
+          "line": 13,
+          "title": "CRYPTONITE AI Anti-Phishing Guard — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/DakshDadhania/Cryptonite-AntiPhishing",
+      "latency_ms": 329.7,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:51.894194+00:00"
+    },
+    {
+      "target_url": "https://github.com/DakshDadhania",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_11_cryptonite_phishing_guard.md",
+          "line": 15,
+          "title": "CRYPTONITE AI Anti-Phishing Guard — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/DakshDadhania",
+      "latency_ms": 482.91,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:52.078962+00:00"
+    },
+    {
+      "target_url": "https://github.com/DakshDadhania/Cryptonite-AntiPhishing#live-demo",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_11_cryptonite_phishing_guard.md",
+          "line": 16,
+          "title": "CRYPTONITE AI Anti-Phishing Guard — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/DakshDadhania/Cryptonite-AntiPhishing#live-demo",
+      "latency_ms": 279.93,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:51.893267+00:00"
+    },
+    {
+      "target_url": "https://github.com/DakshDadhania/Cryptonite-AntiPhishing/tree/main/docs/NTRO_SIH1454_Cryptonite.pdf",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_11_cryptonite_phishing_guard.md",
+          "line": 17,
+          "title": "CRYPTONITE AI Anti-Phishing Guard — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/DakshDadhania/Cryptonite-AntiPhishing/tree/main/docs/NTRO_SIH1454_Cryptonite.pdf",
+      "latency_ms": 345.16,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:52.011225+00:00"
+    },
+    {
+      "target_url": "https://www.youtube.com/results?search_query=Cryptonite+Anti+Phishing+SIH+2023+NTRO",
+      "domain_category": "Video Demonstration",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_11_cryptonite_phishing_guard.md",
+          "line": 18,
+          "title": "CRYPTONITE AI Anti-Phishing Guard — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://www.youtube.com/results?search_query=Cryptonite+Anti+Phishing+SIH+2023+NTRO",
+      "latency_ms": 524.37,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "ESF",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:52.194083+00:00"
+    },
+    {
+      "target_url": "https://github.com/DakshDadhania/Cryptonite-AntiPhishing/blob/main/README.md",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_11_cryptonite_phishing_guard.md",
+          "line": 19,
+          "title": "CRYPTONITE AI Anti-Phishing Guard — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/DakshDadhania/Cryptonite-AntiPhishing/blob/main/README.md",
+      "latency_ms": 300.32,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:52.003498+00:00"
+    },
+    {
+      "target_url": "https://github.com/AtharvaKarekar/BitHeads-OpenVPN-Scanner",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_12_bitheads_openvpn_scanner.md",
+          "line": 13,
+          "title": "BitHeads OpenVPN Cryptographic Vulnerability Scanner — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/AtharvaKarekar/BitHeads-OpenVPN-Scanner",
+      "latency_ms": 324.73,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:52.066208+00:00"
+    },
+    {
+      "target_url": "https://github.com/AtharvaKarekar",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_12_bitheads_openvpn_scanner.md",
+          "line": 15,
+          "title": "BitHeads OpenVPN Cryptographic Vulnerability Scanner — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/AtharvaKarekar",
+      "latency_ms": 439.58,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:52.200043+00:00"
+    },
+    {
+      "target_url": "https://github.com/OpenVPN/openvpn",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_12_bitheads_openvpn_scanner.md",
+          "line": 16,
+          "title": "BitHeads OpenVPN Cryptographic Vulnerability Scanner — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/OpenVPN/openvpn",
+      "latency_ms": 582.96,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:52.361583+00:00"
+    },
+    {
+      "target_url": "https://github.com/AtharvaKarekar/BitHeads-OpenVPN-Scanner#demo",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_12_bitheads_openvpn_scanner.md",
+          "line": 17,
+          "title": "BitHeads OpenVPN Cryptographic Vulnerability Scanner — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/AtharvaKarekar/BitHeads-OpenVPN-Scanner#demo",
+      "latency_ms": 251.03,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:52.071736+00:00"
+    },
+    {
+      "target_url": "https://github.com/AtharvaKarekar/BitHeads-OpenVPN-Scanner/tree/main/docs/NTRO_SIH1453_BitHeads.pdf",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_12_bitheads_openvpn_scanner.md",
+          "line": 18,
+          "title": "BitHeads OpenVPN Cryptographic Vulnerability Scanner — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/AtharvaKarekar/BitHeads-OpenVPN-Scanner/tree/main/docs/NTRO_SIH1453_BitHeads.pdf",
+      "latency_ms": 371.65,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:52.250864+00:00"
+    },
+    {
+      "target_url": "https://www.youtube.com/results?search_query=BitHeads+OpenVPN+Scanner+SIH+2023+NTRO",
+      "domain_category": "Video Demonstration",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_12_bitheads_openvpn_scanner.md",
+          "line": 19,
+          "title": "BitHeads OpenVPN Cryptographic Vulnerability Scanner — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://www.youtube.com/results?search_query=BitHeads+OpenVPN+Scanner+SIH+2023+NTRO",
+      "latency_ms": 600.09,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "ESF",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:52.494418+00:00"
+    },
+    {
+      "target_url": "https://github.com/AtharvaKarekar/BitHeads-OpenVPN-Scanner/blob/main/README.md",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_12_bitheads_openvpn_scanner.md",
+          "line": 20,
+          "title": "BitHeads OpenVPN Cryptographic Vulnerability Scanner — SIH 2023 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/AtharvaKarekar/BitHeads-OpenVPN-Scanner/blob/main/README.md",
+      "latency_ms": 347.68,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:52.243868+00:00"
+    },
+    {
+      "target_url": "https://github.com/vinaynesta",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_13_blockwizz_urban_infra.md",
+          "line": 15,
+          "title": "BlockWizz Property Tax & Land Registry Ledger — SIH 2022 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/vinaynesta",
+      "latency_ms": 472.4,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:52.476096+00:00"
+    },
+    {
+      "target_url": "https://github.com/vinaynesta/BlockWizz#demo-preview",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_13_blockwizz_urban_infra.md",
+          "line": 16,
+          "title": "BlockWizz Property Tax & Land Registry Ledger — SIH 2022 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/vinaynesta/BlockWizz#demo-preview",
+      "latency_ms": 21.41,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:52.033380+00:00"
+    },
+    {
+      "target_url": "https://github.com/vinaynesta/BlockWizz/tree/main/docs/BlockWizz_MoHUA_Deck.pdf",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_13_blockwizz_urban_infra.md",
+          "line": 17,
+          "title": "BlockWizz Property Tax & Land Registry Ledger — SIH 2022 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/vinaynesta/BlockWizz/tree/main/docs/BlockWizz_MoHUA_Deck.pdf",
+      "latency_ms": 511.36,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:52.544882+00:00"
+    },
+    {
+      "target_url": "https://www.youtube.com/results?search_query=BlockWizz+SIH+2022+Vinay+Nesta",
+      "domain_category": "Video Demonstration",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_13_blockwizz_urban_infra.md",
+          "line": 18,
+          "title": "BlockWizz Property Tax & Land Registry Ledger — SIH 2022 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://www.youtube.com/results?search_query=BlockWizz+SIH+2022+Vinay+Nesta",
+      "latency_ms": 489.79,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "ESF",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:52.557811+00:00"
+    },
+    {
+      "target_url": "https://github.com/vinaynesta/BlockWizz/blob/main/README.md",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_13_blockwizz_urban_infra.md",
+          "line": 19,
+          "title": "BlockWizz Property Tax & Land Registry Ledger — SIH 2022 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/vinaynesta/BlockWizz/blob/main/README.md",
+      "latency_ms": 523.24,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:52.595180+00:00"
+    },
+    {
+      "target_url": "https://github.com/PushkarJaiswal06/SatyaSetu",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_14_satyasetu_fake_news_ledger.md",
+          "line": 13,
+          "title": "SatyaSetu Intelligent Credentialing & Forensic Verification Ledger — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/PushkarJaiswal06/SatyaSetu",
+      "latency_ms": 351.9,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:52.430994+00:00"
+    },
+    {
+      "target_url": "https://github.com/PushkarJaiswal06",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_14_satyasetu_fake_news_ledger.md",
+          "line": 15,
+          "title": "SatyaSetu Intelligent Credentialing & Forensic Verification Ledger — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/PushkarJaiswal06",
+      "latency_ms": 537.02,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:52.731518+00:00"
+    },
+    {
+      "target_url": "https://github.com/PushkarJaiswal06/SatyaSetu#demo-portal",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_14_satyasetu_fake_news_ledger.md",
+          "line": 16,
+          "title": "SatyaSetu Intelligent Credentialing & Forensic Verification Ledger — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/PushkarJaiswal06/SatyaSetu#demo-portal",
+      "latency_ms": 230.57,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:52.425935+00:00"
+    },
+    {
+      "target_url": "https://github.com/PushkarJaiswal06/SatyaSetu/tree/main/docs/SatyaSetu_SIH_Presentation.pdf",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_14_satyasetu_fake_news_ledger.md",
+          "line": 17,
+          "title": "SatyaSetu Intelligent Credentialing & Forensic Verification Ledger — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/PushkarJaiswal06/SatyaSetu/tree/main/docs/SatyaSetu_SIH_Presentation.pdf",
+      "latency_ms": 348.28,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:52.548452+00:00"
+    },
+    {
+      "target_url": "https://www.youtube.com/results?search_query=SatyaSetu+Pushkar+Jaiswal+SIH",
+      "domain_category": "Video Demonstration",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_14_satyasetu_fake_news_ledger.md",
+          "line": 18,
+          "title": "SatyaSetu Intelligent Credentialing & Forensic Verification Ledger — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://www.youtube.com/results?search_query=SatyaSetu+Pushkar+Jaiswal+SIH",
+      "latency_ms": 599.36,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "ESF",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:52.843307+00:00"
+    },
+    {
+      "target_url": "https://github.com/PushkarJaiswal06/SatyaSetu/blob/main/README.md",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_14_satyasetu_fake_news_ledger.md",
+          "line": 19,
+          "title": "SatyaSetu Intelligent Credentialing & Forensic Verification Ledger — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/PushkarJaiswal06/SatyaSetu/blob/main/README.md",
+      "latency_ms": 367.86,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:52.618851+00:00"
+    },
+    {
+      "target_url": "https://github.com/Arohi-jd/Nivesh-Nidhi",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_15_nivesh_nidhi_chitchain.md",
+          "line": 13,
+          "title": "Nivesh-Nidhi ChitChain — SIH FinTech Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/Arohi-jd/Nivesh-Nidhi",
+      "latency_ms": 309.46,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:52.671167+00:00"
+    },
+    {
+      "target_url": "https://github.com/Arohi-jd",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_15_nivesh_nidhi_chitchain.md",
+          "line": 15,
+          "title": "Nivesh-Nidhi ChitChain — SIH FinTech Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/Arohi-jd",
+      "latency_ms": 625.25,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:53.051467+00:00"
+    },
+    {
+      "target_url": "https://github.com/Arohi-jd/Nivesh-Nidhi#demo",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_15_nivesh_nidhi_chitchain.md",
+          "line": 16,
+          "title": "Nivesh-Nidhi ChitChain — SIH FinTech Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/Arohi-jd/Nivesh-Nidhi#demo",
+      "latency_ms": 240.56,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:52.672002+00:00"
+    },
+    {
+      "target_url": "https://github.com/Arohi-jd/Nivesh-Nidhi/tree/main/docs/NiveshNidhi_SIH_Pitch.pdf",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_15_nivesh_nidhi_chitchain.md",
+          "line": 17,
+          "title": "Nivesh-Nidhi ChitChain — SIH FinTech Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/Arohi-jd/Nivesh-Nidhi/tree/main/docs/NiveshNidhi_SIH_Pitch.pdf",
+      "latency_ms": 299.84,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:52.776103+00:00"
+    },
+    {
+      "target_url": "https://www.youtube.com/results?search_query=Nivesh+Nidhi+ChitChain+SIH+Arohi+Jadhav",
+      "domain_category": "Video Demonstration",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_15_nivesh_nidhi_chitchain.md",
+          "line": 18,
+          "title": "Nivesh-Nidhi ChitChain — SIH FinTech Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://www.youtube.com/results?search_query=Nivesh+Nidhi+ChitChain+SIH+Arohi+Jadhav",
+      "latency_ms": 576.43,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "ESF",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:53.070993+00:00"
+    },
+    {
+      "target_url": "https://github.com/Arohi-jd/Nivesh-Nidhi/blob/main/README.md",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_15_nivesh_nidhi_chitchain.md",
+          "line": 19,
+          "title": "Nivesh-Nidhi ChitChain — SIH FinTech Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/Arohi-jd/Nivesh-Nidhi/blob/main/README.md",
+      "latency_ms": 367.36,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:52.912452+00:00"
+    },
+    {
+      "target_url": "https://github.com/iiitkottayam/SonsOfPitches-AT980",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_16_sons_of_pitches_at980.md",
+          "line": 13,
+          "title": "Big Data Forensic Search Engine (AT980) / Sons of Pitches — SIH 2022 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/iiitkottayam/SonsOfPitches-AT980",
+      "latency_ms": 306.28,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:52.855160+00:00"
+    },
+    {
+      "target_url": "https://github.com/iiitkottayam",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_16_sons_of_pitches_at980.md",
+          "line": 15,
+          "title": "Big Data Forensic Search Engine (AT980) / Sons of Pitches — SIH 2022 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/iiitkottayam",
+      "latency_ms": 678.42,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:53.236329+00:00"
+    },
+    {
+      "target_url": "https://github.com/iiitkottayam/SonsOfPitches-AT980#overview",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_16_sons_of_pitches_at980.md",
+          "line": 16,
+          "title": "Big Data Forensic Search Engine (AT980) / Sons of Pitches — SIH 2022 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/iiitkottayam/SonsOfPitches-AT980#overview",
+      "latency_ms": 263.61,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:52.858906+00:00"
+    },
+    {
+      "target_url": "https://github.com/iiitkottayam/SonsOfPitches-AT980/tree/main/docs/AT980_MP_Police_Presentation.pdf",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_16_sons_of_pitches_at980.md",
+          "line": 17,
+          "title": "Big Data Forensic Search Engine (AT980) / Sons of Pitches — SIH 2022 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/iiitkottayam/SonsOfPitches-AT980/tree/main/docs/AT980_MP_Police_Presentation.pdf",
+      "latency_ms": 344.74,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:52.963722+00:00"
+    },
+    {
+      "target_url": "https://www.youtube.com/results?search_query=Sons+of+Pitches+SIH+2022+IIIT+Kottayam+AT980",
+      "domain_category": "Video Demonstration",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_16_sons_of_pitches_at980.md",
+          "line": 18,
+          "title": "Big Data Forensic Search Engine (AT980) / Sons of Pitches — SIH 2022 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://www.youtube.com/results?search_query=Sons+of+Pitches+SIH+2022+IIIT+Kottayam+AT980",
+      "latency_ms": 495.72,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "ESF",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:53.167855+00:00"
+    },
+    {
+      "target_url": "https://github.com/iiitkottayam/SonsOfPitches-AT980/blob/main/README.md",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_16_sons_of_pitches_at980.md",
+          "line": 19,
+          "title": "Big Data Forensic Search Engine (AT980) / Sons of Pitches — SIH 2022 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/iiitkottayam/SonsOfPitches-AT980/blob/main/README.md",
+      "latency_ms": 309.87,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:52.983922+00:00"
+    },
+    {
+      "target_url": "https://github.com/SiddharthKumar268",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_17_anveshak_threatshield.md",
+          "line": 15,
+          "title": "Anveshak ThreatShield — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/SiddharthKumar268",
+      "latency_ms": 497.56,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:53.229188+00:00"
+    },
+    {
+      "target_url": "https://github.com/SiddharthKumar268/Anveshak#demo",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_17_anveshak_threatshield.md",
+          "line": 16,
+          "title": "Anveshak ThreatShield — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/SiddharthKumar268/Anveshak#demo",
+      "latency_ms": 23.53,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:52.799766+00:00"
+    },
+    {
+      "target_url": "https://github.com/SiddharthKumar268/Anveshak/tree/main/docs/Anveshak_Defense_Deck.pdf",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_17_anveshak_threatshield.md",
+          "line": 17,
+          "title": "Anveshak ThreatShield — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/SiddharthKumar268/Anveshak/tree/main/docs/Anveshak_Defense_Deck.pdf",
+      "latency_ms": 492.96,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:53.292857+00:00"
+    },
+    {
+      "target_url": "https://www.youtube.com/results?search_query=Anveshak+ThreatShield+SIH+Siddharth+Kumar",
+      "domain_category": "Video Demonstration",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_17_anveshak_threatshield.md",
+          "line": 18,
+          "title": "Anveshak ThreatShield — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://www.youtube.com/results?search_query=Anveshak+ThreatShield+SIH+Siddharth+Kumar",
+      "latency_ms": 508.3,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "ESF",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:53.351726+00:00"
+    },
+    {
+      "target_url": "https://github.com/SiddharthKumar268/Anveshak/blob/main/README.md",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_17_anveshak_threatshield.md",
+          "line": 19,
+          "title": "Anveshak ThreatShield — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/SiddharthKumar268/Anveshak/blob/main/README.md",
+      "latency_ms": 628.27,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:53.483670+00:00"
+    },
+    {
+      "target_url": "https://github.com/NP-compete/Alternate-Authentication",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_18_passchain_auth.md",
+          "line": 13,
+          "title": "Alternate-Authentication / PassChain — SIH 2020 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/NP-compete/Alternate-Authentication",
+      "latency_ms": 823.18,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:53.682512+00:00"
+    },
+    {
+      "target_url": "https://github.com/sohamdutta",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_18_passchain_auth.md",
+          "line": 15,
+          "title": "Alternate-Authentication / PassChain — SIH 2020 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/sohamdutta",
+      "latency_ms": 405.75,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:53.318324+00:00"
+    },
+    {
+      "target_url": "https://github.com/NP-compete/Alternate-Authentication#demo",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_18_passchain_auth.md",
+          "line": 16,
+          "title": "Alternate-Authentication / PassChain — SIH 2020 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/NP-compete/Alternate-Authentication#demo",
+      "latency_ms": 725.47,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:53.689333+00:00"
+    },
+    {
+      "target_url": "https://github.com/NP-compete/Alternate-Authentication/tree/main/docs/PassChain_SIH2020.pdf",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_18_passchain_auth.md",
+          "line": 17,
+          "title": "Alternate-Authentication / PassChain — SIH 2020 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/NP-compete/Alternate-Authentication/tree/main/docs/PassChain_SIH2020.pdf",
+      "latency_ms": 490.8,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:53.474841+00:00"
+    },
+    {
+      "target_url": "https://www.youtube.com/results?search_query=Alternate+Authentication+PassChain+SIH+2020",
+      "domain_category": "Video Demonstration",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_18_passchain_auth.md",
+          "line": 18,
+          "title": "Alternate-Authentication / PassChain — SIH 2020 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://www.youtube.com/results?search_query=Alternate+Authentication+PassChain+SIH+2020",
+      "latency_ms": 614.51,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "ESF",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:53.666084+00:00"
+    },
+    {
+      "target_url": "https://github.com/NP-compete/Alternate-Authentication/blob/main/README.md",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_18_passchain_auth.md",
+          "line": 19,
+          "title": "Alternate-Authentication / PassChain — SIH 2020 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/NP-compete/Alternate-Authentication/blob/main/README.md",
+      "latency_ms": 424.94,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:53.496069+00:00"
+    },
+    {
+      "target_url": "https://github.com/Nihar-Ranjan-Sahu",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_19_fir_vault_ledger.md",
+          "line": 13,
+          "title": "FIR Vault / SecureFIR Immutable Police Ledger — SIH 2022 Winning Project Dossier"
+        },
+        {
+          "file": "dossiers/cyber_blockchain/dossier_19_fir_vault_ledger.md",
+          "line": 15,
+          "title": "FIR Vault / SecureFIR Immutable Police Ledger — SIH 2022 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/Nihar-Ranjan-Sahu",
+      "latency_ms": 343.36,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:53.511307+00:00"
+    },
+    {
+      "target_url": "https://github.com/Nihar-Ranjan-Sahu#overview",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_19_fir_vault_ledger.md",
+          "line": 16,
+          "title": "FIR Vault / SecureFIR Immutable Police Ledger — SIH 2022 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/Nihar-Ranjan-Sahu#overview",
+      "latency_ms": 281.43,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:53.510747+00:00"
+    },
+    {
+      "target_url": "https://github.com/Nihar-Ranjan-Sahu/docs/FIR_Vault_SIH2022_Presentation.pdf",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_19_fir_vault_ledger.md",
+          "line": 17,
+          "title": "FIR Vault / SecureFIR Immutable Police Ledger — SIH 2022 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/Nihar-Ranjan-Sahu/docs/FIR_Vault_SIH2022_Presentation.pdf",
+      "latency_ms": 230.86,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/plain; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:53.467302+00:00"
+    },
+    {
+      "target_url": "https://www.youtube.com/results?search_query=FIR+Vault+SIH+2022+Nihar+Ranjan+Sahu",
+      "domain_category": "Video Demonstration",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_19_fir_vault_ledger.md",
+          "line": 18,
+          "title": "FIR Vault / SecureFIR Immutable Police Ledger — SIH 2022 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://www.youtube.com/results?search_query=FIR+Vault+SIH+2022+Nihar+Ranjan+Sahu",
+      "latency_ms": 473.16,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "ESF",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:53.766167+00:00"
+    },
+    {
+      "target_url": "https://github.com/Nihar-Ranjan-Sahu/README.md",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_19_fir_vault_ledger.md",
+          "line": 19,
+          "title": "FIR Vault / SecureFIR Immutable Police Ledger — SIH 2022 Winning Project Dossier"
+        }
+      ],
+      "status": "BROKEN",
+      "http_status_code": 404,
+      "final_url": "https://github.com/Nihar-Ranjan-Sahu/README.md",
+      "latency_ms": 340.88,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": "Resource not found (HTTP 404).",
+      "last_verified": "2026-08-27T17:05:53.659328+00:00"
+    },
+    {
+      "target_url": "https://github.com/tani321",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_20_bluecarbonnexus_mrv.md",
+          "line": 15,
+          "title": "BlueCarbonNexus MRV Blockchain Platform — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/tani321",
+      "latency_ms": 493.49,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:53.845343+00:00"
+    },
+    {
+      "target_url": "https://github.com/tani321/-finalbluecarbonnexus-blockchain#live-demo",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_20_bluecarbonnexus_mrv.md",
+          "line": 16,
+          "title": "BlueCarbonNexus MRV Blockchain Platform — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/tani321/-finalbluecarbonnexus-blockchain#live-demo",
+      "latency_ms": 23.67,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:53.491120+00:00"
+    },
+    {
+      "target_url": "https://github.com/tani321/-finalbluecarbonnexus-blockchain/tree/main/docs/BlueCarbonNexus_Defense_Deck.pdf",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_20_bluecarbonnexus_mrv.md",
+          "line": 17,
+          "title": "BlueCarbonNexus MRV Blockchain Platform — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/tani321/-finalbluecarbonnexus-blockchain/tree/main/docs/BlueCarbonNexus_Defense_Deck.pdf",
+      "latency_ms": 422.08,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:53.897064+00:00"
+    },
+    {
+      "target_url": "https://www.youtube.com/results?search_query=BlueCarbonNexus+Blockchain+MRV+SIH",
+      "domain_category": "Video Demonstration",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_20_bluecarbonnexus_mrv.md",
+          "line": 18,
+          "title": "BlueCarbonNexus MRV Blockchain Platform — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://www.youtube.com/results?search_query=BlueCarbonNexus+Blockchain+MRV+SIH",
+      "latency_ms": 595.48,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "ESF",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:54.079270+00:00"
+    },
+    {
+      "target_url": "https://github.com/tani321/-finalbluecarbonnexus-blockchain/blob/main/README.md",
+      "domain_category": "GitHub Repository / Asset",
+      "source_files": [
+        {
+          "file": "dossiers/cyber_blockchain/dossier_20_bluecarbonnexus_mrv.md",
+          "line": 19,
+          "title": "BlueCarbonNexus MRV Blockchain Platform — SIH 2024 Winning Project Dossier"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://github.com/tani321/-finalbluecarbonnexus-blockchain/blob/main/README.md",
+      "latency_ms": 377.44,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "github.com",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:53.868658+00:00"
+    },
+    {
+      "target_url": "http://localhost:3000",
+      "domain_category": "General Web Resource",
+      "source_files": [
+        {
+          "file": "JURY_QA_DEFENSE_PLAYBOOK.md",
+          "line": 349,
+          "title": "Smart India Hackathon (SIH) — Grand Finale Jury Q&A Defense Playbook & Evaluation Framework"
+        }
+      ],
+      "status": "WARNING",
+      "http_status_code": 500,
+      "final_url": "http://localhost:3000",
+      "latency_ms": 499.73,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=utf-8",
+      "server": "",
+      "error_message": "Returned unexpected status 500",
+      "last_verified": "2026-08-27T17:05:53.995924+00:00"
+    },
+    {
+      "target_url": "https://img.shields.io/badge/SIH-2020--2025-blue.svg",
+      "domain_category": "General Web Resource",
+      "source_files": [
+        {
+          "file": "README.md",
+          "line": 3,
+          "title": "Smart India Hackathon (SIH) Winning Resources & Champion Intelligence Repository"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://img.shields.io/badge/SIH-2020--2025-blue.svg",
+      "latency_ms": 300.04,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "image/svg+xml;charset=utf-8",
+      "server": "cloudflare",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:53.811438+00:00"
+    },
+    {
+      "target_url": "https://sih.gov.in",
+      "domain_category": "Official Government / Ministry Portal",
+      "source_files": [
+        {
+          "file": "README.md",
+          "line": 3,
+          "title": "Smart India Hackathon (SIH) Winning Resources & Champion Intelligence Repository"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://sih.gov.in",
+      "latency_ms": 110.22,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "text/html; charset=UTF-8",
+      "server": "Apache",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:53.622820+00:00"
+    },
+    {
+      "target_url": "https://img.shields.io/badge/Verified%20Dossiers-42%20Champions-emerald.svg",
+      "domain_category": "General Web Resource",
+      "source_files": [
+        {
+          "file": "README.md",
+          "line": 4,
+          "title": "Smart India Hackathon (SIH) Winning Resources & Champion Intelligence Repository"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://img.shields.io/badge/Verified%20Dossiers-42%20Champions-emerald.svg",
+      "latency_ms": 255.89,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "image/svg+xml;charset=utf-8",
+      "server": "cloudflare",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:53.878813+00:00"
+    },
+    {
+      "target_url": "https://img.shields.io/badge/Pitch%20Deck-8--Slide%20Architecture-purple.svg",
+      "domain_category": "General Web Resource",
+      "source_files": [
+        {
+          "file": "README.md",
+          "line": 5,
+          "title": "Smart India Hackathon (SIH) Winning Resources & Champion Intelligence Repository"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://img.shields.io/badge/Pitch%20Deck-8--Slide%20Architecture-purple.svg",
+      "latency_ms": 310.59,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "image/svg+xml;charset=utf-8",
+      "server": "cloudflare",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:53.970010+00:00"
+    },
+    {
+      "target_url": "https://img.shields.io/badge/Jury%20Defense-12%20Objection%20Models-orange.svg",
+      "domain_category": "General Web Resource",
+      "source_files": [
+        {
+          "file": "README.md",
+          "line": 6,
+          "title": "Smart India Hackathon (SIH) Winning Resources & Champion Intelligence Repository"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://img.shields.io/badge/Jury%20Defense-12%20Objection%20Models-orange.svg",
+      "latency_ms": 3218.12,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "image/svg+xml;charset=utf-8",
+      "server": "cloudflare",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:56.884287+00:00"
+    },
+    {
+      "target_url": "https://img.shields.io/badge/Link%20Verifier-Async%20Engine%20v2.4-green.svg",
+      "domain_category": "General Web Resource",
+      "source_files": [
+        {
+          "file": "README.md",
+          "line": 7,
+          "title": "Smart India Hackathon (SIH) Winning Resources & Champion Intelligence Repository"
+        }
+      ],
+      "status": "VALID",
+      "http_status_code": 200,
+      "final_url": "https://img.shields.io/badge/Link%20Verifier-Async%20Engine%20v2.4-green.svg",
+      "latency_ms": 879.48,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": "image/svg+xml;charset=utf-8",
+      "server": "cloudflare",
+      "error_message": null,
+      "last_verified": "2026-08-27T17:05:54.562089+00:00"
+    },
+    {
+      "target_url": "http://localhost:8000",
+      "domain_category": "General Web Resource",
+      "source_files": [
+        {
+          "file": "SIH_WINNING_PPT_BLUEPRINT.md",
+          "line": 500,
+          "title": "Smart India Hackathon (SIH) — Champion Presentation (PPT) Blueprint & Pitch Architecture"
+        }
+      ],
+      "status": "ERROR",
+      "http_status_code": null,
+      "final_url": "http://localhost:8000",
+      "latency_ms": 19344.01,
+      "is_redirected": false,
+      "redirect_chain": [],
+      "content_type": null,
+      "server": null,
+      "error_message": "Network exception: All connection attempts failed",
+      "last_verified": "2026-08-27T17:06:13.033475+00:00"
+    }
+  ]
+}
