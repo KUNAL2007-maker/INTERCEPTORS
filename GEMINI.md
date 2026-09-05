@@ -85,13 +85,18 @@ a:/SIH/
 
 ---
 
-### 4. Automated Git Synchronization Protocol (Pull on Start, Push on Milestone)
+### 4. Automated Git Synchronization & Zero Conflict Protocol
 
 > **MANDATORY AUTOMATED GIT BEHAVIOR FOR ALL AGENTS:**
 > 1. **At the Start of Every Conversation / Session:**
 >    * The AI **MUST immediately run `git pull`** (e.g. `git pull --rebase` or `git pull`) before taking any action or writing code. This guarantees the workspace has the freshest commits, branches, and task updates from all 6 team members.
 > 2. **At Milestone Completion / End of Conversation:**
 >    * Whenever a unit of work is completed, task trackers are updated, or a milestone is reached, the AI **MUST automatically stage changes, commit with a descriptive message, and run `git push`** so teammates and subsequent AI sessions stay immediately in sync without manual user intervention.
+> 3. **Proactive Zero Merge Conflict Strategy:**
+>    * Strive for zero merge conflicts by keeping isolated prototypes strictly inside `<MEMBER_NAME>/` and pulling frequently before making modifications to shared stage modules (`DB/`, `ENGINE/`, `API/`, etc.).
+> 4. **User Escalation on Merge Conflicts:**
+>    * If any merge conflict occurs (e.g. during `git pull` or rebase), the AI **MUST NEVER force-push, drop remote commits, or guess resolutions blindly**.
+>    * The AI **MUST immediately halt, display the conflicting files and diffs to the user, and ask the user explicitly how they want to resolve the conflict** before continuing.
 
 ---
 
@@ -184,6 +189,7 @@ a:/SIH/
 ### 7. Golden Guidelines for Any AI Agent Working Here
 1. **Sync All Three Instruction Files**: Every modification to `GEMINI.md` must be identically copied to `CLAUDE.md` and `AGENT.md`.
 2. **Automated Git Sync**: Always pull at the start of a conversation to ingest teammates' work; always commit & push after completing milestones.
-3. **Consult Research First**: Always ground your logic on the 10 Technical Blueprint sets in `RESEARCH/`.
-4. **Respect User Boundaries**: Write into the active member's directory freely. Treat other members' folders as read-only references unless granted explicit permission.
-5. **Autonomous Milestones**: Keep the Task Board up-to-date after completing meaningful units of work.
+3. **Zero Conflict & Escalation**: Proactively prevent merge conflicts by isolating draft code. If a conflict ever arises, never resolve blindly—stop and ask the user.
+4. **Consult Research First**: Always ground your logic on the 10 Technical Blueprint sets in `RESEARCH/`.
+5. **Respect User Boundaries**: Write into the active member's directory freely. Treat other members' folders as read-only references unless granted explicit permission.
+6. **Autonomous Milestones**: Keep the Task Board up-to-date after completing meaningful units of work.
