@@ -63,6 +63,7 @@ a:/SIH/
 │   ├── ENGINE/                # Core forensic graph traversal, taint algorithms & clustering
 │   ├── API/                   # Backend API services, LEA auth, NCRP/SAHYOG endpoints
 │   ├── FRONTEND/              # Web dashboard, interactive graph visualizer (Cytoscape/D3)
+│   ├── AUTH_RBAC/             # Shared Auth & Role-Based Access Control module
 │   └── COMMON/                # Shared utilities, schemas, and configurations
 ├── RESEARCH/                  # Master technical specifications & legal blueprints (Read-Only reference)
 ├── WINNING_RESOURCES/         # SIH competition dossiers, PPT blueprints & jury playbooks
