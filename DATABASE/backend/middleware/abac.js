@@ -1,16 +1,25 @@
-// Attribute/Scope-Based Access Control (ABAC) Helper
+// Attribute-Based Access Control (ABAC) Helper
 
-function filterCasesByScope(user, casesList) {
-  if (user.role_name === 'SUPER_ADMIN' || user.role_name === 'AUDITOR') {
-    return casesList; // Global Scope
+function filterCasesByScope(currentUser, cases = []) {
+  if (!currentUser) return [];
+
+  // Super Admin & Auditor have nationwide access
+  if (currentUser.role_name === 'SUPER_ADMIN' || currentUser.role_name === 'AUDITOR') {
+    return cases;
   }
-  if (user.role_name === 'VICTIM') {
-    return casesList.filter(c => c.victim_id === user.id); // Strict Victim Ownership Scope
+
+  // Victim: Strictly restricted to their own submitted cases
+  if (currentUser.role_name === 'VICTIM') {
+    return cases.filter(c => c.victim_id === currentUser.id);
   }
-  if (['NORMAL_INVESTIGATOR', 'SENIOR_INVESTIGATOR', 'WORKSPACE_ADMIN'].includes(user.role_name)) {
-    return casesList.filter(c => c.workspace_id === user.workspace_id); // Workspace Scope
+
+  // Exchange Officer: Strictly restricted to cases involving their assigned VASP
+  if (currentUser.role_name === 'EXCHANGE_NODAL_OFFICER') {
+    return cases.filter(c => c.vasp_id === currentUser.vasp_id || c.target_vasp === currentUser.vasp_name);
   }
-  return [];
+
+  // Police Investigators & Workspace Admins: Scoped to their assigned workspace
+  return cases.filter(c => c.workspace_id === currentUser.workspace_id);
 }
 
 module.exports = { filterCasesByScope };

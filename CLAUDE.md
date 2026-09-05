@@ -148,10 +148,11 @@ a:/SIH/
 
 ---
 
-#### Member 2: [Assign Name] (`MEMBER_2/`)
-* **Role / Focus**: Graph Data Modeling & Database Pipeline (`DB/`)
+#### Member 2: Akshay (`DATABASE/`)
+* **Role / Focus**: Graph Data Modeling & Database Pipeline (`DB/`, `DATABASE/`)
 * **✅ Tasks Done (Completed)**:
   * [x] Initial repository structure and research review.
+  * [x] Created database backend, schema definitions, and frontend structure.
 * **🔄 Tasks Working On (In Progress)**:
   * [ ] Designing Graph Database schema (Neo4j / Memgraph) for entities, addresses, transactions, and VASP nodes.
 * **📋 Tasks to be Started (Assigned / Backlog)**:
@@ -160,10 +161,11 @@ a:/SIH/
 
 ---
 
-#### Member 3: [Assign Name] (`MEMBER_3/`)
-* **Role / Focus**: Forensics Engine, Taint Analysis & Clustering (`ENGINE/`)
+#### Member 3: Kunal (`KUNAL/`)
+* **Role / Focus**: Forensics Engine, Access Control (RBAC/ABAC) & Clustering (`ENGINE/`, `AUTH_RBAC/`)
 * **✅ Tasks Done (Completed)**:
   * [x] Reviewed algorithmic specifications in `RESEARCH/SET 2` and `RESEARCH/SET 3`.
+  * [x] Implemented comprehensive 7-role RBAC & ABAC access control engine with interactive button authorization and scope isolation.
 * **🔄 Tasks Working On (In Progress)**:
   * [ ] Designing traversal algorithm (BFS/DFS with pruning) for multi-hop transaction trails.
 * **📋 Tasks to be Started (Assigned / Backlog)**:
