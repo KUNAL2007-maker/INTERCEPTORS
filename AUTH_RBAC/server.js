@@ -66,6 +66,10 @@ app.set('memoryDB', memoryDB);
 // Import Middlewares from local directory
 const { requireRole } = require('./middleware/rbac');
 const { filterCasesByScope } = require('./middleware/abac');
+const { keycloakAuthMiddleware } = require('./middleware/keycloak-middleware');
+
+// Mount Keycloak OIDC Token Parser (supports both Keycloak Bearer tokens & local mock personas)
+app.use(keycloakAuthMiddleware);
 
 // ----------------------------------------------------------------------------
 // 1. AUTH & PERSONA SWITCHING

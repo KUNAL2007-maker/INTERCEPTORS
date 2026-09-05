@@ -1,0 +1,79 @@
+{
+  "realm": "crypto-attribution",
+  "enabled": true,
+  "displayName": "SIH 2026 Crypto Fraud Attribution Hub",
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "roles": {
+    "realm": [
+      {
+        "name": "VICTIM",
+        "description": "Citizen affected by crypto fraud"
+      },
+      {
+        "name": "NORMAL_INVESTIGATOR",
+        "description": "Field cyber officer or sub-inspector"
+      },
+      {
+        "name": "SENIOR_INVESTIGATOR",
+        "description": "Unit lead with statutory approval authority"
+      },
+      {
+        "name": "WORKSPACE_ADMIN",
+        "description": "Police Unit Lead (SP / DCP)"
+      },
+      {
+        "name": "SUPER_ADMIN",
+        "description": "National Nodal Authority (I4C / MHA)"
+      },
+      {
+        "name": "EXCHANGE_NODAL_OFFICER",
+        "description": "Compliance officer representing external crypto exchange"
+      },
+      {
+        "name": "AUDITOR",
+        "description": "Judicial representative or compliance auditor"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "sih-crypto-portal",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": ["http://localhost:5000/*"],
+      "webOrigins": ["*"]
+    }
+  ],
+  "users": [
+    {
+      "username": "senior.sharma",
+      "email": "senior.sharma@mhcyber.gov.in",
+      "firstName": "Officer",
+      "lastName": "Sharma",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "Police@123", "temporary": false }],
+      "realmRoles": ["SENIOR_INVESTIGATOR"]
+    },
+    {
+      "username": "central.admin",
+      "email": "admin@i4c.gov.in",
+      "firstName": "Central",
+      "lastName": "Nodal",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "Admin@123", "temporary": false }],
+      "realmRoles": ["SUPER_ADMIN"]
+    },
+    {
+      "username": "victim.verma",
+      "email": "victim.verma@gmail.com",
+      "firstName": "Rajesh",
+      "lastName": "Verma",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "Victim@123", "temporary": false }],
+      "realmRoles": ["VICTIM"]
+    }
+  ]
+}
