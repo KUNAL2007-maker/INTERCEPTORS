@@ -154,10 +154,11 @@ a:/SIH/
 * **✅ Tasks Done (Completed)**:
   * [x] Initial repository structure and research review.
   * [x] Created database backend, schema definitions, and frontend structure.
+  * [x] Created PostgreSQL database initialization scripts (`db/schema.sql`, `db/seed.sql`, `db/init_db.py`).
+  * [x] Connected live backend API (`app.py`) to PostgreSQL database.
 * **🔄 Tasks Working On (In Progress)**:
   * [ ] Designing Graph Database schema (Neo4j / Memgraph) for entities, addresses, transactions, and VASP nodes.
 * **📋 Tasks to be Started (Assigned / Backlog)**:
-  * [ ] Write database initialization scripts and migration handlers under `DB/`.
   * [ ] Implement high-speed bulk ingestion schema for multi-hop graph querying.
 
 ---
