@@ -63,7 +63,7 @@ a:/SIH/
 │   ├── ENGINE/                # Core forensic graph traversal, taint algorithms & clustering
 │   ├── API/                   # Backend API services, LEA auth, NCRP/SAHYOG endpoints
 │   ├── FRONTEND/              # Web dashboard, interactive graph visualizer (Cytoscape/D3)
-│   ├── AUTH_RBAC/             # Shared Auth & Role-Based Access Control module
+│   ├── AUTH_RBAC_ABAC/        # Shared Auth, RBAC & ABAC Access Control module
 │   └── COMMON/                # Shared utilities, schemas, and configurations
 ├── RESEARCH/                  # Master technical specifications & legal blueprints (Read-Only reference)
 ├── WINNING_RESOURCES/         # SIH competition dossiers, PPT blueprints & jury playbooks
@@ -165,10 +165,10 @@ a:/SIH/
 ---
 
 #### Member 3: Kunal (`KUNAL/`)
-* **Role / Focus**: Forensics Engine, Access Control (RBAC/ABAC) & Clustering (`ENGINE/`, `AUTH_RBAC/`)
+* **Role / Focus**: Forensics Engine, Access Control (RBAC/ABAC) & Clustering (`ENGINE/`, `AUTH_RBAC_ABAC/`)
 * **✅ Tasks Done (Completed)**:
   * [x] Reviewed algorithmic specifications in `RESEARCH/SET 2` and `RESEARCH/SET 3`.
-  * [x] Consolidated complete 7-role RBAC & ABAC access control engine into single self-contained `AUTH_RBAC/` module with dedicated frontend, backend API, 23 automated tests, and documentation.
+  * [x] Consolidated complete 7-role RBAC & ABAC access control engine into single self-contained `AUTH_RBAC_ABAC/` module with dedicated frontend, backend API, 35 automated tests, and documentation.
 * **🔄 Tasks Working On (In Progress)**:
   * [ ] Designing traversal algorithm (BFS/DFS with pruning) for multi-hop transaction trails.
 * **📋 Tasks to be Started (Assigned / Backlog)**:

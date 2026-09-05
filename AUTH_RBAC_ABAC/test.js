@@ -1,5 +1,5 @@
 /**
- * Verification Test Suite for AUTH_RBAC Module (RBAC + ABAC)
+ * Verification Test Suite for AUTH_RBAC_ABAC Module (RBAC + ABAC)
  * Tests both Role-Based Permissions and Fine-Grained Attribute-Based Policies.
  */
 

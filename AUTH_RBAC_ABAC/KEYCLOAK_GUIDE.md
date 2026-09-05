@@ -1,4 +1,4 @@
-# Keycloak OIDC Integration Guide for `AUTH_RBAC`
+# Keycloak OIDC Integration Guide for `AUTH_RBAC_ABAC`
 
 > **SIH 2026 Crypto Fraud Attribution System** · Enterprise Identity & Access Management (IAM)
 
@@ -20,7 +20,7 @@ This document explains **how Keycloak integrates with our 7-Role RBAC & ABAC eng
          |    `Authorization: Bearer <Keycloak_JWT>`
          v
 +--------------------------------------------------------------------------+
-|  AUTH_RBAC Backend Server (Express)                                      |
+|  AUTH_RBAC_ABAC Backend Server (Express)                                 |
 |                                                                          |
 |  Step A: `keycloakAuthMiddleware`                                        |
 |          Extracts `payload.realm_access.roles` from JWT                  |
@@ -41,7 +41,7 @@ We have provided a pre-configured `docker-compose.yml` and `keycloak-realm-expor
 
 ### Step 1: Start Keycloak with 1 Command
 ```bash
-cd AUTH_RBAC
+cd AUTH_RBAC_ABAC
 docker compose up -d
 ```
 Keycloak will launch on `http://localhost:8080` with the `crypto-attribution` realm automatically imported!
@@ -62,7 +62,7 @@ Keycloak will launch on `http://localhost:8080` with the `crypto-attribution` re
 
 ## ⚡ Zero-Failure Fallback (Why Our Code Never Breaks)
 
-Notice how [`AUTH_RBAC/middleware/keycloak-middleware.js`](middleware/keycloak-middleware.js) is designed:
+Notice how [`AUTH_RBAC_ABAC/middleware/keycloak-middleware.js`](middleware/keycloak-middleware.js) is designed:
 * **If Keycloak is active**: It parses the live OIDC JWT Bearer token and pulls `realm_access.roles`.
 * **If Keycloak / Docker is offline**: It seamlessly falls back to our local persona switcher (`req.app.get('currentUser')`).
 

@@ -1,5 +1,5 @@
 {
-  "name": "auth-rbac-module",
+  "name": "auth-rbac-abac-module",
   "version": "1.0.0",
   "description": "7-Role Dual Access Control (RBAC & ABAC) Module for SIH 2026 Crypto Fraud Attribution System",
   "main": "index.js",

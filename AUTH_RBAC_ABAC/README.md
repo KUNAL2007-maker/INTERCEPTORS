@@ -1,4 +1,4 @@
-# AUTH_RBAC — 7-Role Dual Access Control System
+# AUTH_RBAC_ABAC — 7-Role Dual Access Control System (RBAC + ABAC)
 
 > **Smart India Hackathon 2026** · Problem Statement: Real-Time Identification of Fraud-Linked Cryptocurrency Exchanges from Victim-Reported Suspect Wallet Addresses through Automated Blockchain Analytics.
 
@@ -9,16 +9,20 @@ This folder contains the **complete, self-contained Access Control Engine (RBAC 
 ## 📁 Complete Folder Structure
 
 ```
-AUTH_RBAC/
+AUTH_RBAC_ABAC/
 ├── README.md                 # Master documentation & setup guide
+├── KEYCLOAK_GUIDE.md         # Keycloak OIDC integration guide
+├── docker-compose.yml        # Optional Docker Keycloak configuration
 ├── package.json              # Server dependencies & test scripts
 ├── server.js                 # Standalone Express API & static server (port 5000)
 ├── index.js                  # Canonical entrypoint exporting all roles & middlewares
 ├── roles.js                  # 7 roles, scopes, metadata, permissions, and permission matrix
-├── test.js                   # Automated unit test suite (23/23 passing)
+├── abac-engine.js            # ABAC Policy Decision Point (PDP) engine (7 statutory policies)
+├── test.js                   # Automated unit test suite (35/35 passing)
 ├── middleware/
 │   ├── rbac.js               # Role-Based Access Control route guard middleware
-│   └── abac.js               # Attribute-Based Access Control scope filter (Victim, Workspace, VASP)
+│   ├── abac.js               # Attribute-Based Access Control scope filter (Victim, Workspace, VASP)
+│   └── keycloak-middleware.js# Keycloak OIDC JWT verification with zero-crash mock fallback
 └── frontend/
     ├── index.html            # Complete Interactive 7-Persona Dashboard
     ├── css/
@@ -26,7 +30,7 @@ AUTH_RBAC/
     └── js/
         ├── rbac-ui.js        # Declarative UI button permission enforcer
         ├── api.js            # API client with zero-config offline fallback
-        └── app.js            # Controller, event handlers, and security audit log
+        └── app.js            # Controller, event handlers, and ABAC simulator
 ```
 
 ---
@@ -36,7 +40,7 @@ AUTH_RBAC/
 ### Option 1: Run via Node.js Server (Recommended)
 From the repository root:
 ```bash
-cd AUTH_RBAC
+cd AUTH_RBAC_ABAC
 npm install       # (PowerShell users: npm.cmd install)
 node server.js    # Or: npm start
 ```
@@ -44,13 +48,13 @@ Open your browser at:
 👉 **[http://localhost:5000](http://localhost:5000)**
 
 ### Option 2: Zero-Install Instant Preview
-Open [`AUTH_RBAC/frontend/index.html`](frontend/index.html) directly in Google Chrome, Microsoft Edge, or Firefox. The built-in client-side simulation automatically enforces permissions and ABAC scope isolation without needing any server or dependencies.
+Open [`AUTH_RBAC_ABAC/frontend/index.html`](frontend/index.html) directly in Google Chrome, Microsoft Edge, or Firefox. The built-in client-side simulation automatically enforces permissions and ABAC scope isolation without needing any server or dependencies.
 
 ### Option 3: Run the Automated Verification Tests
 ```bash
 node test.js
 ```
-Runs 23 automated test assertions covering permissions, role restrictions, and ABAC case filters across all 7 personas.
+Runs 35 automated test assertions covering permissions, role restrictions, and ABAC policies across all 7 personas.
 
 ---
 

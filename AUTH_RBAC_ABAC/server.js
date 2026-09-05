@@ -381,5 +381,5 @@ app.post('/api/audit/verify-hash', requireRole(['AUDITOR', 'SENIOR_INVESTIGATOR'
 });
 
 app.listen(PORT, () => {
-  console.log(`AUTH_RBAC standalone server running on http://localhost:${PORT}`);
+  console.log(`AUTH_RBAC_ABAC standalone server running on http://localhost:${PORT}`);
 });
