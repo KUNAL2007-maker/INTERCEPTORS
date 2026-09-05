@@ -93,14 +93,20 @@ def _rpc(method: str, params: list | dict, api_key: str | None = None, network: 
     }
     try:
         r = http_requests.post(url, json=payload, verify=False, timeout=12)
-        r.raise_for_status()
-        data = r.json()
+        try:
+            data = r.json()
+        except Exception:
+            data = {}
+
         if "error" in data:
-            return {"error": data["error"].get("message", str(data["error"]))}
+            err_msg = data["error"].get("message", str(data["error"]))
+            return {"error": err_msg}
+
+        r.raise_for_status()
         return data.get("result", {})
-    except http_requests.exceptions.HTTPError as he:
+    except http_requests.exceptions.HTTPError:
         if r.status_code in [401, 403]:
-            return {"error": f"Invalid Alchemy API Key for network {net}."}
+            return {"error": f"Network {net} is not enabled for this Alchemy API key. Enable it in your Alchemy app settings."}
         return {"error": f"HTTP Error {r.status_code} from Alchemy"}
     except Exception as e:
         return {"error": f"Connection Error: {str(e)}"}
