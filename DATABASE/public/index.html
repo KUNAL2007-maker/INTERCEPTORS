@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Real-Time Crypto Fraud Attribution System - LEA Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { background-color: #f1f5f9; font-family: system-ui, -apple-system, sans-serif; }
+  </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+  <!-- TOP APP HEADER -->
+  <header class="bg-slate-900 text-white px-6 py-3 flex justify-between items-center shadow-md">
+    <div class="flex items-center space-x-3">
+      <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-lg">A</div>
+      <div>
+        <h1 class="font-semibold text-base leading-none">Crypto Fraud Attribution Platform</h1>
+        <p class="text-xs text-slate-400 mt-0.5">National Cybercrime Coordination Center (I4C) & LEA Hub</p>
+      </div>
+    </div>
+
+    <!-- Active User & Access Scope Indicator -->
+    <div class="flex items-center space-x-4 text-xs">
+      <div class="bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg flex items-center space-x-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span>Active Persona: <strong id="header-user-name" class="text-blue-400">Officer Sharma</strong></span>
+        <span id="header-role-badge" class="px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded border border-blue-500/30 text-[10px] font-mono">SENIOR_INVESTIGATOR</span>
+      </div>
+      <div class="text-slate-400 hidden md:block">
+        Scope: <span id="header-scope-text" class="text-slate-200">Maharashtra Cyber Unit</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- MOCK IDENTITY SETUP BAR (Bottom/Top Quick Switcher matching wireframe) -->
+  <div class="bg-slate-200 border-b border-slate-300 px-6 py-2 flex flex-wrap items-center justify-between text-xs gap-2">
+    <div class="font-medium text-slate-700 flex items-center space-x-1">
+      <i class="fa-solid fa-sliders text-blue-600"></i>
+      <span>Mock Identity Setup (Quick Switch Persona):</span>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <button onclick="switchRole('SUPER_ADMIN')" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-3 py-1.5 rounded shadow-sm transition flex items-center space-x-1">
+        <i class="fa-solid fa-shield-halved"></i> <span>Auto-Login: Super Admin</span>
+      </button>
+      <button onclick="switchRole('SENIOR_INVESTIGATOR')" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-3 py-1.5 rounded shadow-sm transition flex items-center space-x-1">
+        <i class="fa-solid fa-user-gear"></i> <span>Auto-Login: Senior Investigator</span>
+      </button>
+      <button onclick="switchRole('NORMAL_INVESTIGATOR')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-3 py-1.5 rounded shadow-sm transition flex items-center space-x-1">
+        <i class="fa-solid fa-user-check"></i> <span>Auto-Login: Investigator</span>
+      </button>
+      <button onclick="switchRole('VICTIM')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-3 py-1.5 rounded shadow-sm transition flex items-center space-x-1">
+        <i class="fa-solid fa-user"></i> <span>Auto-Login: Victim</span>
+      </button>
+      <button onclick="switchRole('EXCHANGE_NODAL_OFFICER')" class="bg-amber-600 hover:bg-amber-700 text-white font-medium px-3 py-1.5 rounded shadow-sm transition flex items-center space-x-1">
+        <i class="fa-solid fa-building-columns"></i> <span>Exchange Officer</span>
+      </button>
+      <button onclick="switchRole('AUDITOR')" class="bg-purple-600 hover:bg-purple-700 text-white font-medium px-3 py-1.5 rounded shadow-sm transition flex items-center space-x-1">
+        <i class="fa-solid fa-scale-balanced"></i> <span>Auditor</span>
+      </button>
+      <button onclick="resetSession()" class="bg-rose-100 hover:bg-rose-200 text-rose-700 font-medium px-3 py-1.5 rounded border border-rose-300 transition">
+        Reset Session
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN NAVIGATION TABS -->
+  <div class="bg-white border-b border-slate-200 px-6 flex space-x-8 text-sm font-medium text-slate-600">
+    <button onclick="showTab('login-tab')" id="tab-login-tab" class="py-3 border-b-2 border-blue-600 text-blue-600 flex items-center space-x-2">
+      <i class="fa-solid fa-right-to-bracket"></i> <span>1. Login / Setup</span>
+    </button>
+    <button onclick="showTab('victim-tab')" id="tab-victim-tab" class="py-3 border-b-2 border-transparent hover:text-slate-900 flex items-center space-x-2">
+      <i class="fa-solid fa-bullhorn"></i> <span>2. Public Reporter View</span>
+    </button>
+    <button onclick="showTab('investigator-tab')" id="tab-investigator-tab" class="py-3 border-b-2 border-transparent hover:text-slate-900 flex items-center space-x-2">
+      <i class="fa-solid fa-magnifying-glass-chart"></i> <span>3. Investigator Workspace</span>
+    </button>
+    <button onclick="showTab('admin-tab')" id="tab-admin-tab" class="py-3 border-b-2 border-transparent hover:text-slate-900 flex items-center space-x-2">
+      <i class="fa-solid fa-building-shield"></i> <span>4. National Admin Center</span>
+    </button>
+  </div>
+
+  <!-- SCREEN CONTENT CONTAINERS -->
+  <main class="flex-1 overflow-y-auto p-6">
+
+    <!-- 1. LOGIN / SETUP SCREEN -->
+    <section id="login-tab" class="tab-content max-w-xl mx-auto space-y-6">
+      <div class="bg-white p-8 rounded-xl shadow-sm border border-slate-200 text-center">
+        <h2 class="text-xl font-bold text-slate-800">System Access Gateway</h2>
+        <p class="text-xs text-slate-500 mt-1">Multi-Tenant RBAC & Scope-Based Authentication Gateway</p>
+        
+        <form onsubmit="event.preventDefault();" class="mt-6 space-y-4 text-left">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Email Address</label>
+            <input type="email" id="login-email" value="senior.sharma@mhcyber.gov.in" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Password</label>
+            <input type="password" value="••••••••••••" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+          <button class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg text-sm transition shadow-sm">
+            Sign In
+          </button>
+        </form>
+      </div>
+
+      <div class="bg-blue-50 border border-blue-200 p-4 rounded-xl text-xs text-slate-700 space-y-2">
+        <div class="font-bold text-blue-900"><i class="fa-solid fa-circle-info"></i> Prototype Dual Access Control Matrix:</div>
+        <p>• <strong>Role-Based (RBAC):</strong> Limits high-privilege operations like <em>"Approve & Anchor Evidence"</em> strictly to <code>SENIOR_INVESTIGATOR</code> or <code>SUPER_ADMIN</code>.</p>
+        <p>• <strong>Attribute/Scope-Based (ABAC):</strong> Filters case rows dynamically. A victim can only access complaints where <code>victim_id == user.id</code>.</p>
+      </div>
+    </section>
+
+    <!-- 2. PUBLIC REPORTER VIEW (VICTIM DASHBOARD) -->
+    <section id="victim-tab" class="tab-content hidden max-w-5xl mx-auto space-y-6">
+      <div class="bg-blue-100 border border-blue-300 p-3 rounded-lg text-xs text-blue-800 flex justify-between items-center">
+        <span><i class="fa-solid fa-circle-check"></i> <strong>Victim Complaint Dashboard</strong> — Simulated Case tracking & complaint ingestion interface.</span>
+        <span class="bg-blue-200 px-2 py-0.5 rounded font-mono">Scope: Strict Victim Ownership</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Sidebar Controls -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 space-y-3">
+          <h3 class="font-bold text-sm text-slate-800 border-b pb-2">Actions</h3>
+          <button onclick="submitFraudComplaint()" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium py-2.5 px-3 rounded-lg transition text-left flex items-center justify-between">
+            <span>Submit Fraud Complaint (Victim)</span>
+            <i class="fa-solid fa-plus"></i>
+          </button>
+          <button onclick="fetchCases()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium py-2.5 px-3 rounded-lg transition text-left flex items-center justify-between border">
+            <span>Check Case Status (Victim)</span>
+            <i class="fa-solid fa-arrows-rotate"></i>
+          </button>
+
+          <!-- LOCKED ADMIN FUNCTIONS DEMO -->
+          <div class="pt-4 border-t">
+            <button disabled class="w-full bg-slate-200 text-slate-400 text-xs font-medium py-2.5 px-3 rounded-lg text-left cursor-not-allowed flex items-center justify-between">
+              <span>Admin Functions (Locked)</span>
+              <i class="fa-solid fa-lock text-slate-400"></i>
+            </button>
+            <p class="text-[10px] text-rose-500 mt-1">Locked for Victim role by ABAC restriction.</p>
+          </div>
+        </div>
+
+        <!-- Main Cases List -->
+        <div class="md:col-span-2 bg-white p-5 rounded-xl border border-slate-200 space-y-4">
+          <h3 class="font-bold text-sm text-slate-800 flex justify-between items-center">
+            <span>Your Filed Crypto Fraud Complaints</span>
+            <span class="text-xs bg-slate-100 px-2.5 py-1 rounded text-slate-600" id="victim-case-count">1 Complaint</span>
+          </h3>
+          
+          <div id="victim-cases-container" class="space-y-3">
+            <!-- Dynamic Case Cards rendered here -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. INVESTIGATOR WORKSPACE (POLICE HUB) -->
+    <section id="investigator-tab" class="tab-content hidden max-w-5xl mx-auto space-y-6">
+      <div class="bg-slate-900 text-white p-4 rounded-xl flex justify-between items-center shadow-sm">
+        <div>
+          <h2 class="text-base font-bold">Police Investigation Hub</h2>
+          <p class="text-xs text-slate-400">State Workspace: <span id="investigator-unit-name">Maharashtra Cyber Unit</span></p>
+        </div>
+        <div class="text-xs bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
+          User: <span id="investigator-name" class="text-blue-300 font-semibold">Officer Sharma</span>
+        </div>
+      </div>
+
+      <!-- Actions Grid matching wireframe Screen 3 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-white p-5 rounded-xl border border-slate-200 space-y-4">
+          <h3 class="font-bold text-sm text-slate-800">Automated Analytics & Tracing</h3>
+          <p class="text-xs text-slate-500">Run graph attribution algorithms to trace suspect wallet addresses to the nearest receiving cryptocurrency exchange (VASP).</p>
+          <button onclick="runWalletTrace()" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-3 px-4 rounded-lg transition shadow-sm flex items-center justify-center space-x-2">
+            <i class="fa-solid fa-diagram-project"></i>
+            <span>Start Wallet Trace (Investigator)</span>
+          </button>
+        </div>
+
+        <div class="bg-white p-5 rounded-xl border border-slate-200 space-y-4">
+          <h3 class="font-bold text-sm text-slate-800">Statutory Asset Freezing</h3>
+          <p class="text-xs text-slate-500">Draft freeze notice under Sec 94 BNSS / 91 CrPC to request immediate asset hold from VASP compliance officers.</p>
+          <button onclick="draftFreezeRequest()" class="w-full bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold py-3 px-4 rounded-lg transition shadow-sm flex items-center justify-center space-x-2">
+            <i class="fa-solid fa-file-signature"></i>
+            <span>Draft Freeze Request (Investigator)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- SENIOR ROLE ONLY ACTION PANEL -->
+      <div class="bg-rose-50 border border-rose-200 p-5 rounded-xl space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="font-bold text-sm text-rose-900 flex items-center space-x-2">
+            <i class="fa-solid fa-stamp"></i>
+            <span>Legal Approval & Blockchain Evidence Anchoring</span>
+          </h3>
+          <span class="text-[10px] bg-rose-200 text-rose-800 px-2 py-0.5 rounded font-mono font-bold">SENIOR ROLE ONLY</span>
+        </div>
+        <p class="text-xs text-rose-700">Conducts final statutory approval of freeze notices and anchors case PDF SHA-256 evidence hash onto smart contract blockchain for immutable court admissibility.</p>
+        
+        <button id="btn-approve-anchor" onclick="approveAndAnchorEvidence()" class="w-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-3 px-4 rounded-lg transition shadow-md flex items-center justify-center space-x-2">
+          <i class="fa-solid fa-link"></i>
+          <span>Approve & Anchor Evidence (Senior Role Only)</span>
+        </button>
+      </div>
+
+      <!-- Active Cases Grid -->
+      <div class="bg-white p-5 rounded-xl border border-slate-200 space-y-4">
+        <h3 class="font-bold text-sm text-slate-800 border-b pb-2">Workspace Active Investigation Cases</h3>
+        <div id="investigator-cases-container" class="space-y-3">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. NATIONAL ADMIN CENTER (SUPER ADMIN CONSOLE) -->
+    <section id="admin-tab" class="tab-content hidden max-w-5xl mx-auto space-y-6">
+      <div class="bg-slate-900 text-white p-4 rounded-xl flex justify-between items-center shadow-sm">
+        <div>
+          <h2 class="text-base font-bold">Super Admin Console</h2>
+          <p class="text-xs text-slate-400">National Nodal Portal (I4C / Ministry of Home Affairs)</p>
+        </div>
+        <div class="text-xs bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
+          Officer: <span class="text-blue-300 font-semibold">Central Nodal Officer</span>
+        </div>
+      </div>
+
+      <!-- Global Controls Grid matching wireframe Screen 4 -->
+      <div class="space-y-4">
+        <h3 class="font-bold text-xs uppercase tracking-wider text-slate-500">Global Control</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="bg-emerald-50 border border-emerald-200 p-5 rounded-xl space-y-3">
+            <h4 class="font-bold text-sm text-emerald-900">State Workspaces</h4>
+            <p class="text-xs text-emerald-700">Provision new state/regional cyber cell workspaces and assign workspace admin privileges.</p>
+            <button id="btn-create-workspace" onclick="createNewWorkspace()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-2.5 px-4 rounded-lg transition flex items-center justify-center space-x-2">
+              <i class="fa-solid fa-plus"></i>
+              <span>Create New State Workspace (Super Admin)</span>
+            </button>
+          </div>
+
+          <div class="bg-emerald-50 border border-emerald-200 p-5 rounded-xl space-y-3">
+            <h4 class="font-bold text-sm text-emerald-900">API Key & Bridge Management</h4>
+            <p class="text-xs text-emerald-700">Configure global blockchain RPC endpoints (Alchemy, Infura) and national NCRP/SAHYOG platform API credentials.</p>
+            <button id="btn-manage-keys" onclick="alert('API Credentials updated for Alchemy & NCRP Gateway')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-2.5 px-4 rounded-lg transition flex items-center justify-center space-x-2">
+              <i class="fa-solid fa-key"></i>
+              <span>Manage System API Keys (Global Admin)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Critical Emergency Section -->
+      <div class="space-y-4 pt-2">
+        <h3 class="font-bold text-xs uppercase tracking-wider text-rose-600">Critical Controls</h3>
+        <div class="bg-rose-50 border border-rose-300 p-5 rounded-xl space-y-3">
+          <h4 class="font-bold text-sm text-rose-900">Emergency Platform Isolation</h4>
+          <p class="text-xs text-rose-700">Immediately freeze all active blockchain API connections and enforce emergency workspace isolation during national cyber crises.</p>
+          <button id="btn-lockdown" onclick="triggerEmergencyLockdown()" class="w-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-3 px-4 rounded-lg transition shadow-md flex items-center justify-center space-x-2">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>Executes Emergency Lockdown (Super Admin Only)</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- NOTIFICATION TOAST -->
+  <div id="toast" class="fixed bottom-4 right-4 bg-slate-900 text-white px-4 py-3 rounded-lg shadow-xl text-xs hidden flex items-center space-x-2 border border-slate-700 transition-all z-50">
+    <i id="toast-icon" class="fa-solid fa-circle-info text-blue-400"></i>
+    <span id="toast-msg">Operation completed successfully.</span>
+  </div>
+
+  <script>
+    let currentUser = null;
+    let currentCases = [];
+
+    // Initialize App State
+    async function initApp() {
+      await fetchCurrentUser();
+      await fetchCases();
+    }
+
+    async function fetchCurrentUser() {
+      try {
+        const res = await fetch('/api/auth/current-user');
+        const data = await res.json();
+        currentUser = data.user;
+
+        // Update Header UI
+        document.getElementById('header-user-name').innerText = currentUser.name;
+        document.getElementById('header-role-badge').innerText = currentUser.role_name;
+        document.getElementById('header-scope-text').innerText = currentUser.workspace_id ? `Workspace #${currentUser.workspace_id}` : 'Global Scope';
+
+        // Update Investigator Header
+        document.getElementById('investigator-name').innerText = currentUser.name;
+
+        // Apply RBAC UI States
+        applyRBACUIState();
+      } catch (err) {
+        console.error('Error fetching user:', err);
+      }
+    }
+
+    function applyRBACUIState() {
+      const isSenior = currentUser.role_name === 'SENIOR_INVESTIGATOR' || currentUser.role_name === 'SUPER_ADMIN';
+      const isSuperAdmin = currentUser.role_name === 'SUPER_ADMIN';
+
+      // Approve & Anchor button enable/disable state
+      const approveBtn = document.getElementById('btn-approve-anchor');
+      if (!isSenior) {
+        approveBtn.disabled = true;
+        approveBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        approveBtn.title = 'Access Denied: Requires SENIOR_INVESTIGATOR role';
+      } else {
+        approveBtn.disabled = false;
+        approveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        approveBtn.title = '';
+      }
+
+      // Super admin buttons
+      const createWsBtn = document.getElementById('btn-create-workspace');
+      const manageKeysBtn = document.getElementById('btn-manage-keys');
+      const lockdownBtn = document.getElementById('btn-lockdown');
+
+      [createWsBtn, manageKeysBtn, lockdownBtn].forEach(btn => {
+        if (!isSuperAdmin) {
+          btn.disabled = true;
+          btn.classList.add('opacity-50', 'cursor-not-allowed');
+        } else {
+          btn.disabled = false;
+          btn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+      });
+    }
+
+    async function switchRole(roleName) {
+      try {
+        const res = await fetch('/api/auth/switch-role', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roleName })
+        });
+        const data = await res.json();
+        showToast(`Switched active identity to ${data.user.name} (${data.user.role_name})`);
+        await initApp();
+      } catch (err) {
+        showToast('Error switching role', true);
+      }
+    }
+
+    async function resetSession() {
+      await switchRole('SENIOR_INVESTIGATOR');
+      showToast('Session reset to default Senior Investigator');
+    }
+
+    async function fetchCases() {
+      try {
+        const res = await fetch('/api/cases');
+        const data = await res.json();
+        currentCases = data.cases;
+        renderCases();
+      } catch (err) {
+        console.error('Error fetching cases:', err);
+      }
+    }
+
+    function renderCases() {
+      const victimContainer = document.getElementById('victim-cases-container');
+      const investigatorContainer = document.getElementById('investigator-cases-container');
+
+      document.getElementById('victim-case-count').innerText = `${currentCases.length} Complaints`;
+
+      const html = currentCases.map(c => `
+        <div class="border border-slate-200 rounded-lg p-4 bg-slate-50 space-y-2">
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="font-bold text-sm text-slate-800">${c.case_number}</span>
+              <span class="ml-2 text-xs text-slate-500 font-mono">${c.blockchain_network}</span>
+            </div>
+            <span class="px-2.5 py-1 text-[10px] font-bold rounded-full font-mono ${getStatusBadgeClass(c.status)}">
+              ${c.status}
+            </span>
+          </div>
+          <div class="text-xs text-slate-600">
+            <p><strong>Suspect Wallet:</strong> <code class="bg-white px-1.5 py-0.5 rounded border font-mono text-slate-800">${c.suspect_wallet_address}</code></p>
+            <p><strong>Fraud Type:</strong> ${c.crime_type} | <strong>Loss:</strong> ₹${parseFloat(c.loss_amount_inr).toLocaleString('en-IN')}</p>
+          </div>
+        </div>
+      `).join('');
+
+      victimContainer.innerHTML = html || '<p class="text-xs text-slate-400">No filed complaints found for your victim scope.</p>';
+      investigatorContainer.innerHTML = html || '<p class="text-xs text-slate-400">No active cases in this workspace.</p>';
+    }
+
+    function getStatusBadgeClass(status) {
+      switch(status) {
+        case 'PENDING_TRACING': return 'bg-amber-100 text-amber-800';
+        case 'TRACED': return 'bg-blue-100 text-blue-800';
+        case 'FREEZE_DRAFTED': return 'bg-indigo-100 text-indigo-800';
+        case 'FREEZE_APPROVED': return 'bg-emerald-100 text-emerald-800';
+        default: return 'bg-slate-200 text-slate-700';
+      }
+    }
+
+    async function submitFraudComplaint() {
+      const wallet = prompt('Enter suspect cryptocurrency wallet address:', '0x71C7656EC7ab88b098defB751B7401B5f6d8976F');
+      if (!wallet) return;
+
+      const res = await fetch('/api/cases', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          suspect_wallet_address: wallet,
+          blockchain_network: 'Ethereum',
+          loss_amount_inr: 450000,
+          crime_type: 'Task-Based Crypto Fraud'
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(`Complaint filed! Assigned Case #: ${data.case.case_number}`);
+        fetchCases();
+      } else {
+        showToast(data.message || data.error, true);
+      }
+    }
+
+    async function runWalletTrace() {
+      if (currentCases.length === 0) return alert('No active case available to trace.');
+      const caseId = currentCases[0].id;
+
+      const res = await fetch('/api/trace/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ case_id: caseId })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(`Attribution Complete! VASP Identified: ${data.trace.detected_vasp} (Risk: ${data.trace.risk_score}/100)`);
+        fetchCases();
+      } else {
+        showToast(data.message || data.error, true);
+      }
+    }
+
+    async function draftFreezeRequest() {
+      if (currentCases.length === 0) return alert('No active case available.');
+      const caseId = currentCases[0].id;
+
+      const res = await fetch('/api/freeze/draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ case_id: caseId, freeze_reason: 'Urgent freeze requested under Sec 94 BNSS' })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(`Freeze notice drafted under Sec 94 BNSS`);
+        fetchCases();
+      } else {
+        showToast(data.message || data.error, true);
+      }
+    }
+
+    async function approveAndAnchorEvidence() {
+      const res = await fetch('/api/freeze/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ freeze_request_id: 1 })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(`APPROVED & ANCHORED! Smart Contract Tx: ${data.anchor.smart_contract_tx_hash.substring(0, 18)}...`);
+        fetchCases();
+      } else {
+        showToast(data.message || data.error, true);
+      }
+    }
+
+    async function createNewWorkspace() {
+      const res = await fetch('/api/workspaces/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Karnataka Cyber Taskforce', state: 'Karnataka', jurisdiction_code: 'KA-CYBER-03' })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(`Workspace Created: ${data.workspace.name}`);
+      } else {
+        showToast(data.message || data.error, true);
+      }
+    }
+
+    async function triggerEmergencyLockdown() {
+      const res = await fetch('/api/admin/lockdown', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(data.message, true);
+      } else {
+        showToast(data.message || data.error, true);
+      }
+    }
+
+    function showTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.getElementById(tabId).classList.remove('hidden');
+
+      document.querySelectorAll('[id^="tab-"]').forEach(btn => {
+        btn.classList.remove('border-blue-600', 'text-blue-600');
+        btn.classList.add('border-transparent');
+      });
+      document.getElementById(`tab-${tabId}`).classList.add('border-blue-600', 'text-blue-600');
+    }
+
+    function showToast(msg, isError = false) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-msg');
+      const toastIcon = document.getElementById('toast-icon');
+
+      toastMsg.innerText = msg;
+      toastIcon.className = isError ? 'fa-solid fa-triangle-exclamation text-rose-400' : 'fa-solid fa-circle-check text-emerald-400';
+
+      toast.classList.remove('hidden');
+      setTimeout(() => toast.classList.add('hidden'), 4500);
+    }
+
+    // Run Initialization on Load
+    window.onload = initApp;
+  </script>
+</body>
+</html>

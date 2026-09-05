@@ -1,0 +1,16 @@
+/* SIH 2026 Theme Styling */
+body {
+    background-color: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+.tab-active {
+    border-bottom: 2px solid #2563eb !important;
+    color: #2563eb !important;
+    font-weight: 600;
+}
+
+.badge-status-pending { background-color: #fef3c7; color: #92400e; }
+.badge-status-traced { background-color: #dbeafe; color: #1e40af; }
+.badge-status-drafted { background-color: #e0e7ff; color: #3730a3; }
+.badge-status-approved { background-color: #d1fae5; color: #065f46; }
