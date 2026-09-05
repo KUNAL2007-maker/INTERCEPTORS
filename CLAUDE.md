@@ -85,18 +85,27 @@ a:/SIH/
 
 ---
 
-### 4. Automated Git Synchronization & Zero Conflict Protocol
+### 4. Automated Git Synchronization & Zero Data Loss Protocol
 
-> **MANDATORY AUTOMATED GIT BEHAVIOR FOR ALL AGENTS:**
-> 1. **At the Start of Every Conversation / Session:**
->    * The AI **MUST immediately run `git pull`** (e.g. `git pull --rebase` or `git pull`) before taking any action or writing code. This guarantees the workspace has the freshest commits, branches, and task updates from all 6 team members.
-> 2. **At Milestone Completion / End of Conversation:**
->    * Whenever a unit of work is completed, task trackers are updated, or a milestone is reached, the AI **MUST automatically stage changes, commit with a descriptive message, and run `git push`** so teammates and subsequent AI sessions stay immediately in sync without manual user intervention.
-> 3. **Proactive Zero Merge Conflict Strategy:**
->    * Strive for zero merge conflicts by keeping isolated prototypes strictly inside `<MEMBER_NAME>/` and pulling frequently before making modifications to shared stage modules (`DB/`, `ENGINE/`, `API/`, etc.).
-> 4. **User Escalation on Merge Conflicts:**
->    * If any merge conflict occurs (e.g. during `git pull` or rebase), the AI **MUST NEVER force-push, drop remote commits, or guess resolutions blindly**.
->    * The AI **MUST immediately halt, display the conflicting files and diffs to the user, and ask the user explicitly how they want to resolve the conflict** before continuing.
+> **MANDATORY AUTOMATED GIT BEHAVIOR & SAFETY GATES FOR ALL AGENTS:**
+>
+> 1. **Safety First — Inspect `git status` Before Any Git Command:**
+>    * At the start of every session or task, the AI **MUST check `git status`**.
+>    * If uncommitted or unstaged changes exist, the AI **MUST NOT pull blindly** (which risks overwriting work). Instead, commit the local changes first (`git add .`, `git commit -m "wip: save local progress before sync"`) or ask the user for guidance.
+> 2. **Pull at the Start of Every Session:**
+>    * Once local state is cleanly committed, run `git pull` (or `git pull --rebase`) to ingest fresh commits from teammates.
+> 3. **Push Automatically on Milestone Completion:**
+>    * Whenever a unit of work is completed, task trackers are updated, or a milestone is reached, the AI **MUST automatically stage changes, commit with a descriptive message, and run `git push origin main`** so teammates stay in sync.
+> 4. **STRICT BAN ON DANGEROUS GIT COMMANDS (ZERO TOLERANCE):**
+>    * 🚫 **NEVER RUN `git reset --hard`** (permanently wipes uncommitted work).
+>    * 🚫 **NEVER RUN `git push --force` or `-f`** (erases remote history and teammates' commits).
+>    * 🚫 **NEVER RUN `git clean -fd`** (deletes untracked drafts and files).
+>    * 🚫 **NEVER RUN `git checkout -- .` or `git restore .`** (discards local changes).
+>    * 🚫 **NEVER RUN `git stash drop`** without explicit user instruction.
+> 5. **User Escalation on Ambiguity & Merge Conflicts:**
+>    * If a merge conflict occurs, or if Git reports ambiguous state (untracked overlaps, divergent branches), the AI **MUST IMMEDIATELY HALT**.
+>    * Display the exact conflicting files, state, and diff to the user.
+>    * Ask the user explicitly how they wish to resolve it before executing any resolution commands.
 
 ---
 
@@ -188,8 +197,9 @@ a:/SIH/
 
 ### 7. Golden Guidelines for Any AI Agent Working Here
 1. **Sync All Three Instruction Files**: Every modification to `GEMINI.md` must be identically copied to `CLAUDE.md` and `AGENT.md`.
-2. **Automated Git Sync**: Always pull at the start of a conversation to ingest teammates' work; always commit & push after completing milestones.
-3. **Zero Conflict & Escalation**: Proactively prevent merge conflicts by isolating draft code. If a conflict ever arises, never resolve blindly—stop and ask the user.
-4. **Consult Research First**: Always ground your logic on the 10 Technical Blueprint sets in `RESEARCH/`.
-5. **Respect User Boundaries**: Write into the active member's directory freely. Treat other members' folders as read-only references unless granted explicit permission.
-6. **Autonomous Milestones**: Keep the Task Board up-to-date after completing meaningful units of work.
+2. **Automated Git Sync with Safety Gate**: Always check `git status` first, commit WIP, pull at session start, and push on milestone completion.
+3. **Strict Ban on Dangerous Commands**: Absolutely no `git reset --hard`, `git push --force`, `git clean -fd`, or `git restore .`.
+4. **Escalate Conflicts & Ambiguity**: If any merge conflict or ambiguous branch state arises, immediately stop and ask the user.
+5. **Consult Research First**: Always ground your logic on the 10 Technical Blueprint sets in `RESEARCH/`.
+6. **Respect User Boundaries**: Write into the active member's directory freely. Treat other members' folders as read-only references unless granted explicit permission.
+7. **Autonomous Milestones**: Keep the Task Board up-to-date after completing meaningful units of work.
