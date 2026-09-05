@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Real-Time Crypto Fraud Attribution System — RBAC & ABAC Engine</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-blue-600 selection:text-white">
+
+  <!-- TOP BRANDING & ACTIVE IDENTITY HEADER -->
+  <header class="bg-slate-900 border-b border-slate-800 px-6 py-3 flex flex-wrap justify-between items-center gap-3 shadow-lg sticky top-0 z-40">
+    <div class="flex items-center space-x-3">
+      <div class="w-9 h-9 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-xl flex items-center justify-center font-black text-lg shadow-md">
+        <i class="fa-solid fa-shield-halved text-white text-base"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-sm tracking-wide text-white flex items-center gap-2">
+          Crypto Fraud Attribution Platform
+          <span class="text-[10px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-full font-mono">SIH 2026</span>
+        </h1>
+        <p class="text-xs text-slate-400">National Cybercrime Coordination Centre (I4C) & LEA Hub</p>
+      </div>
+    </div>
+
+    <!-- Active User & Scope Indicator -->
+    <div class="flex items-center space-x-3 text-xs">
+      <div class="bg-slate-800/80 border border-slate-700/80 px-3.5 py-1.5 rounded-xl flex items-center space-x-2.5">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="text-slate-300">Active User: <strong id="header-user-name" class="text-white font-semibold">Officer Sharma</strong></span>
+        <span id="header-role-badge" class="px-2 py-0.5 rounded border text-[10px] font-mono font-bold bg-blue-500/20 text-blue-300 border-blue-500/30">SENIOR_INVESTIGATOR</span>
+      </div>
+      <div class="hidden lg:flex items-center space-x-1.5 text-slate-400 bg-slate-900/80 border border-slate-800 px-3 py-1.5 rounded-xl">
+        <i class="fa-solid fa-crosshairs text-blue-400 text-xs"></i>
+        <span id="header-scope-text" class="text-slate-300 font-mono text-[11px]">Maharashtra Cyber Unit</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 7-PERSONA QUICK SWITCHER BAR -->
+  <section class="bg-slate-900/90 border-b border-slate-800/80 px-6 py-2.5 flex flex-col gap-2">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <span class="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
+        <i class="fa-solid fa-users-gear text-blue-400"></i>
+        <span>Switch User Persona (RBAC Testing):</span>
+      </span>
+      <span class="text-[11px] text-slate-500">Click any role to test instant button authorization & scope isolation</span>
+    </div>
+
+    <div class="flex flex-wrap gap-2 text-xs">
+      <!-- 1. Victim -->
+      <button onclick="switchPersona('VICTIM')" data-role="VICTIM" class="persona-switch-btn bg-emerald-700/80 hover:bg-emerald-600 text-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-500/40 transition flex items-center space-x-1.5 shadow-xs">
+        <i class="fa-solid fa-user"></i>
+        <span>1. Victim</span>
+      </button>
+
+      <!-- 2. Normal Investigator -->
+      <button onclick="switchPersona('NORMAL_INVESTIGATOR')" data-role="NORMAL_INVESTIGATOR" class="persona-switch-btn bg-indigo-700/80 hover:bg-indigo-600 text-indigo-100 px-3 py-1.5 rounded-lg border border-indigo-500/40 transition flex items-center space-x-1.5 shadow-xs">
+        <i class="fa-solid fa-user-shield"></i>
+        <span>2. Normal Investigator</span>
+      </button>
+
+      <!-- 3. Senior Investigator -->
+      <button onclick="switchPersona('SENIOR_INVESTIGATOR')" data-role="SENIOR_INVESTIGATOR" class="persona-switch-btn bg-blue-700/80 hover:bg-blue-600 text-blue-100 px-3 py-1.5 rounded-lg border border-blue-500/40 transition flex items-center space-x-1.5 shadow-xs">
+        <i class="fa-solid fa-user-tie"></i>
+        <span>3. Senior Investigator</span>
+      </button>
+
+      <!-- 4. Workspace Admin -->
+      <button onclick="switchPersona('WORKSPACE_ADMIN')" data-role="WORKSPACE_ADMIN" class="persona-switch-btn bg-cyan-700/80 hover:bg-cyan-600 text-cyan-100 px-3 py-1.5 rounded-lg border border-cyan-500/40 transition flex items-center space-x-1.5 shadow-xs">
+        <i class="fa-solid fa-building-user"></i>
+        <span>4. Workspace Admin (SP/DCP)</span>
+      </button>
+
+      <!-- 5. Super Admin -->
+      <button onclick="switchPersona('SUPER_ADMIN')" data-role="SUPER_ADMIN" class="persona-switch-btn bg-rose-700/80 hover:bg-rose-600 text-rose-100 px-3 py-1.5 rounded-lg border border-rose-500/40 transition flex items-center space-x-1.5 shadow-xs">
+        <i class="fa-solid fa-crown"></i>
+        <span>5. Super Admin (I4C)</span>
+      </button>
+
+      <!-- 6. Exchange Nodal Officer -->
+      <button onclick="switchPersona('EXCHANGE_NODAL_OFFICER')" data-role="EXCHANGE_NODAL_OFFICER" class="persona-switch-btn bg-amber-700/80 hover:bg-amber-600 text-amber-100 px-3 py-1.5 rounded-lg border border-amber-500/40 transition flex items-center space-x-1.5 shadow-xs">
+        <i class="fa-solid fa-building-columns"></i>
+        <span>6. Exchange Officer (VASP)</span>
+      </button>
+
+      <!-- 7. Auditor / Judiciary -->
+      <button onclick="switchPersona('AUDITOR')" data-role="AUDITOR" class="persona-switch-btn bg-purple-700/80 hover:bg-purple-600 text-purple-100 px-3 py-1.5 rounded-lg border border-purple-500/40 transition flex items-center space-x-1.5 shadow-xs">
+        <i class="fa-solid fa-scale-balanced"></i>
+        <span>7. Auditor (Judiciary)</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ACTIVE ROLE CONTEXT CARD -->
+  <div class="px-6 py-3 bg-slate-900/50 border-b border-slate-800 flex flex-wrap justify-between items-center gap-3 text-xs">
+    <div class="space-y-0.5">
+      <div class="flex items-center space-x-2">
+        <span class="text-slate-400 font-medium">Active Role:</span>
+        <span id="active-role-title" class="font-bold text-slate-100 text-sm">Senior Investigator</span>
+        <span id="active-scope-badge" class="bg-blue-900/40 text-blue-300 border border-blue-700/50 px-2 py-0.5 rounded text-[10px] font-mono">Scope: Workspace-Wide Oversight</span>
+      </div>
+      <p id="active-role-desc" class="text-slate-400 text-[11px]">Unit lead or forensic specialist conducting cross-chain tracing and legal approvals.</p>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="flex space-x-2 bg-slate-800/80 p-1 rounded-xl border border-slate-700/80">
+      <button onclick="showTab('tab-rbac-controls')" id="tab-btn-tab-rbac-controls" class="tab-btn px-3 py-1.5 rounded-lg font-medium text-xs border-b-2 border-blue-500 text-blue-400 transition flex items-center space-x-1.5">
+        <i class="fa-solid fa-gamepad"></i> <span>RBAC Action Buttons</span>
+      </button>
+      <button onclick="showTab('tab-cases-view')" id="tab-btn-tab-cases-view" class="tab-btn px-3 py-1.5 rounded-lg font-medium text-xs border-b-2 border-transparent text-slate-400 hover:text-white transition flex items-center space-x-1.5">
+        <i class="fa-solid fa-folder-tree"></i> <span>Case Scope Explorer (ABAC)</span>
+      </button>
+      <button onclick="showTab('tab-matrix-view')" id="tab-btn-tab-matrix-view" class="tab-btn px-3 py-1.5 rounded-lg font-medium text-xs border-b-2 border-transparent text-slate-400 hover:text-white transition flex items-center space-x-1.5">
+        <i class="fa-solid fa-table-cells"></i> <span>7x7 Permission Matrix</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN VIEWPORT -->
+  <main class="flex-1 overflow-y-auto px-6 py-5 max-w-7xl mx-auto w-full space-y-6 custom-scrollbar">
+
+    <!-- ===================================================================== -->
+    <!-- TAB 1: RBAC ACTION BUTTONS (Organized by Department) -->
+    <!-- ===================================================================== -->
+    <div id="tab-rbac-controls" class="tab-content space-y-6">
+
+      <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl text-xs text-slate-300 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-shield-check text-emerald-400 text-sm"></i>
+          <span>Buttons automatically enable/disable based on your active persona. Hover over locked buttons to view the exact restriction rule.</span>
+        </div>
+        <div class="flex items-center space-x-3 text-[11px] font-mono">
+          <span class="flex items-center space-x-1"><span class="w-2 h-2 rounded-full bg-emerald-400"></span><span class="text-slate-400">Allowed</span></span>
+          <span class="flex items-center space-x-1"><span class="w-2 h-2 rounded-full bg-rose-400"></span><span class="text-slate-400">Locked 🔒</span></span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+
+        <!-- 1. VICTIM / COMPLAINANT PORTAL -->
+        <div class="bg-slate-900/80 border border-emerald-500/20 rounded-2xl p-5 space-y-4 relative overflow-hidden">
+          <div class="absolute -top-10 -right-10 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl pointer-events-none"></div>
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center space-x-2">
+              <span class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs"><i class="fa-solid fa-user"></i></span>
+              <h3 class="font-bold text-sm text-emerald-300">1. Citizen / Victim Portal</h3>
+            </div>
+            <span class="text-[10px] font-mono text-emerald-400/80 bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded">Own Cases</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Public reporter ingestion portal. File complaint & track status.</p>
+
+          <div class="space-y-2.5">
+            <!-- Button: File Complaint -->
+            <button onclick="handleFileComplaint()" data-permission="FILE_COMPLAINT" data-is-write="true" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2.5 px-3.5 rounded-xl transition flex items-center justify-between">
+              <span class="flex items-center space-x-2">
+                <i class="fa-solid fa-file-circle-plus"></i>
+                <span>File Fraud Report</span>
+              </span>
+              <span class="flex items-center space-x-1.5">
+                <i class="fa-solid fa-lock rbac-lock-icon hidden text-rose-400"></i>
+                <span class="rbac-badge text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">ALLOWED</span>
+              </span>
+            </button>
+
+            <!-- Button: Upload Tx Hash -->
+            <button onclick="handleUploadTxHash()" data-permission="UPLOAD_TX_HASH" data-is-write="true" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium py-2.5 px-3.5 rounded-xl border border-slate-700 transition flex items-center justify-between">
+              <span class="flex items-center space-x-2">
+                <i class="fa-solid fa-hashtag"></i>
+                <span>Upload Transaction Hashes</span>
+              </span>
+              <span class="flex items-center space-x-1.5">
+                <i class="fa-solid fa-lock rbac-lock-icon hidden text-rose-400"></i>
+                <span class="rbac-badge text-[9px] font-bold px-1.5 py-0.5 rounded">ALLOWED</span>
+              </span>
+            </button>
+
+            <!-- Button: Track Status -->
+            <button onclick="handleTrackComplaintStatus()" data-permission="TRACK_COMPLAINT_STATUS" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium py-2.5 px-3.5 rounded-xl border border-slate-700 transition flex items-center justify-between">
+              <span class="flex items-center space-x-2">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <span>Track Complaint Status</span>
+              </span>
+              <span class="flex items-center space-x-1.5">
+                <i class="fa-solid fa-lock rbac-lock-icon hidden text-rose-400"></i>
+                <span class="rbac-badge text-[9px] font-bold px-1.5 py-0.5 rounded">ALLOWED</span>
+              </span>
+            </button>
+
+            <!-- Button: View Court Summary -->
+            <button onclick="handleViewCourtSummary()" data-permission="VIEW_COURT_SUMMARY" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium py-2.5 px-3.5 rounded-xl border border-slate-700 transition flex items-center justify-between">
+              <span class="flex items-center space-x-2">
+                <i class="fa-solid fa-file-contract"></i>
+                <span>View Court-Ready Summary</span>
+              </span>
+              <span class="flex items-center space-x-1.5">
+                <i class="fa-solid fa-lock rbac-lock-icon hidden text-rose-400"></i>
+                <span class="rbac-badge text-[9px] font-bold px-1.5 py-0.5 rounded">ALLOWED</span>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. NORMAL INVESTIGATOR -->
+        <div class="bg-slate-900/80 border border-indigo-500/20 rounded-2xl p-5 space-y-4 relative overflow-hidden">
+          <div class="absolute -top-10 -right-10 w-24 h-24 bg-indigo-500/10 rounded-full blur-xl pointer-events-none"></div>
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center space-x-2">
+              <span class="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-xs"><i class="fa-solid fa-magnifying-glass-chart"></i></span>
+              <h3 class="font-bold text-sm text-indigo-300">2. Field Cyber Officer</h3>
+            </div>
+            <span class="text-[10px] font-mono text-indigo-400/80 bg-indigo-950/60 border border-indigo-800/60 px-2 py-0.5 rounded">Assigned Unit</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Initial tracing, graph visualization & freeze drafting.</p>
+
+          <div class="space-y-2.5">
+            <!-- Button: Run Wallet Graph -->
+            <button onclick="handleRunWalletGraph()" data-permission="RUN_WALLET_GRAPH" data-is-write="true" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold py-2.5 px-3.5 rounded-xl transition flex items-center justify-between">
+              <span class="flex items-center space-x-2">
+                <i class="fa-solid fa-diagram-project"></i>
+                <span>Run Wallet Graph Visualizer</span>
+              </span>
+              <span class="flex items-center space-x-1.5">
+                <i class="fa-solid fa-lock rbac-lock-icon hidden text-rose-400"></i>
+                <span class="rbac-badge text-[9px] font-bold px-1.5 py-0.5 rounded">ALLOWED</span>
+              </span>
+            </button>
+
+            <!-- Button: Identify Suspect VASP -->
+            <button onclick="handleIdentifySuspectVASP()" data-permission="IDENTIFY_SUSPECT_VASP" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium py-2.5 px-3.5 rounded-xl border border-slate-700 transition flex items-center justify-between">
+              <span class="flex items-center space-x-2">
+                <i class="fa-solid fa-building-wheat"></i>
+                <span>Identify Suspect Exchanges (VASP)</span>
+              </span>
+              <span class="flex items-center space-x-1.5">
+                <i class="fa-solid fa-lock rbac-lock-icon hidden text-rose-400"></i>
+                <span class="rbac-badge text-[9px] font-bold px-1.5 py-0.5 rounded">ALLOWED</span>
+              </span>
+            </button>
+
+            <!-- Button: Draft Evidence Report -->
+            <button onclick="handleDraftEvidenceReport()" data-permission="DRAFT_EVIDENCE_REPORT" data-is-write="true" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium py-2.5 px-3.5 rounded-xl border border-slate-700 transition flex items-center justify-between">
+              <span class="flex items-center space-x-2">
+                <i class="fa-solid fa-file-lines"></i>
+                <span>Draft Evidence Report</span>
+              </span>
+              <span class="flex items-center space-x-1.5">
+                <i class="fa-solid fa-lock rbac-lock-icon hidden text-rose-400"></i>
+                <span class="rbac-badge text-[9px] font-bold px-1.5 py-0.5 rounded">ALLOWED</span>
+              </span>
+            </button>
+
+            <!-- Button: Draft Freeze Request -->
+            <button onclick="handleDraftFreezeRequest()" data-permission="DRAFT_FREEZE_REQUEST" data-is-write="true" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium py-2.5 px-3.5 rounded-xl border border-slate-700 transition flex items-center justify-between">
+              <span class="flex items-center space-x-2">
+                <i class="fa-solid fa-hand-holding-dollar"></i>
+                <span>Draft Sec 94 BNSS Notice</span>
+              </span>
+              <span class="flex items-center space-x-1.5">
+                <i class="fa-solid fa-lock rbac-lock-icon hidden text-rose-400"></i>
+                <span class="rbac-badge text-[9px] font-bold px-1.5 py-0.5 rounded">ALLOWED</span>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. SENIOR INVESTIGATOR -->
+        <div class="bg-slate-900/80 border border-blue-500/20 rounded-2xl p-5 space-y-4 relative overflow-hidden">
+          <div class="absolute -top-10 -right-10 w-24 h-24 bg-blue-500/10 rounded-full blur-xl pointer-events-none"></div>
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center space-x-2">
+              <span class="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-xs"><i class="fa-solid fa-stamp"></i></span>
+              <h3 class="font-bold text-sm text-blue-300">3. Senior Forensic Lead</h3>
+            </div>
+            <span class="text-[10px] font-mono text-blue-400/80 bg-blue-950/60 border border-blue-800/60 px-2 py-0.5 rounded">Legal Approver</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Advanced cross-chain analysis, Sec 94 approvals & on-chain anchoring.</p>
+
+          <div class="space-y-2.5">
+            <!-- Button: Cross-Chain Trace -->
+            <button onclick="handleCrossChainTrace()" data-permission="ADVANCED_CROSS_CHAIN_TRACE" data-is-write="true" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2.5 px-3.5 rounded-xl transition flex items-center justify-between">
+              <span class="flex items-center space-x-2">
+                <i class="fa-solid fa-network-wired"></i>
+                <span>Advanced Cross-Chain Trace</span>
+              </span>
+              <span class="flex items-center space-x-1.5">
+                <i class="fa-solid fa-lock rbac-lock-icon hidden text-rose-400"></i>
+                <span class="rbac-badge text-[9px] font-bold px-1.5 py-0.5 rounded">ALLOWED</span>
+              </span>
+            </button>
+
+            <!-- Button: Approve Freeze Notice -->
+            <button onclick="handleApproveAndAnchor()" data-permission="APPROVE_FREEZE_REQUEST" data-is-write="true" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2.5 px-3.5 rounded-xl transition flex items-center justify-between">
+              <span class="flex items-center space-x-2">
+                <i class="fa-solid fa-gavel"></i>
+                <span>Approve Sec 94 BNSS Order</span>
+              </span>
+              <span class="flex items-center space-x-1.5">
+                <i class="fa-solid fa-lock rbac-lock-icon hidden text-rose-400"></i>
+                <span class="rbac-badge text-[9px] font-bold px-1.5 py-0.5 rounded">ALLOWED</span>
+              </span>
+            </button>
+
+            <!-- Button: Anchor Evidence Hash -->
+            <button onclick="handleApproveAndAnchor()" data-permission="ANCHOR_EVIDENCE_ONCHAIN" data-is-write="true" class="w-full bg-indigo-900/70 hover:bg-indigo-800 text-indigo-200 border border-indigo-500/40 text-xs font-semibold py-2.5 px-3.5 rounded-xl transition flex items-center justify-between">
+              <span class="flex items-center space-x-2">
+                <i class="fa-solid fa-cube"></i>
+                <span>Anchor On-Chain Hash (Web3)</span>
+              </span>
+              <span class="flex items-center space-x-1.5">
+                <i class="fa-solid fa-lock rbac-lock-icon hidden text-rose-400"></i>
+                <span class="rbac-badge text-[9px] font-bold px-1.5 py-0.5 rounded">ALLOWED</span>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 4. WORKSPACE ADMIN (SP / DCP) -->
+        <div class="bg-slate-900/80 border border-cyan-500/20 rounded-2xl p-5 space-y-4 relative overflow-hidden">
+          <div class="absolute -top-10 -right-10 w-24 h-24 bg-cyan-500/10 rounded-full blur-xl pointer-events-none"></div>
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center space-x-2">
+              <span class="w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold text-xs"><i class="fa-solid fa-user-shield"></i></span>
+              <h3 class="font-bold text-sm text-cyan-300">4. Police Unit Admin (SP/DCP)</h3>
+            </div>
+            <span class="text-[10px] font-mono text-cyan-400/80 bg-cyan-950/60 border border-cyan-800/60 px-2 py-0.5 rounded">Unit Lead</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Manage cyber cell accounts, case allocation & unit clearance workload.</p>
+
+          <div class="space-y-2.5">
+            <!-- Button: Manage Police Accounts -->
+            <button onclick="handleManagePoliceAccounts()" data-permission="MANAGE_POLICE_ACCOUNTS" data-is-write="true" class="w-full bg-cyan-700 hover:bg-cyan-600 text-white text-xs font-semibold py-2.5 px-3.5 rounded-xl transition flex items-center justify-between">
+              <span class="flex items-center space-x-2">
+                <i class="fa-solid fa-address-book"></i>
+                <span>Manage Police Accounts</span>
+              </span>
+              <span class="flex items-center space-x-1.5">
+                <i class="fa-solid fa-lock rbac-lock-icon hidden text-rose-400"></i>
+                <span class="rbac-badge text-[9px] font-bold px-1.5 py-0.5 rounded">ALLOWED</span>
+              </span>
+            </button>
+
+            <!-- Button: Assign Cases -->
+            <button onclick="handleAssignCase()" data-permission="ASSIGN_CASES" data-is-write="true" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium py-2.5 px-3.5 rounded-xl border border-slate-700 transition flex items-center justify-between">
+              <span class="flex items-center space-x-2">
+                <i class="fa-solid fa-share-nodes"></i>
+                <span>Assign / Reassign Cases</span>
+              </span>
+              <span class="flex items-center space-x-1.5">
+                <i class="fa-solid fa-lock rbac-lock-icon hidden text-rose-400"></i>
+                <span class="rbac-badge text-[9px] font-bold px-1.5 py-0.5 rounded">ALLOWED</span>
+              </span>
+            </button>
+
+            <!-- Button: Review Workload -->
+            <button onclick="handleReviewUnitWorkload()" data-permission="REVIEW_UNIT_WORKLOAD" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium py-2.5 px-3.5 rounded-xl border border-slate-700 transition flex items-center justify-between">
+              <span class="flex items-center space-x-2">
+                <i class="fa-solid fa-chart-pie"></i>
+                <span>Review Unit Workload & Metrics</span>
+              </span>
+              <span class="flex items-center space-x-1.5">
+                <i class="fa-solid fa-lock rbac-lock-icon hidden text-rose-400"></i>
+                <span class="rbac-badge text-[9px] font-bold px-1.5 py-0.5 rounded">ALLOWED</span>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 5. SUPER ADMIN (I4C / MHA) -->
+        <div class="bg-slate-900/80 border border-rose-500/20 rounded-2xl p-5 space-y-4 relative overflow-hidden">
+          <div class="absolute -top-10 -right-10 w-24 h-24 bg-rose-500/10 rounded-full blur-xl pointer-events-none"></div>
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center space-x-2">
+              <span class="w-7 h-7 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-xs"><i class="fa-solid fa-crown"></i></span>
+              <h3 class="font-bold text-sm text-rose-300">5. National Nodal Authority (I4C)</h3>
+            </div>
+            <span class="text-[10px] font-mono text-rose-400/80 bg-rose-950/60 border border-rose-800/60 px-2 py-0.5 rounded">Global</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Provision state workspaces, national crime trends & emergency lockdown.</p>
+
+          <div class="space-y-2.5">
+            <!-- Button: Create State Workspace -->
+            <button onclick="handleCreateStateWorkspace()" data-permission="CREATE_STATE_WORKSPACE" data-is-write="true" class="w-full bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold py-2.5 px-3.5 rounded-xl transition flex items-center justify-between">
+              <span class="flex items-center space-x-2">
+                <i class="fa-solid fa-plus-circle"></i>
+                <span>Create New State Workspace</span>
+              </span>
+              <span class="flex items-center space-x-1.5">
+                <i class="fa-solid fa-lock rbac-lock-icon hidden text-rose-400"></i>
+                <span class="rbac-badge text-[9px] font-bold px-1.5 py-0.5 rounded">ALLOWED</span>
+              </span>
+            </button>
+
+            <!-- Button: Monitor Trends -->
+            <button onclick="handleMonitorTrends()" data-permission="MONITOR_CROSS_BORDER_TRENDS" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium py-2.5 px-3.5 rounded-xl border border-slate-700 transition flex items-center justify-between">
+              <span class="flex items-center space-x-2">
+                <i class="fa-solid fa-chart-line"></i>
+                <span>Monitor National Trends</span>
+              </span>
+              <span class="flex items-center space-x-1.5">
+                <i class="fa-solid fa-lock rbac-lock-icon hidden text-rose-400"></i>
+                <span class="rbac-badge text-[9px] font-bold px-1.5 py-0.5 rounded">ALLOWED</span>
+              </span>
+            </button>
+
+            <!-- Button: Config Keys -->
+            <button onclick="handleConfigureKeys()" data-permission="CONFIGURE_GLOBAL_SETTINGS" data-is-write="true" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium py-2.5 px-3.5 rounded-xl border border-slate-700 transition flex items-center justify-between">
+              <span class="flex items-center space-x-2">
+                <i class="fa-solid fa-key"></i>
+                <span>Configure Global Alchemy Keys</span>
+              </span>
+              <span class="flex items-center space-x-1.5">
+                <i class="fa-solid fa-lock rbac-lock-icon hidden text-rose-400"></i>
+                <span class="rbac-badge text-[9px] font-bold px-1.5 py-0.5 rounded">ALLOWED</span>
+              </span>
+            </button>
+
+            <!-- Button: Emergency Lockdown -->
+            <button onclick="handleEmergencyLockdown()" data-permission="EMERGENCY_LOCKDOWN" data-is-write="true" class="w-full bg-rose-950/70 hover:bg-rose-900 text-rose-200 border border-rose-600/50 text-xs font-bold py-2.5 px-3.5 rounded-xl transition flex items-center justify-between">
+              <span class="flex items-center space-x-2">
+                <i class="fa-solid fa-triangle-exclamation text-rose-400"></i>
+                <span>Emergency Platform Lockdown</span>
+              </span>
+              <span class="flex items-center space-x-1.5">
+                <i class="fa-solid fa-lock rbac-lock-icon hidden text-rose-400"></i>
+                <span class="rbac-badge text-[9px] font-bold px-1.5 py-0.5 rounded">ALLOWED</span>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 6. EXCHANGE NODAL OFFICER (VASP) -->
+        <div class="bg-slate-900/80 border border-amber-500/20 rounded-2xl p-5 space-y-4 relative overflow-hidden">
+          <div class="absolute -top-10 -right-10 w-24 h-24 bg-amber-500/10 rounded-full blur-xl pointer-events-none"></div>
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center space-x-2">
+              <span class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-xs"><i class="fa-solid fa-building-columns"></i></span>
+              <h3 class="font-bold text-sm text-amber-300">6. Exchange Officer (VASP Desk)</h3>
+            </div>
+            <span class="text-[10px] font-mono text-amber-400/80 bg-amber-950/60 border border-amber-800/60 px-2 py-0.5 rounded">Binance Desk</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Receive LEA notices, freeze target accounts & securely upload KYC.</p>
+
+          <div class="space-y-2.5">
+            <!-- Button: Confirm Freeze -->
+            <button onclick="handleConfirmExchangeFreeze()" data-permission="CONFIRM_ACCOUNT_FREEZE" data-is-write="true" class="w-full bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold py-2.5 px-3.5 rounded-xl transition flex items-center justify-between">
+              <span class="flex items-center space-x-2">
+                <i class="fa-solid fa-snowflake"></i>
+                <span>Confirm Account Freeze (VASP)</span>
+              </span>
+              <span class="flex items-center space-x-1.5">
+                <i class="fa-solid fa-lock rbac-lock-icon hidden text-rose-400"></i>
+                <span class="rbac-badge text-[9px] font-bold px-1.5 py-0.5 rounded">ALLOWED</span>
+              </span>
+            </button>
+
+            <!-- Button: Submit KYC -->
+            <button onclick="handleSubmitKycDossier()" data-permission="SUBMIT_KYC_DOSSIER" data-is-write="true" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium py-2.5 px-3.5 rounded-xl border border-slate-700 transition flex items-center justify-between">
+              <span class="flex items-center space-x-2">
+                <i class="fa-solid fa-id-card"></i>
+                <span>Submit Requested KYC Package</span>
+              </span>
+              <span class="flex items-center space-x-1.5">
+                <i class="fa-solid fa-lock rbac-lock-icon hidden text-rose-400"></i>
+                <span class="rbac-badge text-[9px] font-bold px-1.5 py-0.5 rounded">ALLOWED</span>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 7. AUDITOR / JUDICIAL REPRESENTATIVE -->
+        <div class="bg-slate-900/80 border border-purple-500/20 rounded-2xl p-5 space-y-4 relative overflow-hidden">
+          <div class="absolute -top-10 -right-10 w-24 h-24 bg-purple-500/10 rounded-full blur-xl pointer-events-none"></div>
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center space-x-2">
+              <span class="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-xs"><i class="fa-solid fa-scale-balanced"></i></span>
+              <h3 class="font-bold text-sm text-purple-300">7. Judicial Auditor</h3>
+            </div>
+            <span class="text-[10px] font-mono text-purple-400/80 bg-purple-950/60 border border-purple-800/60 px-2 py-0.5 rounded">Strict Read-Only</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Zero write/execution permissions. Validate PDF hash against on-chain block.</p>
+
+          <div class="space-y-2.5">
+            <!-- Button: Compare PDF Hash -->
+            <button onclick="handleComparePdfHash()" data-permission="COMPARE_PDF_HASH_TIMESTAMP" class="w-full bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold py-2.5 px-3.5 rounded-xl transition flex items-center justify-between">
+              <span class="flex items-center space-x-2">
+                <i class="fa-solid fa-fingerprint"></i>
+                <span>Compare PDF Hash vs Blockchain</span>
+              </span>
+              <span class="flex items-center space-x-1.5">
+                <i class="fa-solid fa-lock rbac-lock-icon hidden text-rose-400"></i>
+                <span class="rbac-badge text-[9px] font-bold px-1.5 py-0.5 rounded">ALLOWED</span>
+              </span>
+            </button>
+
+            <!-- Button: Confirm Tamper Integrity -->
+            <button onclick="handleVerifyEvidenceIntegrity()" data-permission="VERIFY_COURT_INTEGRITY" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium py-2.5 px-3.5 rounded-xl border border-slate-700 transition flex items-center justify-between">
+              <span class="flex items-center space-x-2">
+                <i class="fa-solid fa-certificate"></i>
+                <span>Verify Court Evidence (Sec 65B)</span>
+              </span>
+              <span class="flex items-center space-x-1.5">
+                <i class="fa-solid fa-lock rbac-lock-icon hidden text-rose-400"></i>
+                <span class="rbac-badge text-[9px] font-bold px-1.5 py-0.5 rounded">ALLOWED</span>
+              </span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 2: CASE EXPLORER (ABAC SCOPE FILTERED) -->
+    <!-- ===================================================================== -->
+    <div id="tab-cases-view" class="tab-content hidden space-y-4">
+      <div class="flex justify-between items-center bg-slate-900/80 p-4 rounded-xl border border-slate-800">
+        <div>
+          <h2 class="text-sm font-bold text-white">Attribute-Based Access Control (ABAC) Case Explorer</h2>
+          <p class="text-xs text-slate-400">Cases displayed below are strictly filtered based on the active user's identity attributes (Victim ID, Workspace ID, or VASP ID).</p>
+        </div>
+        <span id="case-count-badge" class="bg-blue-600/20 text-blue-400 border border-blue-500/30 text-xs px-3 py-1 rounded-full font-mono">1 Case</span>
+      </div>
+
+      <div id="case-list-container" class="space-y-3">
+        <!-- Rendered dynamically by app.js -->
+      </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 3: 7x7 PERMISSION MATRIX -->
+    <!-- ===================================================================== -->
+    <div id="tab-matrix-view" class="tab-content hidden space-y-4">
+      <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 flex justify-between items-center">
+        <div>
+          <h2 class="text-sm font-bold text-white">System Permission Matrix & Role Hierarchy</h2>
+          <p class="text-xs text-slate-400">Complete access control mapping across all 7 defined platform personas.</p>
+        </div>
+        <span class="text-xs font-mono text-emerald-400 bg-emerald-950 px-2.5 py-1 rounded border border-emerald-800">7 Roles · 16 Actions</span>
+      </div>
+
+      <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/50">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr class="bg-slate-800/80 text-slate-300 border-b border-slate-700">
+              <th class="py-3 px-4 font-semibold">Capability / Permission</th>
+              <th class="py-3 px-3 text-center">1. Victim</th>
+              <th class="py-3 px-3 text-center">2. Normal Inv.</th>
+              <th class="py-3 px-3 text-center">3. Senior Inv.</th>
+              <th class="py-3 px-3 text-center">4. Unit Admin</th>
+              <th class="py-3 px-3 text-center">5. Super Admin</th>
+              <th class="py-3 px-3 text-center">6. VASP Desk</th>
+              <th class="py-3 px-3 text-center">7. Auditor</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800 font-mono text-[11px] text-slate-300">
+            <tr>
+              <td class="py-2.5 px-4 font-sans text-slate-200">File Fraud Report</td>
+              <td class="text-center text-emerald-400 font-bold">✓</td>
+              <td class="text-center text-slate-600">✗</td>
+              <td class="text-center text-slate-600">✗</td>
+              <td class="text-center text-slate-600">✗</td>
+              <td class="text-center text-emerald-400 font-bold">✓</td>
+              <td class="text-center text-slate-600">✗</td>
+              <td class="text-center text-slate-600">✗</td>
+            </tr>
+            <tr>
+              <td class="py-2.5 px-4 font-sans text-slate-200">Run Wallet Graph Trace</td>
+              <td class="text-center text-slate-600">✗</td>
+              <td class="text-center text-emerald-400 font-bold">✓</td>
+              <td class="text-center text-emerald-400 font-bold">✓</td>
+              <td class="text-center text-emerald-400 font-bold">✓</td>
+              <td class="text-center text-emerald-400 font-bold">✓</td>
+              <td class="text-center text-slate-600">✗</td>
+              <td class="text-center text-slate-600">✗</td>
+            </tr>
+            <tr>
+              <td class="py-2.5 px-4 font-sans text-slate-200">Draft Sec 94 BNSS Notice</td>
+              <td class="text-center text-slate-600">✗</td>
+              <td class="text-center text-emerald-400 font-bold">✓</td>
+              <td class="text-center text-emerald-400 font-bold">✓</td>
+              <td class="text-center text-emerald-400 font-bold">✓</td>
+              <td class="text-center text-emerald-400 font-bold">✓</td>
+              <td class="text-center text-slate-600">✗</td>
+              <td class="text-center text-slate-600">✗</td>
+            </tr>
+            <tr>
+              <td class="py-2.5 px-4 font-sans text-slate-200 font-semibold text-blue-300">Approve Freeze & Anchor On-Chain</td>
+              <td class="text-center text-slate-600">✗</td>
+              <td class="text-center text-rose-500 font-bold">🔒</td>
+              <td class="text-center text-emerald-400 font-bold">✓</td>
+              <td class="text-center text-slate-600">✗</td>
+              <td class="text-center text-emerald-400 font-bold">✓</td>
+              <td class="text-center text-slate-600">✗</td>
+              <td class="text-center text-slate-600">✗</td>
+            </tr>
+            <tr>
+              <td class="py-2.5 px-4 font-sans text-slate-200">Manage Police Accounts</td>
+              <td class="text-center text-slate-600">✗</td>
+              <td class="text-center text-slate-600">✗</td>
+              <td class="text-center text-slate-600">✗</td>
+              <td class="text-center text-emerald-400 font-bold">✓</td>
+              <td class="text-center text-emerald-400 font-bold">✓</td>
+              <td class="text-center text-slate-600">✗</td>
+              <td class="text-center text-slate-600">✗</td>
+            </tr>
+            <tr>
+              <td class="py-2.5 px-4 font-sans text-slate-200 font-semibold text-rose-300">Create Workspaces & Lockdown</td>
+              <td class="text-center text-slate-600">✗</td>
+              <td class="text-center text-slate-600">✗</td>
+              <td class="text-center text-slate-600">✗</td>
+              <td class="text-center text-slate-600">✗</td>
+              <td class="text-center text-emerald-400 font-bold">✓</td>
+              <td class="text-center text-slate-600">✗</td>
+              <td class="text-center text-slate-600">✗</td>
+            </tr>
+            <tr>
+              <td class="py-2.5 px-4 font-sans text-slate-200">Confirm VASP Account Freeze</td>
+              <td class="text-center text-slate-600">✗</td>
+              <td class="text-center text-slate-600">✗</td>
+              <td class="text-center text-slate-600">✗</td>
+              <td class="text-center text-slate-600">✗</td>
+              <td class="text-center text-emerald-400 font-bold">✓</td>
+              <td class="text-center text-emerald-400 font-bold">✓</td>
+              <td class="text-center text-slate-600">✗</td>
+            </tr>
+            <tr>
+              <td class="py-2.5 px-4 font-sans text-slate-200 font-semibold text-purple-300">Compare PDF Hash vs Blockchain</td>
+              <td class="text-center text-slate-600">✗</td>
+              <td class="text-center text-slate-600">✗</td>
+              <td class="text-center text-emerald-400 font-bold">✓</td>
+              <td class="text-center text-slate-600">✗</td>
+              <td class="text-center text-emerald-400 font-bold">✓</td>
+              <td class="text-center text-slate-600">✗</td>
+              <td class="text-center text-emerald-400 font-bold">✓ (Read-Only)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SECURITY AUDIT EVENT STREAM -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+        <h3 class="text-xs font-bold text-slate-300 flex items-center space-x-1.5">
+          <i class="fa-solid fa-terminal text-blue-400"></i>
+          <span>Live Security Audit & Access Control Event Stream</span>
+        </h3>
+        <span class="text-[10px] text-slate-500 font-mono">Real-Time Tamper-Proof Audit</span>
+      </div>
+      <div id="security-audit-logs" class="max-h-28 overflow-y-auto space-y-1 custom-scrollbar">
+        <!-- Log entries injected dynamically -->
+      </div>
+    </div>
+
+  </main>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast" class="fixed bottom-5 right-5 px-4 py-3 rounded-xl shadow-2xl text-xs hidden flex items-center space-x-2 border transition-all z-50">
+    <i id="toast-icon" class="fa-solid fa-circle-info text-blue-400"></i>
+    <span id="toast-msg">Operation completed.</span>
+  </div>
+
+  <!-- JavaScript Modules -->
+  <script src="js/api.js"></script>
+  <script src="js/rbac-ui.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -167,7 +167,7 @@ a:/SIH/
 * **Role / Focus**: Forensics Engine, Access Control (RBAC/ABAC) & Clustering (`ENGINE/`, `AUTH_RBAC/`)
 * **✅ Tasks Done (Completed)**:
   * [x] Reviewed algorithmic specifications in `RESEARCH/SET 2` and `RESEARCH/SET 3`.
-  * [x] Implemented comprehensive 7-role RBAC & ABAC access control engine with interactive button authorization and scope isolation.
+  * [x] Consolidated complete 7-role RBAC & ABAC access control engine into single self-contained `AUTH_RBAC/` module with dedicated frontend, backend API, 23 automated tests, and documentation.
 * **🔄 Tasks Working On (In Progress)**:
   * [ ] Designing traversal algorithm (BFS/DFS with pruning) for multi-hop transaction trails.
 * **📋 Tasks to be Started (Assigned / Backlog)**:
