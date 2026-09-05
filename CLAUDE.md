@@ -74,7 +74,7 @@ a:/SIH/
 
 #### Active User Identification Protocol (`.active_user` in `.gitignore`):
 * **Local Identity File**: Each developer's machine stores their personal username in a local `.active_user` file at the repository root (`a:/SIH/.active_user`).
-* **Gitignored by Design**: `.active_user` and `.current_user` are listed in `.gitignore` so one teammate's local identity is **never** committed or pushed to remote.
+* **Gitignored by Design**: `.active_user` is listed in `.gitignore` so one teammate's local identity is **never** committed or pushed to remote.
 * **Initial Setup Prompt**: Whenever an AI starts a session and `.active_user` is missing or empty, **the AI MUST halt and ask the user initially**:
   > *"Welcome! Which team member are you? (e.g., HAFIZ, MEMBER_2, etc.)"*
   Once the user answers, the AI creates `.active_user` with that name.
