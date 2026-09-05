@@ -100,9 +100,10 @@ a:/SIH/
 
 > **MANDATORY AUTOMATED GIT BEHAVIOR & SAFETY GATES FOR ALL AGENTS:**
 >
-> 1. **Safety First — Inspect `git status` Before Any Git Command:**
->    * At the start of every session or task, the AI **MUST check `git status`**.
->    * If uncommitted or unstaged changes exist, the AI **MUST NOT pull blindly** (which risks overwriting work). Instead, commit the local changes first (`git add .`, `git commit -m "wip: save local progress before sync"`) or ask the user for guidance.
+> 1. **Live Remote Check — `git fetch origin` then `git status`:**
+>    * Plain `git status` is strictly local and does not contact GitHub. Therefore, at the start of every session or before making sync decisions, the AI **MUST run `git fetch origin` first, followed by `git status`**.
+>    * This reveals the true live remote state (e.g., whether local is behind, diverged, or up-to-date with teammates on GitHub) without touching working files.
+>    * If uncommitted or unstaged changes exist locally, the AI **MUST NOT pull blindly** (which risks overwriting work). Instead, commit the local changes first (`git add .`, `git commit -m "wip: save local progress before sync"`) or ask the user for guidance.
 > 2. **Pull at the Start of Every Session:**
 >    * Once local state is cleanly committed, run `git pull` (or `git pull --rebase`) to ingest fresh commits from teammates.
 > 3. **Push Automatically on Milestone Completion:**
@@ -209,7 +210,7 @@ a:/SIH/
 ### 7. Golden Guidelines for Any AI Agent Working Here
 1. **Sync All Three Instruction Files**: Every modification to `GEMINI.md` must be identically copied to `CLAUDE.md` and `AGENT.md`.
 2. **Active User Identity**: Check `.active_user` on startup. If missing, ask the user their member name and save it to `.active_user` (which is gitignored).
-3. **Automated Git Sync with Safety Gate**: Always check `git status` first, commit WIP, pull at session start, and push on milestone completion.
+3. **Automated Git Sync with Safety Gate**: Always run `git fetch origin` then `git status` first to inspect true remote state, commit WIP before pulling, pull at session start, and push on milestone completion.
 4. **Strict Ban on Dangerous Commands**: Absolutely no `git reset --hard`, `git push --force`, `git clean -fd`, or `git restore .`.
 5. **Escalate Conflicts & Ambiguity**: If any merge conflict or ambiguous branch state arises, immediately stop and ask the user.
 6. **Consult Research First**: Always ground your logic on the 10 Technical Blueprint sets in `RESEARCH/`.
