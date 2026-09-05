@@ -50,7 +50,7 @@ This repository serves a team of **6 engineers**. The structure separates person
 a:/SIH/
 ├── <MEMBER_NAME>/             # Personal user workspace for drafts, tests & isolated prototypes
 │   ├── HAFIZ/                 # Member 1 personal workspace (e.g., D1_alchemy_monitor/)
-│   ├── MEMBER_2/              # Member 2 personal workspace
+│   ├── KUNAL/                 # Kunal personal workspace
 │   ├── MEMBER_3/              # Member 3 personal workspace
 │   ├── MEMBER_4/              # Member 4 personal workspace
 │   ├── MEMBER_5/              # Member 5 personal workspace
