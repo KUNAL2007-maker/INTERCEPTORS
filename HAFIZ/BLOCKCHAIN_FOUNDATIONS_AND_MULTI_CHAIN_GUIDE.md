@@ -84,34 +84,28 @@ Scammers deliberately switch chains to evade EVM-only tools. Here is how we cove
 ┌────────────────────────────────────────────────────────────────────────┐
 │                   MULTI-CHAIN FORENSIC DATA MATRIX                     │
 ├───────────────────┬────────────────────────────┬───────────────────────┤
-│ Blockchain        │ Importance in Indian Crime │ Solution / Tool       │
+│ Blockchain        │ Importance in Indian Crime │ Solution / Provider   │
 ├───────────────────┼────────────────────────────┼───────────────────────┤
 │ Ethereum, Polygon,│ ⭐⭐⭐⭐⭐                   │ Alchemy API           │
-│ Arbitrum, Base,BSC│ Very High                  │ (Free: 300M CU/mo)    │
+│ Arbitrum, Base,OP │ Very High                  │ (Status: 200 OK)      │
 ├───────────────────┼────────────────────────────┼───────────────────────┤
-│ TRON              │ 🚨 EXTREME CRITICAL        │ TronGrid API          │
-│ (USDT-TRC20)      │ 70-80% of Indian scams     │ (Free: 100k req/day)  │
+│ TRON              │ 🚨 EXTREME CRITICAL        │ Alchemy Tron RPC      │
+│ (USDT-TRC20)      │ 70-80% of Indian scams     │ & TronGrid Backup     │
 ├───────────────────┼────────────────────────────┼───────────────────────┤
-│ Bitcoin           │ ⭐⭐⭐⭐                     │ Mempool.space API     │
-│ (BTC)             │ Ransomware / Darknet       │ (Free & Open Source)  │
+│ Bitcoin           │ ⭐⭐⭐⭐                     │ Alchemy Bitcoin RPC   │
+│ (BTC)             │ Ransomware / Darknet       │ & Mempool.space       │
 └───────────────────┴────────────────────────────┴───────────────────────┘
 ```
 
 #### 1. TRON (`USDT-TRC20`) — The Indian Cybercrime Favorite
 * **Why**: Over 75% of Indian cybercrime (Telegram task frauds, fake part-time jobs, pig-butchering) uses **USDT on TRON** due to ₹80-₹120 flat transfer fees and instant Indian P2P liquidity.
-* **Alchemy Status**: Not supported on Alchemy.
-* **Our Solution**: **TronGrid API** ([trongrid.io](https://www.trongrid.io/)).
-  * Official TRON Foundation API.
-  * 100,000 requests/day on the free tier.
-  * Provides wallet balances, TRC-20 transfer logs, and smart contract triggers.
+* **Alchemy Status**: **Natively Supported!** Enabled on Alchemy under `https://tron-mainnet.g.alchemy.com/v2/{key}`.
+* **Backup Provider**: **TronGrid API** ([trongrid.io](https://www.trongrid.io/)).
 
 #### 2. Bitcoin (`BTC`) — The Ransomware Standard
 * **Why**: Extortion, ransomware, and high-value darknet markets still rely on Bitcoin's UTXO ledger.
-* **Alchemy Status**: Not supported on Alchemy.
-* **Our Solution**: **Mempool.space API** ([mempool.space](https://mempool.space/docs/api/rest)).
-  * 100% free, community-standard, open-source API.
-  * Zero sign-up, zero API key required for standard queries.
-  * Direct endpoints for address balance, unspent outputs (UTXO), and transaction trails.
+* **Alchemy Status**: **Natively Supported!** Enabled on Alchemy under `https://bitcoin-mainnet.g.alchemy.com/v2/{key}`.
+* **Backup Provider**: **Mempool.space API** ([mempool.space](https://mempool.space/docs/api/rest)).
 
 ---
 
