@@ -1,4 +1,4 @@
-﻿# OS files
+# OS files
 .DS_Store
 Thumbs.db
 desktop.ini
@@ -20,6 +20,10 @@ build/
 
 # Agent internals & logs
 .agents/
+
+# Local Developer / Active User Identity (Machine-specific, gitignored)
+.active_user
+.current_user
 
 # Environment variables & secrets
 .env

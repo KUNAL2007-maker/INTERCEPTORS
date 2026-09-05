@@ -72,6 +72,17 @@ a:/SIH/
 └── AGENT.md                   # Master Agent Context & Task Tracker (Synchronized)
 ```
 
+#### Active User Identification Protocol (`.active_user` in `.gitignore`):
+* **Local Identity File**: Each developer's machine stores their personal username in a local `.active_user` file at the repository root (`a:/SIH/.active_user`).
+* **Gitignored by Design**: `.active_user` and `.current_user` are listed in `.gitignore` so one teammate's local identity is **never** committed or pushed to remote.
+* **Initial Setup Prompt**: Whenever an AI starts a session and `.active_user` is missing or empty, **the AI MUST halt and ask the user initially**:
+  > *"Welcome! Which team member are you? (e.g., HAFIZ, MEMBER_2, etc.)"*
+  Once the user answers, the AI creates `.active_user` with that name.
+* **AI Routing & Boundaries**:
+  1. The AI treats `<ACTIVE_USER>/` as the sole personal folder with full read/write permissions.
+  2. The AI maps all milestone tracking to that member's section on the Team Task Board in Section 6.
+  3. Folders belonging to other teammates remain strictly **READ-ONLY** by default.
+
 #### Workspace Access Protocol for AI Agents:
 1. **Active User's Folder (`<ACTIVE_USER>/`)**:
    * The AI has full read and write access.
@@ -197,9 +208,10 @@ a:/SIH/
 
 ### 7. Golden Guidelines for Any AI Agent Working Here
 1. **Sync All Three Instruction Files**: Every modification to `GEMINI.md` must be identically copied to `CLAUDE.md` and `AGENT.md`.
-2. **Automated Git Sync with Safety Gate**: Always check `git status` first, commit WIP, pull at session start, and push on milestone completion.
-3. **Strict Ban on Dangerous Commands**: Absolutely no `git reset --hard`, `git push --force`, `git clean -fd`, or `git restore .`.
-4. **Escalate Conflicts & Ambiguity**: If any merge conflict or ambiguous branch state arises, immediately stop and ask the user.
-5. **Consult Research First**: Always ground your logic on the 10 Technical Blueprint sets in `RESEARCH/`.
-6. **Respect User Boundaries**: Write into the active member's directory freely. Treat other members' folders as read-only references unless granted explicit permission.
-7. **Autonomous Milestones**: Keep the Task Board up-to-date after completing meaningful units of work.
+2. **Active User Identity**: Check `.active_user` on startup. If missing, ask the user their member name and save it to `.active_user` (which is gitignored).
+3. **Automated Git Sync with Safety Gate**: Always check `git status` first, commit WIP, pull at session start, and push on milestone completion.
+4. **Strict Ban on Dangerous Commands**: Absolutely no `git reset --hard`, `git push --force`, `git clean -fd`, or `git restore .`.
+5. **Escalate Conflicts & Ambiguity**: If any merge conflict or ambiguous branch state arises, immediately stop and ask the user.
+6. **Consult Research First**: Always ground your logic on the 10 Technical Blueprint sets in `RESEARCH/`.
+7. **Respect User Boundaries**: Write into the active member's directory freely. Treat other members' folders as read-only references unless granted explicit permission.
+8. **Autonomous Milestones**: Keep the Task Board up-to-date after completing meaningful units of work.
