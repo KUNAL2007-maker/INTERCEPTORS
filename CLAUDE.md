@@ -141,6 +141,7 @@ a:/SIH/
   * [x] Integrated real-time wallet tracking (balances, token balances, transaction history).
   * [x] Added webhook configuration and event receiver for address activity across 6 EVM networks.
   * [x] Enhanced D1 UI with beginner guide, 1-click real test addresses, plain-English case assessment, and "Follow the Money" hop buttons.
+  * [x] Authored comprehensive beginner foundations & multi-chain forensics guide (`BLOCKCHAIN_FOUNDATIONS_AND_MULTI_CHAIN_GUIDE.md`).
 * **🔄 Tasks Working On (In Progress)**:
   * [ ] Evaluating database schemas for caching transaction subgraphs and wallet profiles.
 * **📋 Tasks to be Started (Assigned / Backlog)**:
