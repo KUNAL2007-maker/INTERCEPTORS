@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blockchain Monitor & Exchange Attribution | Alchemy API</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #0f172a;
+    --text-muted: #64748b;
+    --primary: #4338ca;
+    --primary-light: #e0e7ff;
+    --primary-hover: #3730a3;
+    --success: #16a34a;
+    --success-bg: #dcfce7;
+    --danger: #dc2626;
+    --danger-bg: #fee2e2;
+    --warning: #d97706;
+    --warning-bg: #fef3c7;
+    --radius: 12px;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+  }
+
+  /* ── Header ─────────────────────────────────────── */
+  header {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 32px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .brand h1 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .brand p { font-size: 0.78rem; color: var(--text-muted); }
+  .badge-live {
+    background: var(--success-bg);
+    color: var(--success);
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .dot-pulse {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--success);
+  }
+
+  /* ── Layout ─────────────────────────────────────── */
+  .main-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 24px 20px 60px;
+  }
+
+  /* ── Search & Setup Card ────────────────────────── */
+  .setup-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow);
+  }
+  .card-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .card-desc {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+
+  .form-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .form-col {
+    flex: 1;
+    min-width: 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .col-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  input[type="text"], input[type="password"], select {
+    padding: 11px 14px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    transition: all 0.15s;
+  }
+  input[type="text"]:focus, input[type="password"]:focus, select:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: #fff;
+    box-shadow: 0 0 0 3px var(--primary-light);
+  }
+
+  .mono-input {
+    font-family: 'JetBrains Mono', monospace !important;
+  }
+
+  .btn-track {
+    padding: 11px 26px;
+    font-size: 0.92rem;
+    font-weight: 600;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    align-self: flex-end;
+    height: 44px;
+  }
+  .btn-track:hover { background: var(--primary-hover); transform: translateY(-1px); }
+  .btn-track:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  /* ── Presets ─────────────────────────────────────── */
+  .presets-bar {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .presets-label {
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+  .preset-btn {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .preset-btn:hover {
+    background: var(--primary-light);
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+
+  /* ── Spinner ─────────────────────────────────────── */
+  .spinner-wrap {
+    display: none;
+    text-align: center;
+    padding: 40px 20px;
+  }
+  .spinner-wrap.active { display: block; }
+  .spinner {
+    width: 42px;
+    height: 42px;
+    border: 3.5px solid var(--border);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 12px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Dashboard (Hidden until tracked) ───────────── */
+  #dashboard { display: none; }
+  #dashboard.visible { display: block; }
+
+  /* ── Target Identity Banner ─────────────────────── */
+  .target-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .target-addr-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+  }
+  .target-addr-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.05rem;
+    font-weight: 600;
+    word-break: break-all;
+  }
+  .entity-tag {
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .tag-exchange { background: #fef9c3; color: #854d0e; border: 1px solid #fde047; }
+  .tag-scam { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+  .tag-normal { background: #f1f5f9; color: #334155; border: 1px solid var(--border); }
+
+  /* ── Metric Cards ───────────────────────────────── */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .metric-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+  }
+  .metric-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+  }
+  .metric-val {
+    font-size: 1.7rem;
+    font-weight: 800;
+    color: var(--text);
+    margin: 6px 0;
+    word-break: break-all;
+  }
+  .metric-sub {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+  }
+
+  /* ── Tables ─────────────────────────────────────── */
+  .table-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  .table-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+  .table-count {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+  .table-wrap { overflow-x: auto; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.84rem;
+  }
+  thead th {
+    background: var(--bg);
+    text-align: left;
+    padding: 10px 16px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: #f8fafc; }
+
+  .mono-box {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .dir-badge {
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .dir-badge.in { background: var(--success-bg); color: var(--success); }
+  .dir-badge.out { background: var(--danger-bg); color: var(--danger); }
+  .val-in { color: var(--success); font-weight: 600; }
+  .val-out { color: var(--danger); font-weight: 600; }
+
+  /* ── Live Webhook Card ──────────────────────────── */
+  .webhook-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-sm);
+  }
+  .wh-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .wh-desc {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+  .wh-box {
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    max-height: 180px;
+    overflow-y: auto;
+  }
+
+  /* ── Toast alerts ───────────────────────────────── */
+  .toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .toast {
+    padding: 12px 18px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    animation: slideIn 0.2s ease;
+    max-width: 400px;
+  }
+  .toast.error { background: var(--danger-bg); color: var(--danger); border: 1px solid #f87171; }
+  .toast.success { background: var(--success-bg); color: var(--success); border: 1px solid #86efac; }
+  .toast.info { background: var(--primary-light); color: var(--primary); border: 1px solid #a5b4fc; }
+  @keyframes slideIn { from { transform: translateX(100px); opacity:0; } to { transform: translateX(0); opacity:1; } }
+
+  .empty-msg {
+    text-align: center;
+    padding: 30px;
+    color: var(--text-muted);
+  }
+
+  footer {
+    text-align: center;
+    padding: 24px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<div class="toast-container" id="toasts"></div>
+
+<!-- Header -->
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <h1>
+        ⚡ Blockchain Monitor & Exchange Attribution
+        <span class="badge-live"><span class="dot-pulse"></span> LIVE ALCHEMY CONNECTION</span>
+      </h1>
+      <p>Real-Time Fraud-Linked Crypto Tracing Prototype | SIH Problem Statement</p>
+    </div>
+  </div>
+</header>
+
+<div class="main-container">
+
+  <!-- Setup Card -->
+  <div class="setup-card">
+    <div class="card-title">🔍 Track Any Wallet Address (100% Real Blockchain Data)</div>
+    <div class="card-desc">Your Alchemy API Key is verified and connected. Enter any EVM address or select a test wallet below:</div>
+
+    <div class="form-row">
+      <!-- API Key -->
+      <div class="form-col" style="flex: 1.2;">
+        <span class="col-label">Alchemy API Key (Verified)</span>
+        <input type="text" id="apiKey" value="{{ default_key }}" class="mono-input" placeholder="alch_...">
+      </div>
+
+      <!-- Network -->
+      <div class="form-col" style="flex: 0.8;">
+        <span class="col-label">Blockchain Network</span>
+        <select id="networkSelect">
+          <option value="eth-mainnet" selected>Ethereum Mainnet</option>
+          <option value="polygon-mainnet">Polygon Mainnet</option>
+          <option value="arb-mainnet">Arbitrum Mainnet</option>
+          <option value="opt-mainnet">Optimism Mainnet</option>
+          <option value="base-mainnet">Base Mainnet</option>
+          <option value="eth-sepolia">Sepolia Testnet</option>
+        </select>
+      </div>
+
+      <!-- Wallet Input -->
+      <div class="form-col" style="flex: 2;">
+        <span class="col-label">Target Wallet Address</span>
+        <input type="text" id="addressInput" class="mono-input" placeholder="0x... (e.g. 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045)" value="0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045">
+      </div>
+
+      <!-- Button -->
+      <button class="btn-track" id="trackBtn" onclick="trackAddress()">
+        <span>🔍 Track Wallet</span>
+      </button>
+    </div>
+
+    <!-- Presets -->
+    <div class="presets-bar">
+      <span class="presets-label">⚡ Live Test Wallets:</span>
+      <button class="preset-btn" onclick="selectPreset('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045', 'Vitalik Buterin')">
+        <span>👤 Vitalik Buterin (vitalik.eth)</span>
+      </button>
+      <button class="preset-btn" onclick="selectPreset('0x28C6c06298d514Db089934071355E5743bf21d60', 'Binance Hot Wallet')">
+        <span>🏦 Binance Hot Wallet 14</span>
+      </button>
+      <button class="preset-btn" onclick="selectPreset('0x5754284f345afc66a98fbb0a0afe71e0f007b949', 'Tether Treasury')">
+        <span>🪙 Tether USD (USDT Treasury)</span>
+      </button>
+      <button class="preset-btn" onclick="selectPreset('0x098B716B8Aaf21512996dC57EB0615e2383E2f96', 'Ronin Hacker Wallet')">
+        <span>🚨 Ronin Bridge Exploiter</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading Spinner -->
+  <div class="spinner-wrap" id="loadingSpinner">
+    <div class="spinner"></div>
+    <div style="font-weight: 600;">Fetching live on-chain data from Alchemy...</div>
+    <div style="font-size: 0.8rem; color: var(--text-muted);">Querying balance, ERC-20 token balances, and transaction history</div>
+  </div>
+
+  <!-- Dashboard Output -->
+  <div id="dashboard">
+
+    <!-- Target Banner -->
+    <div class="target-card">
+      <div>
+        <div class="target-addr-title">Tracked Address</div>
+        <div class="target-addr-val" id="targetAddrVal">—</div>
+      </div>
+      <div id="entityTagSlot">
+        <!-- Entity tag badge -->
+      </div>
+    </div>
+
+    <!-- 4 Metrics -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-title">Native Balance (Gas)</div>
+        <div class="metric-val" id="mBalance">0.000000</div>
+        <div class="metric-sub">Real on-chain ETH available in wallet</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-title">Transaction Nonce</div>
+        <div class="metric-val" id="mNonce">0</div>
+        <div class="metric-sub">Total outgoing transactions broadcasted</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-title">ERC-20 Assets</div>
+        <div class="metric-val" id="mTokens">0</div>
+        <div class="metric-sub">Unique token balances detected</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-title">Exchange Interactions</div>
+        <div class="metric-val" id="mExchanges">0</div>
+        <div class="metric-sub">Transfers with known exchanges (Binance, etc.)</div>
+      </div>
+    </div>
+
+    <!-- Token Holdings Table -->
+    <div class="table-card">
+      <div class="table-header">
+        <span>💰 Live ERC-20 Token Holdings</span>
+        <span class="table-count" id="tokenCountBadge">0 tokens</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Token</th>
+              <th>Symbol</th>
+              <th>Balance</th>
+              <th>Contract Address</th>
+            </tr>
+          </thead>
+          <tbody id="tokenTableBody">
+            <tr><td colspan="4" class="empty-msg">No token holdings found.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Transfer Flow Table -->
+    <div class="table-card">
+      <div class="table-header">
+        <span>📋 Recent On-Chain Asset Transfers</span>
+        <span class="table-count" id="transferCountBadge">0 transfers</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Direction</th>
+              <th>Counterparty & Attribution</th>
+              <th>Amount</th>
+              <th>Asset</th>
+              <th>Type</th>
+              <th>Block</th>
+              <th>Transaction Hash</th>
+            </tr>
+          </thead>
+          <tbody id="transferTableBody">
+            <tr><td colspan="7" class="empty-msg">No transfers found.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Live Webhook Listener Stream -->
+  <div class="webhook-card">
+    <div class="wh-header">
+      <div style="font-weight: 700; font-size: 0.95rem;">📡 Real-Time Webhook Listener (`/webhook`)</div>
+      <button class="preset-btn" onclick="clearWebhooks()">Clear Log</button>
+    </div>
+    <div class="wh-desc">
+      Your Flask server is actively listening on endpoint <code>POST /webhook</code>. Whenever Alchemy Notify pushes an address activity event, it appears live in the box below:
+    </div>
+    <div class="wh-box" id="webhookLogBox">
+      // Webhook listener active. No incoming webhook POST received yet.
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Smart India Hackathon (SIH) — D1 Working Prototype &nbsp;|&nbsp; 100% Real Blockchain Data via Alchemy JSON-RPC Engine
+</footer>
+
+<script>
+  function toast(msg, type = 'info') {
+    const container = document.getElementById('toasts');
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.textContent = msg;
+    container.appendChild(el);
+    setTimeout(() => el.remove(), 4000);
+  }
+
+  function selectPreset(addr, name) {
+    document.getElementById('addressInput').value = addr;
+    toast(`Selected: ${name}`, 'info');
+    trackAddress();
+  }
+
+  async function trackAddress() {
+    const address = document.getElementById('addressInput').value.trim();
+    const apiKey = document.getElementById('apiKey').value.trim();
+    const network = document.getElementById('networkSelect').value;
+
+    if (!address) {
+      toast('Please enter a wallet address.', 'error');
+      return;
+    }
+
+    document.getElementById('loadingSpinner').classList.add('active');
+    document.getElementById('dashboard').classList.remove('visible');
+    document.getElementById('trackBtn').disabled = true;
+    document.getElementById('trackBtn').textContent = '⏳ Querying...';
+
+    try {
+      const res = await fetch('/api/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address, api_key: apiKey, network })
+      });
+      const data = await res.json();
+
+      if (data.error) {
+        toast(data.error, 'error');
+        return;
+      }
+
+      renderData(data);
+      document.getElementById('dashboard').classList.add('visible');
+      toast(`Loaded real on-chain data for ${trunc(data.address)}`, 'success');
+    } catch (e) {
+      toast('Error fetching data: ' + e.message, 'error');
+    } finally {
+      document.getElementById('loadingSpinner').classList.remove('active');
+      document.getElementById('trackBtn').disabled = false;
+      document.getElementById('trackBtn').textContent = '🔍 Track Wallet';
+    }
+  }
+
+  function renderData(data) {
+    document.getElementById('targetAddrVal').textContent = data.address;
+
+    // Entity Tag
+    const tagSlot = document.getElementById('entityTagSlot');
+    if (data.entity_tag) {
+      const isEx = data.entity_tag.type === 'exchange';
+      const isScam = data.entity_tag.type === 'scam';
+      const cls = isEx ? 'tag-exchange' : (isScam ? 'tag-scam' : 'tag-normal');
+      const icon = isEx ? '🏦' : (isScam ? '🚨' : 'ℹ️');
+      tagSlot.innerHTML = `<span class="entity-tag ${cls}"><span>${icon}</span> <span>${esc(data.entity_tag.name)}</span></span>`;
+    } else {
+      tagSlot.innerHTML = `<span class="entity-tag tag-normal"><span>👤</span> <span>Non-Custodial Wallet</span></span>`;
+    }
+
+    // Metrics
+    document.getElementById('mBalance').textContent = data.balance + ' ETH';
+    document.getElementById('mNonce').textContent = data.tx_count.toLocaleString();
+    document.getElementById('mTokens').textContent = data.tokens.length;
+    document.getElementById('mExchanges').textContent = data.metrics.exchange_interactions;
+
+    // Tokens Table
+    document.getElementById('tokenCountBadge').textContent = `${data.tokens.length} tokens`;
+    const tBody = document.getElementById('tokenTableBody');
+    if (data.tokens.length === 0) {
+      tBody.innerHTML = '<tr><td colspan="4" class="empty-msg">No ERC-20 token balances found for this address.</td></tr>';
+    } else {
+      tBody.innerHTML = data.tokens.map(t => `
+        <tr>
+          <td><strong>${esc(t.name)}</strong></td>
+          <td><span style="font-weight:700; color:var(--primary);">${esc(t.symbol)}</span></td>
+          <td style="font-weight:600;">${t.balance}</td>
+          <td><span class="mono-box">${esc(t.contract)}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    // Transfers Table
+    document.getElementById('transferCountBadge').textContent = `${data.transfers.length} transfers`;
+    const trBody = document.getElementById('transferTableBody');
+    if (data.transfers.length === 0) {
+      trBody.innerHTML = '<tr><td colspan="7" class="empty-msg">No transfers found in recent history.</td></tr>';
+    } else {
+      trBody.innerHTML = data.transfers.map(tr => {
+        const isIncoming = tr._direction === 'in';
+        const counterparty = isIncoming ? tr.from : tr.to;
+        const tag = tr._counterparty_tag;
+
+        let tagHtml = `<span class="mono-box">${trunc(counterparty)}</span>`;
+        if (tag) {
+          tagHtml += ` <span class="entity-tag tag-exchange" style="font-size:0.7rem; padding:1px 6px;">${esc(tag.name)}</span>`;
+        }
+
+        const value = tr.value !== null && tr.value !== undefined ? parseFloat(tr.value).toFixed(4) : '—';
+        const blockNum = tr.blockNum ? parseInt(tr.blockNum, 16).toLocaleString() : '—';
+
+        return `
+          <tr>
+            <td><span class="dir-badge ${isIncoming ? 'in' : 'out'}">${isIncoming ? '⬇ INFLOW' : '⬆ OUTFLOW'}</span></td>
+            <td>${tagHtml}</td>
+            <td class="${isIncoming ? 'val-in' : 'val-out'}">${value}</td>
+            <td><strong>${esc(tr.asset || 'ETH')}</strong></td>
+            <td><span style="text-transform:uppercase; font-size:0.75rem; color:var(--text-muted);">${esc(tr.category)}</span></td>
+            <td>${blockNum}</td>
+            <td><span class="mono-box" title="${esc(tr.hash || '')}">${trunc(tr.hash || '')}</span></td>
+          </tr>
+        `;
+      }).join('');
+    }
+  }
+
+  async function loadWebhooks() {
+    try {
+      const res = await fetch('/api/webhook/events');
+      const data = await res.json();
+      const box = document.getElementById('webhookLogBox');
+      if (data.events && data.events.length > 0) {
+        box.textContent = JSON.stringify(data.events, null, 2);
+      }
+    } catch (e) {}
+  }
+
+  async function clearWebhooks() {
+    await fetch('/api/webhook/clear', { method: 'POST' });
+    document.getElementById('webhookLogBox').textContent = '// Webhook listener active. No incoming webhook POST received yet.';
+    toast('Webhook log cleared', 'info');
+  }
+
+  function trunc(s) {
+    if (!s || s.length < 14) return s || '—';
+    return s.slice(0, 6) + '...' + s.slice(-4);
+  }
+
+  function esc(t) {
+    const div = document.createElement('div');
+    div.textContent = t || '';
+    return div.innerHTML;
+  }
+
+  document.getElementById('addressInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') trackAddress();
+  });
+
+  // Auto-track on first page load
+  document.addEventListener('DOMContentLoaded', () => {
+    trackAddress();
+    setInterval(loadWebhooks, 5000);
+  });
+</script>
+</body>
+</html>
