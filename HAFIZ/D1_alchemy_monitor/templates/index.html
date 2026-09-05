@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Blockchain Monitor & Exchange Attribution | Alchemy API</title>
+<title>Blockchain Fraud Tracing & Exchange Attribution | Alchemy D1</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -24,6 +24,7 @@
     --radius: 12px;
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+    --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
   }
 
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -85,35 +86,127 @@
     padding: 24px 20px 60px;
   }
 
+  /* ── Beginner Explainer Card ─────────────────────── */
+  .guide-card {
+    background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
+    border: 1px solid #bfdbfe;
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .guide-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #1e40af;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .guide-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+  }
+  .guide-item {
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(191, 219, 254, 0.6);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.78rem;
+  }
+  .guide-item strong { color: #1e3a8a; display: block; margin-bottom: 2px; }
+
+  /* ── Preset Real Address Cards ──────────────────── */
+  .presets-section {
+    margin-bottom: 24px;
+  }
+  .presets-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .preset-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 12px;
+  }
+  .preset-card {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    text-align: left;
+  }
+  .preset-card:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+  }
+  .preset-card.active {
+    border-color: var(--primary);
+    background: #f5f3ff;
+  }
+  .preset-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .preset-icon { font-size: 1.2rem; }
+  .preset-badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+  .badge-individual { background: #e0f2fe; color: #0369a1; }
+  .badge-exchange { background: #fef9c3; color: #854d0e; }
+  .badge-scam { background: #fee2e2; color: #991b1b; }
+  .badge-defi { background: #f3e8ff; color: #6b21a8; }
+  .badge-mixer { background: #ffedd5; color: #9a3412; }
+  .preset-name {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .preset-desc {
+    font-size: 0.74rem;
+    color: var(--text-muted);
+    line-height: 1.35;
+  }
+
   /* ── Search & Setup Card ────────────────────────── */
   .setup-card {
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 24px;
+    padding: 20px;
     margin-bottom: 24px;
-    box-shadow: var(--shadow);
+    box-shadow: var(--shadow-sm);
   }
-  .card-title {
-    font-size: 1.05rem;
-    font-weight: 700;
-    margin-bottom: 4px;
-  }
-  .card-desc {
-    font-size: 0.82rem;
-    color: var(--text-muted);
-    margin-bottom: 16px;
-  }
-
   .form-row {
     display: flex;
     gap: 12px;
-    margin-bottom: 14px;
+    align-items: flex-end;
     flex-wrap: wrap;
   }
   .form-col {
-    flex: 1;
-    min-width: 260px;
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -125,8 +218,7 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
-
-  input[type="text"], input[type="password"], select {
+  input[type="text"], select {
     padding: 11px 14px;
     font-size: 0.9rem;
     font-family: inherit;
@@ -135,19 +227,17 @@
     background: var(--bg);
     transition: all 0.15s;
   }
-  input[type="text"]:focus, input[type="password"]:focus, select:focus {
+  input[type="text"]:focus, select:focus {
     outline: none;
     border-color: var(--primary);
     background: #fff;
     box-shadow: 0 0 0 3px var(--primary-light);
   }
-
   .mono-input {
     font-family: 'JetBrains Mono', monospace !important;
   }
-
   .btn-track {
-    padding: 11px 26px;
+    padding: 11px 24px;
     font-size: 0.92rem;
     font-weight: 600;
     background: var(--primary);
@@ -159,47 +249,31 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    align-self: flex-end;
     height: 44px;
   }
   .btn-track:hover { background: var(--primary-hover); transform: translateY(-1px); }
   .btn-track:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
-  /* ── Presets ─────────────────────────────────────── */
-  .presets-bar {
-    margin-top: 14px;
-    padding-top: 14px;
-    border-top: 1px dashed var(--border);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-  .presets-label {
+  /* ── Collapsible Advanced Config ───────────────── */
+  .adv-toggle {
     font-size: 0.76rem;
-    font-weight: 700;
     color: var(--text-muted);
-    text-transform: uppercase;
-  }
-  .preset-btn {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 6px 12px;
-    font-size: 0.78rem;
-    font-weight: 500;
-    color: var(--text);
+    background: none;
+    border: none;
     cursor: pointer;
-    transition: all 0.15s;
+    margin-top: 10px;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
+    text-decoration: underline;
   }
-  .preset-btn:hover {
-    background: var(--primary-light);
-    border-color: var(--primary);
-    color: var(--primary);
+  .adv-panel {
+    display: none;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--border);
   }
+  .adv-panel.open { display: flex; gap: 12px; flex-wrap: wrap; }
 
   /* ── Spinner ─────────────────────────────────────── */
   .spinner-wrap {
@@ -209,8 +283,8 @@
   }
   .spinner-wrap.active { display: block; }
   .spinner {
-    width: 42px;
-    height: 42px;
+    width: 40px;
+    height: 40px;
     border: 3.5px solid var(--border);
     border-top-color: var(--primary);
     border-radius: 50%;
@@ -219,16 +293,40 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* ── Dashboard (Hidden until tracked) ───────────── */
+  /* ── Dashboard Output ────────────────────────────── */
   #dashboard { display: none; }
   #dashboard.visible { display: block; }
+
+  /* ── Plain English Case Summary Card ────────────── */
+  .summary-card {
+    background: #eef2ff;
+    border: 1.5px solid #c7d2fe;
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .summary-icon { font-size: 1.6rem; line-height: 1; }
+  .summary-content h3 {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #312e81;
+    margin-bottom: 4px;
+  }
+  .summary-text {
+    font-size: 0.84rem;
+    color: #3730a3;
+    line-height: 1.5;
+  }
 
   /* ── Target Identity Banner ─────────────────────── */
   .target-card {
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 20px 24px;
+    padding: 18px 22px;
     margin-bottom: 20px;
     display: flex;
     justify-content: space-between;
@@ -243,6 +341,13 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
     color: var(--text-muted);
+    margin-bottom: 2px;
+  }
+  .target-addr-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
   }
   .target-addr-val {
     font-family: 'JetBrains Mono', monospace;
@@ -250,23 +355,43 @@
     font-weight: 600;
     word-break: break-all;
   }
-  .entity-tag {
-    padding: 4px 12px;
+  .btn-copy, .btn-explorer {
+    background: var(--bg);
+    border: 1px solid var(--border);
     border-radius: 6px;
-    font-size: 0.78rem;
+    padding: 4px 10px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--text);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .btn-copy:hover, .btn-explorer:hover {
+    background: var(--primary-light);
+    color: var(--primary);
+  }
+
+  .entity-tag {
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 0.82rem;
     font-weight: 700;
     display: inline-flex;
     align-items: center;
     gap: 6px;
   }
-  .tag-exchange { background: #fef9c3; color: #854d0e; border: 1px solid #fde047; }
-  .tag-scam { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
-  .tag-normal { background: #f1f5f9; color: #334155; border: 1px solid var(--border); }
+  .tag-exchange { background: #fef9c3; color: #854d0e; border: 1.5px solid #fde047; }
+  .tag-scam { background: #fee2e2; color: #991b1b; border: 1.5px solid #fca5a5; }
+  .tag-mixer { background: #ffedd5; color: #9a3412; border: 1.5px solid #fdba74; }
+  .tag-normal { background: #f1f5f9; color: #334155; border: 1.5px solid var(--border); }
 
-  /* ── Metric Cards ───────────────────────────────── */
+  /* ── 4 Metric Cards ──────────────────────────────── */
   .metrics-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 16px;
     margin-bottom: 24px;
   }
@@ -274,8 +399,9 @@
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 20px;
+    padding: 18px;
     box-shadow: var(--shadow-sm);
+    position: relative;
   }
   .metric-title {
     font-size: 0.75rem;
@@ -283,16 +409,19 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
     color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
   .metric-val {
-    font-size: 1.7rem;
+    font-size: 1.6rem;
     font-weight: 800;
     color: var(--text);
     margin: 6px 0;
     word-break: break-all;
   }
   .metric-sub {
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     color: var(--text-muted);
   }
 
@@ -306,12 +435,12 @@
     overflow: hidden;
   }
   .table-header {
-    padding: 16px 20px;
+    padding: 14px 20px;
     border-bottom: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.95rem;
+    font-size: 0.92rem;
     font-weight: 700;
   }
   .table-count {
@@ -352,29 +481,57 @@
 
   .mono-box {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     background: #f1f5f9;
     padding: 2px 6px;
     border-radius: 4px;
+    color: var(--text);
+    text-decoration: none;
   }
+  .mono-box:hover { color: var(--primary); text-decoration: underline; }
+
   .dir-badge {
     padding: 3px 8px;
     border-radius: 6px;
     font-size: 0.72rem;
     font-weight: 700;
     text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
   }
   .dir-badge.in { background: var(--success-bg); color: var(--success); }
   .dir-badge.out { background: var(--danger-bg); color: var(--danger); }
-  .val-in { color: var(--success); font-weight: 600; }
-  .val-out { color: var(--danger); font-weight: 600; }
+  .val-in { color: var(--success); font-weight: 700; }
+  .val-out { color: var(--danger); font-weight: 700; }
+
+  /* ── Follow Money (Hop) Button ──────────────────── */
+  .btn-hop {
+    background: var(--primary-light);
+    color: var(--primary);
+    border: 1px solid #c7d2fe;
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-left: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .btn-hop:hover {
+    background: var(--primary);
+    color: #fff;
+  }
 
   /* ── Live Webhook Card ──────────────────────────── */
   .webhook-card {
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 20px;
+    padding: 18px;
     margin-bottom: 24px;
     box-shadow: var(--shadow-sm);
   }
@@ -382,10 +539,10 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
   }
   .wh-desc {
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     color: var(--text-muted);
     margin-bottom: 12px;
   }
@@ -395,7 +552,7 @@
     padding: 12px 16px;
     border-radius: 8px;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     max-height: 180px;
     overflow-y: auto;
   }
@@ -413,7 +570,7 @@
   .toast {
     padding: 12px 18px;
     border-radius: 8px;
-    font-size: 0.85rem;
+    font-size: 0.84rem;
     font-weight: 500;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     animation: slideIn 0.2s ease;
@@ -448,30 +605,114 @@
   <div class="header-inner">
     <div class="brand">
       <h1>
-        ⚡ Blockchain Monitor & Exchange Attribution
-        <span class="badge-live"><span class="dot-pulse"></span> LIVE ALCHEMY CONNECTION</span>
+        ⚡ Crypto Forensics & Exchange Attribution
+        <span class="badge-live"><span class="dot-pulse"></span> LIVE ALCHEMY ENGINE</span>
       </h1>
       <p>Real-Time Fraud-Linked Crypto Tracing Prototype | SIH Problem Statement</p>
+    </div>
+    <div style="font-size: 0.78rem; color: var(--text-muted);">
+      Active Workspace: <strong>HAFIZ/D1_alchemy_monitor</strong>
     </div>
   </div>
 </header>
 
 <div class="main-container">
 
-  <!-- Setup Card -->
-  <div class="setup-card">
-    <div class="card-title">🔍 Track Any Wallet Address (100% Real Blockchain Data)</div>
-    <div class="card-desc">Your Alchemy API Key is verified and connected. Enter any EVM address or select a test wallet below:</div>
+  <!-- Beginner Explainer Box -->
+  <div class="guide-card">
+    <div class="guide-title">
+      <span>💡 New to Blockchain? Quick 4-Step Reference</span>
+      <span style="font-size:0.75rem; font-weight:normal; color:#475569;">No technical jargon required</span>
+    </div>
+    <div class="guide-grid">
+      <div class="guide-item">
+        <strong>1. Wallet Address (0x...)</strong>
+        Like a bank account number or UPI ID. Public and safe to view.
+      </div>
+      <div class="guide-item">
+        <strong>2. Native Balance (ETH)</strong>
+        Main money in account, also used as "stamps/fuel" (gas fees) to send funds.
+      </div>
+      <div class="guide-item">
+        <strong>3. Tokens (USDT, USDC)</strong>
+        Digital dollars inside the wallet. Scammers prefer USDT because it is stable.
+      </div>
+      <div class="guide-item">
+        <strong>4. Exchange / VASP (Binance, etc.)</strong>
+        Where crypto turns into real cash. Finding this is our primary goal!
+      </div>
+    </div>
+  </div>
 
+  <!-- Real-World Example Addresses Grid -->
+  <div class="presets-section">
+    <div class="presets-title">
+      <span>🌟 Select a Real Web Address to Test Instantly:</span>
+    </div>
+    <div class="preset-cards-grid">
+      <!-- 1. Vitalik -->
+      <div class="preset-card active" onclick="selectPreset('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045', 'Vitalik Buterin (vitalik.eth)', this)">
+        <div class="preset-top">
+          <span class="preset-icon">👤</span>
+          <span class="preset-badge badge-individual">Personal Wallet</span>
+        </div>
+        <div class="preset-name">Vitalik Buterin (vitalik.eth)</div>
+        <div class="preset-desc">Creator of Ethereum. Holds diverse tokens & active public transactions.</div>
+      </div>
+
+      <!-- 2. Binance 14 -->
+      <div class="preset-card" onclick="selectPreset('0x28C6c06298d514Db089934071355E5743bf21d60', 'Binance Hot Wallet 14', this)">
+        <div class="preset-top">
+          <span class="preset-icon">🏦</span>
+          <span class="preset-badge badge-exchange">Exchange (VASP)</span>
+        </div>
+        <div class="preset-name">Binance Hot Wallet 14</div>
+        <div class="preset-desc">Massive centralized exchange wallet where millions in user deposits pool.</div>
+      </div>
+
+      <!-- 3. Ronin Hacker -->
+      <div class="preset-card" onclick="selectPreset('0x098B716B8Aaf21512996dC57EB0615e2383E2f96', 'Ronin Bridge Exploiter', this)">
+        <div class="preset-top">
+          <span class="preset-icon">🚨</span>
+          <span class="preset-badge badge-scam">Reported Hacker</span>
+        </div>
+        <div class="preset-name">Ronin Bridge Exploiter</div>
+        <div class="preset-desc">Famous $600M theft wallet. Demonstrates laundering into Tornado Cash.</div>
+      </div>
+
+      <!-- 4. Tether Treasury -->
+      <div class="preset-card" onclick="selectPreset('0x5754284f345afc66a98fbb0a0afe71e0f007b949', 'Tether USD Treasury', this)">
+        <div class="preset-top">
+          <span class="preset-icon">🪙</span>
+          <span class="preset-badge badge-defi">USDT Issuer</span>
+        </div>
+        <div class="preset-name">Tether Treasury (USDT)</div>
+        <div class="preset-desc">Official mint & treasury for USDT digital dollars moving into exchanges.</div>
+      </div>
+
+      <!-- 5. Tornado Cash -->
+      <div class="preset-card" onclick="selectPreset('0xd90e2f925DA726b50C4Ed8D0Fb90Ad053324F31b', 'Tornado Cash 0.1 ETH Pool', this)">
+        <div class="preset-top">
+          <span class="preset-icon">🌀</span>
+          <span class="preset-badge badge-mixer">Privacy Mixer</span>
+        </div>
+        <div class="preset-name">Tornado Cash (Mixer)</div>
+        <div class="preset-desc">Sanctioned protocol used by cybercriminals to break money trails.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search & Tracking Card -->
+  <div class="setup-card">
     <div class="form-row">
-      <!-- API Key -->
-      <div class="form-col" style="flex: 1.2;">
-        <span class="col-label">Alchemy API Key (Verified)</span>
-        <input type="text" id="apiKey" value="{{ default_key }}" class="mono-input" placeholder="alch_...">
+      <!-- Address Input -->
+      <div class="form-col" style="flex: 2; min-width: 280px;">
+        <span class="col-label">Investigate Target Wallet Address</span>
+        <input type="text" id="addressInput" class="mono-input" placeholder="0x..." value="0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045">
       </div>
 
       <!-- Network -->
-      <div class="form-col" style="flex: 0.8;">
+      <div class="form-col" style="flex: 0.9; min-width: 170px;">
         <span class="col-label">Blockchain Network</span>
         <select id="networkSelect">
           <option value="eth-mainnet" selected>Ethereum Mainnet</option>
@@ -483,95 +724,108 @@
         </select>
       </div>
 
-      <!-- Wallet Input -->
-      <div class="form-col" style="flex: 2;">
-        <span class="col-label">Target Wallet Address</span>
-        <input type="text" id="addressInput" class="mono-input" placeholder="0x... (e.g. 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045)" value="0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045">
-      </div>
-
       <!-- Button -->
       <button class="btn-track" id="trackBtn" onclick="trackAddress()">
-        <span>🔍 Track Wallet</span>
+        <span>🔍 Trace Money Trail</span>
       </button>
     </div>
 
-    <!-- Presets -->
-    <div class="presets-bar">
-      <span class="presets-label">⚡ Live Test Wallets:</span>
-      <button class="preset-btn" onclick="selectPreset('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045', 'Vitalik Buterin')">
-        <span>👤 Vitalik Buterin (vitalik.eth)</span>
-      </button>
-      <button class="preset-btn" onclick="selectPreset('0x28C6c06298d514Db089934071355E5743bf21d60', 'Binance Hot Wallet')">
-        <span>🏦 Binance Hot Wallet 14</span>
-      </button>
-      <button class="preset-btn" onclick="selectPreset('0x5754284f345afc66a98fbb0a0afe71e0f007b949', 'Tether Treasury')">
-        <span>🪙 Tether USD (USDT Treasury)</span>
-      </button>
-      <button class="preset-btn" onclick="selectPreset('0x098B716B8Aaf21512996dC57EB0615e2383E2f96', 'Ronin Hacker Wallet')">
-        <span>🚨 Ronin Bridge Exploiter</span>
-      </button>
+    <!-- Collapsible Advanced Settings -->
+    <button class="adv-toggle" onclick="toggleAdv()">⚙️ View / Change Alchemy API Key</button>
+    <div class="adv-panel" id="advPanel">
+      <div class="form-col" style="flex: 1; min-width: 250px;">
+        <span class="col-label">Alchemy API Key</span>
+        <input type="text" id="apiKey" value="{{ default_key }}" class="mono-input">
+      </div>
     </div>
   </div>
 
   <!-- Loading Spinner -->
   <div class="spinner-wrap" id="loadingSpinner">
     <div class="spinner"></div>
-    <div style="font-weight: 600;">Fetching live on-chain data from Alchemy...</div>
-    <div style="font-size: 0.8rem; color: var(--text-muted);">Querying balance, ERC-20 token balances, and transaction history</div>
+    <div style="font-weight: 700; font-size: 1rem;">Querying Live Blockchain via Alchemy...</div>
+    <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 4px;">
+      Fetching current balance, ERC-20 token holdings, and tracing transfer hops.
+    </div>
   </div>
 
   <!-- Dashboard Output -->
   <div id="dashboard">
 
+    <!-- Plain English Investigator Summary Card -->
+    <div class="summary-card" id="summaryCard">
+      <div class="summary-icon">📋</div>
+      <div class="summary-content">
+        <h3>Investigator Plain-English Case Assessment</h3>
+        <div class="summary-text" id="summaryText">Analyzing on-chain behavior...</div>
+      </div>
+    </div>
+
     <!-- Target Banner -->
     <div class="target-card">
       <div>
-        <div class="target-addr-title">Tracked Address</div>
-        <div class="target-addr-val" id="targetAddrVal">—</div>
+        <div class="target-addr-title">Tracked Wallet Address</div>
+        <div class="target-addr-row">
+          <span class="target-addr-val" id="targetAddrVal">—</span>
+          <button class="btn-copy" onclick="copyAddress()">📋 Copy</button>
+          <a href="#" target="_blank" id="explorerLink" class="btn-explorer">🔗 View on Etherscan ↗</a>
+        </div>
       </div>
       <div id="entityTagSlot">
-        <!-- Entity tag badge -->
+        <!-- Entity badge -->
       </div>
     </div>
 
     <!-- 4 Metrics -->
     <div class="metrics-grid">
       <div class="metric-card">
-        <div class="metric-title">Native Balance (Gas)</div>
+        <div class="metric-title">
+          <span>Native Balance (ETH)</span>
+          <span>💰</span>
+        </div>
         <div class="metric-val" id="mBalance">0.000000</div>
-        <div class="metric-sub">Real on-chain ETH available in wallet</div>
+        <div class="metric-sub">Liquid funds available in this wallet</div>
       </div>
       <div class="metric-card">
-        <div class="metric-title">Transaction Nonce</div>
+        <div class="metric-title">
+          <span>Total Money Sent (Tx Count)</span>
+          <span>📤</span>
+        </div>
         <div class="metric-val" id="mNonce">0</div>
-        <div class="metric-sub">Total outgoing transactions broadcasted</div>
+        <div class="metric-sub">Lifetime transactions broadcasted to chain</div>
       </div>
       <div class="metric-card">
-        <div class="metric-title">ERC-20 Assets</div>
+        <div class="metric-title">
+          <span>Tokens & Digital Dollars</span>
+          <span>🪙</span>
+        </div>
         <div class="metric-val" id="mTokens">0</div>
-        <div class="metric-sub">Unique token balances detected</div>
+        <div class="metric-sub">Different token balances (USDT, USDC, etc.)</div>
       </div>
       <div class="metric-card">
-        <div class="metric-title">Exchange Interactions</div>
+        <div class="metric-title">
+          <span>Exchange Touchpoints</span>
+          <span>🏦</span>
+        </div>
         <div class="metric-val" id="mExchanges">0</div>
-        <div class="metric-sub">Transfers with known exchanges (Binance, etc.)</div>
+        <div class="metric-sub">Direct transfers to Binance, OKX, etc.</div>
       </div>
     </div>
 
     <!-- Token Holdings Table -->
     <div class="table-card">
       <div class="table-header">
-        <span>💰 Live ERC-20 Token Holdings</span>
+        <span>🪙 Token Assets Held in this Wallet (USDT, USDC, etc.)</span>
         <span class="table-count" id="tokenCountBadge">0 tokens</span>
       </div>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Token</th>
+              <th>Asset Name</th>
               <th>Symbol</th>
-              <th>Balance</th>
-              <th>Contract Address</th>
+              <th>Quantity Held</th>
+              <th>Smart Contract Address</th>
             </tr>
           </thead>
           <tbody id="tokenTableBody">
@@ -581,27 +835,27 @@
       </div>
     </div>
 
-    <!-- Transfer Flow Table -->
+    <!-- Transfer Flow Table (The Breadcrumb Trail) -->
     <div class="table-card">
       <div class="table-header">
-        <span>📋 Recent On-Chain Asset Transfers</span>
+        <span>👣 Recent Money Flow (The Breadcrumb Trail)</span>
         <span class="table-count" id="transferCountBadge">0 transfers</span>
       </div>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Direction</th>
-              <th>Counterparty & Attribution</th>
-              <th>Amount</th>
+              <th>Flow Direction</th>
+              <th>Counterparty (Sender / Receiver)</th>
+              <th>Amount Moved</th>
               <th>Asset</th>
-              <th>Type</th>
-              <th>Block</th>
-              <th>Transaction Hash</th>
+              <th>Transfer Category</th>
+              <th>Block Height</th>
+              <th>Verified Receipt</th>
             </tr>
           </thead>
           <tbody id="transferTableBody">
-            <tr><td colspan="7" class="empty-msg">No transfers found.</td></tr>
+            <tr><td colspan="7" class="empty-msg">No transfers found in recent history.</td></tr>
           </tbody>
         </table>
       </div>
@@ -612,11 +866,14 @@
   <!-- Live Webhook Listener Stream -->
   <div class="webhook-card">
     <div class="wh-header">
-      <div style="font-weight: 700; font-size: 0.95rem;">📡 Real-Time Webhook Listener (`/webhook`)</div>
-      <button class="preset-btn" onclick="clearWebhooks()">Clear Log</button>
+      <div style="font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
+        <span>📡 Real-Time Wiretap Listener (`POST /webhook`)</span>
+        <span class="badge-live"><span class="dot-pulse"></span> LISTENING</span>
+      </div>
+      <button class="btn-copy" onclick="clearWebhooks()">Clear Log</button>
     </div>
     <div class="wh-desc">
-      Your Flask server is actively listening on endpoint <code>POST /webhook</code>. Whenever Alchemy Notify pushes an address activity event, it appears live in the box below:
+      Whenever a suspect address moves money, Alchemy Notify sends an instant push alert here within seconds.
     </div>
     <div class="wh-box" id="webhookLogBox">
       // Webhook listener active. No incoming webhook POST received yet.
@@ -626,10 +883,12 @@
 </div>
 
 <footer>
-  Smart India Hackathon (SIH) — D1 Working Prototype &nbsp;|&nbsp; 100% Real Blockchain Data via Alchemy JSON-RPC Engine
+  Smart India Hackathon (SIH) — D1 Working Prototype &nbsp;|&nbsp; 100% Real Blockchain Data via Alchemy JSON-RPC & Notify API
 </footer>
 
 <script>
+  let currentExplorerBase = 'https://etherscan.io';
+
   function toast(msg, type = 'info') {
     const container = document.getElementById('toasts');
     const el = document.createElement('div');
@@ -639,10 +898,32 @@
     setTimeout(() => el.remove(), 4000);
   }
 
-  function selectPreset(addr, name) {
+  function toggleAdv() {
+    const p = document.getElementById('advPanel');
+    p.classList.toggle('open');
+  }
+
+  function selectPreset(addr, name, el) {
+    document.querySelectorAll('.preset-card').forEach(c => c.classList.remove('active'));
+    if (el) el.classList.add('active');
     document.getElementById('addressInput').value = addr;
-    toast(`Selected: ${name}`, 'info');
+    toast(`Loaded preset: ${name}`, 'info');
     trackAddress();
+  }
+
+  function hopToAddress(addr) {
+    if (!addr || addr === '—') return;
+    document.getElementById('addressInput').value = addr;
+    toast(`Following money trail to: ${trunc(addr)}`, 'info');
+    trackAddress();
+    window.scrollTo({ top: 120, behavior: 'smooth' });
+  }
+
+  function copyAddress() {
+    const val = document.getElementById('targetAddrVal').textContent;
+    if (!val || val === '—') return;
+    navigator.clipboard.writeText(val);
+    toast('Wallet address copied to clipboard!', 'success');
   }
 
   async function trackAddress() {
@@ -675,81 +956,102 @@
 
       renderData(data);
       document.getElementById('dashboard').classList.add('visible');
-      toast(`Loaded real on-chain data for ${trunc(data.address)}`, 'success');
+      toast(`Loaded real data for ${trunc(data.address)}`, 'success');
     } catch (e) {
       toast('Error fetching data: ' + e.message, 'error');
     } finally {
       document.getElementById('loadingSpinner').classList.remove('active');
       document.getElementById('trackBtn').disabled = false;
-      document.getElementById('trackBtn').textContent = '🔍 Track Wallet';
+      document.getElementById('trackBtn').textContent = '🔍 Trace Money Trail';
     }
   }
 
   function renderData(data) {
     document.getElementById('targetAddrVal').textContent = data.address;
+    currentExplorerBase = data.explorer_base || 'https://etherscan.io';
 
-    // Entity Tag
+    // Explorer Link
+    const expLink = document.getElementById('explorerLink');
+    expLink.href = `${currentExplorerBase}/address/${data.address}`;
+
+    // Plain English Summary
+    document.getElementById('summaryText').textContent = data.plain_summary || 'Analysis complete.';
+
+    // Entity Tag Badge
     const tagSlot = document.getElementById('entityTagSlot');
     if (data.entity_tag) {
-      const isEx = data.entity_tag.type === 'exchange';
-      const isScam = data.entity_tag.type === 'scam';
-      const cls = isEx ? 'tag-exchange' : (isScam ? 'tag-scam' : 'tag-normal');
-      const icon = isEx ? '🏦' : (isScam ? '🚨' : 'ℹ️');
+      const type = data.entity_tag.type;
+      let cls = 'tag-normal';
+      let icon = 'ℹ️';
+
+      if (type === 'exchange') { cls = 'tag-exchange'; icon = '🏦'; }
+      else if (type === 'scam') { cls = 'tag-scam'; icon = '🚨'; }
+      else if (type === 'mixer') { cls = 'tag-mixer'; icon = '🌀'; }
+      else if (type === 'individual') { cls = 'tag-normal'; icon = '👤'; }
+
       tagSlot.innerHTML = `<span class="entity-tag ${cls}"><span>${icon}</span> <span>${esc(data.entity_tag.name)}</span></span>`;
     } else {
-      tagSlot.innerHTML = `<span class="entity-tag tag-normal"><span>👤</span> <span>Non-Custodial Wallet</span></span>`;
+      tagSlot.innerHTML = `<span class="entity-tag tag-normal"><span>👤</span> <span>Non-Custodial / Intermediary Wallet</span></span>`;
     }
 
-    // Metrics
+    // 4 Metrics
     document.getElementById('mBalance').textContent = data.balance + ' ETH';
     document.getElementById('mNonce').textContent = data.tx_count.toLocaleString();
     document.getElementById('mTokens').textContent = data.tokens.length;
     document.getElementById('mExchanges').textContent = data.metrics.exchange_interactions;
 
-    // Tokens Table
+    // Token Holdings Table
     document.getElementById('tokenCountBadge').textContent = `${data.tokens.length} tokens`;
     const tBody = document.getElementById('tokenTableBody');
     if (data.tokens.length === 0) {
-      tBody.innerHTML = '<tr><td colspan="4" class="empty-msg">No ERC-20 token balances found for this address.</td></tr>';
+      tBody.innerHTML = '<tr><td colspan="4" class="empty-msg">No ERC-20 token holdings found for this wallet.</td></tr>';
     } else {
       tBody.innerHTML = data.tokens.map(t => `
         <tr>
           <td><strong>${esc(t.name)}</strong></td>
           <td><span style="font-weight:700; color:var(--primary);">${esc(t.symbol)}</span></td>
           <td style="font-weight:600;">${t.balance}</td>
-          <td><span class="mono-box">${esc(t.contract)}</span></td>
+          <td><a href="${currentExplorerBase}/token/${esc(t.contract)}" target="_blank" class="mono-box">${trunc(t.contract)} ↗</a></td>
         </tr>
       `).join('');
     }
 
-    // Transfers Table
+    // Transfers Table (The Breadcrumb Trail)
     document.getElementById('transferCountBadge').textContent = `${data.transfers.length} transfers`;
     const trBody = document.getElementById('transferTableBody');
     if (data.transfers.length === 0) {
-      trBody.innerHTML = '<tr><td colspan="7" class="empty-msg">No transfers found in recent history.</td></tr>';
+      trBody.innerHTML = '<tr><td colspan="7" class="empty-msg">No asset transfers found in this recent batch.</td></tr>';
     } else {
       trBody.innerHTML = data.transfers.map(tr => {
         const isIncoming = tr._direction === 'in';
         const counterparty = isIncoming ? tr.from : tr.to;
         const tag = tr._counterparty_tag;
 
-        let tagHtml = `<span class="mono-box">${trunc(counterparty)}</span>`;
+        let tagHtml = '';
         if (tag) {
-          tagHtml += ` <span class="entity-tag tag-exchange" style="font-size:0.7rem; padding:1px 6px;">${esc(tag.name)}</span>`;
+          let badgeCls = tag.type === 'exchange' ? 'badge-exchange' : (tag.type === 'scam' ? 'badge-scam' : 'badge-defi');
+          tagHtml = ` <span class="preset-badge ${badgeCls}">${esc(tag.name)}</span>`;
         }
+
+        const hopBtn = counterparty ? `<button class="btn-hop" onclick="hopToAddress('${counterparty}')">➡️ Follow Money</button>` : '';
 
         const value = tr.value !== null && tr.value !== undefined ? parseFloat(tr.value).toFixed(4) : '—';
         const blockNum = tr.blockNum ? parseInt(tr.blockNum, 16).toLocaleString() : '—';
+        const hashLink = tr.hash ? `<a href="${currentExplorerBase}/tx/${esc(tr.hash)}" target="_blank" class="mono-box">${trunc(tr.hash)} ↗</a>` : '—';
 
         return `
           <tr>
-            <td><span class="dir-badge ${isIncoming ? 'in' : 'out'}">${isIncoming ? '⬇ INFLOW' : '⬆ OUTFLOW'}</span></td>
-            <td>${tagHtml}</td>
-            <td class="${isIncoming ? 'val-in' : 'val-out'}">${value}</td>
+            <td><span class="dir-badge ${isIncoming ? 'in' : 'out'}">${isIncoming ? '⬇ INFLOW (Received)' : '⬆ OUTFLOW (Sent)'}</span></td>
+            <td>
+              <a href="${currentExplorerBase}/address/${esc(counterparty || '')}" target="_blank" class="mono-box">${trunc(counterparty || '—')}</a>
+              ${tagHtml}
+              ${hopBtn}
+            </td>
+            <td class="${isIncoming ? 'val-in' : 'val-out'}">${isIncoming ? '+' : '-'}${value}</td>
             <td><strong>${esc(tr.asset || 'ETH')}</strong></td>
-            <td><span style="text-transform:uppercase; font-size:0.75rem; color:var(--text-muted);">${esc(tr.category)}</span></td>
+            <td><span style="text-transform:uppercase; font-size:0.72rem; color:var(--text-muted); font-weight:600;">${esc(tr.category)}</span></td>
             <td>${blockNum}</td>
-            <td><span class="mono-box" title="${esc(tr.hash || '')}">${trunc(tr.hash || '')}</span></td>
+            <td>${hashLink}</td>
           </tr>
         `;
       }).join('');
@@ -788,7 +1090,7 @@
     if (e.key === 'Enter') trackAddress();
   });
 
-  // Auto-track on first page load
+  // Auto-track default on load
   document.addEventListener('DOMContentLoaded', () => {
     trackAddress();
     setInterval(loadWebhooks, 5000);

@@ -25,7 +25,7 @@ app.secret_key = os.urandom(32)
 # ── User's Verified Working API Key ───────────────────────────────────────────
 DEFAULT_API_KEY = "alch_kIo4QuIe1KN7vkoZVZuDc"
 
-# ── Network base URLs ──────────────────────────────────────────────────────────
+# ── Network base URLs & Block Explorers ─────────────────────────────────────────
 NETWORKS = {
     "eth-mainnet":     {"name": "Ethereum Mainnet",  "url": "https://eth-mainnet.g.alchemy.com/v2"},
     "polygon-mainnet": {"name": "Polygon Mainnet",   "url": "https://polygon-mainnet.g.alchemy.com/v2"},
@@ -35,23 +35,33 @@ NETWORKS = {
     "eth-sepolia":     {"name": "Sepolia Testnet",   "url": "https://eth-sepolia.g.alchemy.com/v2"},
 }
 
+EXPLORERS = {
+    "eth-mainnet":     "https://etherscan.io",
+    "polygon-mainnet": "https://polygonscan.com",
+    "arb-mainnet":     "https://arbiscan.io",
+    "opt-mainnet":     "https://optimistic.etherscan.io",
+    "base-mainnet":    "https://basescan.org",
+    "eth-sepolia":     "https://sepolia.etherscan.io",
+}
+
 # ── Known Entities Directory (For SIH Exchange / VASP Attribution) ─────────────
 KNOWN_ENTITIES = {
-    "0x28c6c06298d514db089934071355e5743bf21d60": {"name": "Binance 14 (Hot Wallet)", "type": "exchange"},
-    "0x21a31ee1afc51d94c2efccaa2092ad1028285549": {"name": "Binance 15", "type": "exchange"},
-    "0xdfd5293d8e347dfee59e53b21095066f10c1d088": {"name": "Binance 16", "type": "exchange"},
-    "0xa090e60c5100939cfd845104d95e8546f4ff4c60": {"name": "Coinbase Hot Wallet", "type": "exchange"},
-    "0x503828976d22510aad0201ac7ec88293211d23dc": {"name": "Coinbase 2", "type": "exchange"},
-    "0x267be1c1d684f78cb4f6a176c4911b741e4ffdc0": {"name": "Kraken 4", "type": "exchange"},
-    "0x6cc5f688a315f3dc28a7781717a9a798a59fda7b": {"name": "OKX Hot Wallet", "type": "exchange"},
-    "0xd8da6bf26964af9d7eed9e03e53415d37aa96045": {"name": "vitalik.eth (Vitalik Buterin)", "type": "individual"},
-    "0x098b716b8aaf21512996dc57eb0615e2383e2f96": {"name": "Ronin Bridge Exploiter (Suspect Hacker)", "type": "scam"},
-    "0x1da5821544e25c636c1417ba96ade4cf6d2f9b5a": {"name": "Fake Phishing Scammer (Reported)", "type": "scam"},
-    "0x12d66f87a04a9e220743712ce6d9bb1b5616b8fc": {"name": "Tornado Cash Router (Mixer)", "type": "mixer"},
-    "0xd90e2f925da726b50c4ed8d0fb90ad053324f31b": {"name": "Tornado Cash 0.1 ETH", "type": "mixer"},
-    "0xe592427a0aece92de3edee1f18e0157c05861564": {"name": "Uniswap V3 Swap Router", "type": "defi"},
-    "0x7a250d5630b4cf539739df2c5dacb4c659f2488d": {"name": "Uniswap V2 Router", "type": "defi"},
-    "0x5754284f345afc66a98fbb0a0afe71e0f007b949": {"name": "Tether USD (USDT Treasury)", "type": "defi"},
+    "0x28c6c06298d514db089934071355e5743bf21d60": {"name": "Binance 14 (Hot Wallet)", "type": "exchange", "desc": "Centralized crypto exchange liquidity pool"},
+    "0x21a31ee1afc51d94c2efccaa2092ad1028285549": {"name": "Binance 15", "type": "exchange", "desc": "Binance exchange operational wallet"},
+    "0xdfd5293d8e347dfee59e53b21095066f10c1d088": {"name": "Binance 16", "type": "exchange", "desc": "Binance deposit aggregation wallet"},
+    "0xa090e60c5100939cfd845104d95e8546f4ff4c60": {"name": "Coinbase Hot Wallet", "type": "exchange", "desc": "US-based regulated crypto exchange hot wallet"},
+    "0x503828976d22510aad0201ac7ec88293211d23dc": {"name": "Coinbase 2", "type": "exchange", "desc": "Coinbase exchange operational wallet"},
+    "0x267be1c1d684f78cb4f6a176c4911b741e4ffdc0": {"name": "Kraken 4", "type": "exchange", "desc": "Kraken exchange hot wallet"},
+    "0x6cc5f688a315f3dc28a7781717a9a798a59fda7b": {"name": "OKX Hot Wallet", "type": "exchange", "desc": "OKX exchange liquidity and payout wallet"},
+    "0x5b56438000e2c1493e66565280f7329539571732": {"name": "WazirX (Indian Exchange)", "type": "exchange", "desc": "Leading Indian VASP exchange wallet"},
+    "0xd8da6bf26964af9d7eed9e03e53415d37aa96045": {"name": "vitalik.eth (Vitalik Buterin)", "type": "individual", "desc": "Creator of Ethereum - high activity personal wallet"},
+    "0x098b716b8aaf21512996dc57eb0615e2383e2f96": {"name": "Ronin Bridge Exploiter (Hacker)", "type": "scam", "desc": "Lazarus Group hacker who stole $600M+ in crypto"},
+    "0x1da5821544e25c636c1417ba96ade4cf6d2f9b5a": {"name": "Fake Phishing Scammer (Reported)", "type": "scam", "desc": "Reported phishing and crypto theft wallet"},
+    "0x12d66f87a04a9e220743712ce6d9bb1b5616b8fc": {"name": "Tornado Cash Router (Mixer)", "type": "mixer", "desc": "Sanctioned privacy mixer used to anonymize stolen funds"},
+    "0xd90e2f925da726b50c4ed8d0fb90ad053324f31b": {"name": "Tornado Cash 0.1 ETH", "type": "mixer", "desc": "Tornado Cash privacy pool contract"},
+    "0xe592427a0aece92de3edee1f18e0157c05861564": {"name": "Uniswap V3 Swap Router", "type": "defi", "desc": "Decentralized exchange automated swap contract"},
+    "0x7a250d5630b4cf539739df2c5dacb4c659f2488d": {"name": "Uniswap V2 Router", "type": "defi", "desc": "Decentralized liquidity pool router"},
+    "0x5754284f345afc66a98fbb0a0afe71e0f007b949": {"name": "Tether USD (USDT Treasury)", "type": "defi", "desc": "Official treasury and issuer for USDT digital dollars"},
 }
 
 # Live in-memory webhook event logs
@@ -295,6 +305,26 @@ def track_address():
     # Check if target address itself is recognized
     target_entity = _identify_entity(address)
 
+    # Generate plain-English investigator summary for beginners & cybercrime officers
+    summary_parts = []
+    if target_entity:
+        summary_parts.append(f"📌 Identified Entity: {target_entity['name']} ({target_entity['type'].upper()}). {target_entity.get('desc', '')}.")
+    else:
+        summary_parts.append("📌 Unlabelled Wallet: This is an unflagged personal wallet, intermediary hop, or private address.")
+
+    summary_parts.append(f"It currently holds {balance_eth} ETH and {len(tokens)} token asset(s).")
+    summary_parts.append(f"It has initiated {tx_count:,} lifetime outgoing transactions on {NETWORKS.get(network, {}).get('name', network)}.")
+
+    if exchange_count > 0:
+        summary_parts.append(f"🏦 VASP Alert: Detected {exchange_count} direct transfer(s) connected to major Centralized Exchanges (e.g., Binance, OKX), showing funds entering or leaving a regulated exchange.")
+    if scam_count > 0:
+        summary_parts.append(f"🚨 Threat Alert: Detected {scam_count} interaction(s) with known exploiters or blacklisted scam addresses.")
+    if exchange_count == 0 and scam_count == 0:
+        summary_parts.append("No direct touchpoints with major recognized exchange hot wallets or flagged scam addresses were found in this recent batch.")
+
+    plain_summary = " ".join(summary_parts)
+    explorer_base = EXPLORERS.get(network, "https://etherscan.io")
+
     return jsonify({
         "address": address,
         "entity_tag": target_entity,
@@ -303,6 +333,8 @@ def track_address():
         "tokens": tokens,
         "transfers": transfers,
         "network": network,
+        "explorer_base": explorer_base,
+        "plain_summary": plain_summary,
         "metrics": {
             "total_transfers": len(transfers),
             "exchange_interactions": exchange_count,
