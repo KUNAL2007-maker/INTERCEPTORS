@@ -1,12 +1,13 @@
 /**
- * Attribute-Based Access Control (ABAC) Helper
- * Validates resource scoping based on user attributes (workspace_id, victim_id, vasp_id, role).
+ * Attribute-Based Access Control (ABAC) Middleware & Helpers
+ * Integrates directly with the ABAC Policy Engine
  */
 
+const { evaluateABAC, systemEnvironment } = require('../abac-engine');
 const { ROLES } = require('../roles');
 
 /**
- * Filter an array of cases in memory based on the user's ABAC scope.
+ * Filter an array of cases in memory based on fine-grained ABAC policy evaluations.
  * @param {object} currentUser 
  * @param {Array} cases 
  * @returns {Array}
@@ -14,61 +15,48 @@ const { ROLES } = require('../roles');
 function filterCasesByScope(currentUser, cases = []) {
   if (!currentUser) return [];
 
-  // Super Admin & Auditor have nationwide visibility across all cases
-  if (currentUser.role_name === ROLES.SUPER_ADMIN || currentUser.role_name === ROLES.AUDITOR) {
-    return cases;
-  }
-
-  // Victim: Strictly restricted to their own submitted case files
-  if (currentUser.role_name === ROLES.VICTIM) {
-    return cases.filter(c => c.victim_id === currentUser.id);
-  }
-
-  // Exchange Nodal Officer: Strictly restricted to cases involving their assigned VASP
-  if (currentUser.role_name === ROLES.EXCHANGE_NODAL_OFFICER) {
-    return cases.filter(c => c.vasp_id === currentUser.vasp_id || c.target_vasp === currentUser.vasp_name);
-  }
-
-  // Investigators & Workspace Admins: Scoped to their unit/workspace
-  return cases.filter(c => c.workspace_id === currentUser.workspace_id);
+  return cases.filter(caseRecord => {
+    const decision = evaluateABAC(currentUser, caseRecord, 'VIEW_CASE');
+    return decision.allowed;
+  });
 }
 
 /**
- * Returns SQL WHERE clause and params for relational database queries
- * @param {object} currentUser 
- * @returns {object} { whereClause: string, params: Array }
+ * Express Route Middleware for Fine-Grained ABAC Evaluation
+ * @param {string} action - The action being attempted (e.g. 'APPROVE_FREEZE', 'VIEW_CASE')
+ * @param {Function} [getResource] - Optional callback (req) => resourceObject
  */
-function getCaseScopeFilter(currentUser) {
-  if (!currentUser) {
-    return { whereClause: '1 = 0', params: [] }; // Deny all
-  }
+function requireABAC(action, getResource) {
+  return (req, res, next) => {
+    const currentUser = req.user || req.app.get('currentUser');
+    const memoryDB = req.app.get('memoryDB');
+    
+    let resource = null;
+    if (getResource) {
+      resource = getResource(req, memoryDB);
+    } else if (req.body && req.body.case_id && memoryDB && memoryDB.cases) {
+      resource = memoryDB.cases.find(c => c.id === parseInt(req.body.case_id));
+    }
 
-  if (currentUser.role_name === ROLES.SUPER_ADMIN || currentUser.role_name === ROLES.AUDITOR) {
-    return { whereClause: '1 = 1', params: [] };
-  }
+    const decision = evaluateABAC(currentUser, resource, action);
+    if (!decision.allowed) {
+      return res.status(403).json({
+        error: 'Access Denied (ABAC Policy Restriction)',
+        policyId: decision.policyId,
+        policyName: decision.policyName,
+        message: decision.reason,
+        context: decision.evaluatedContext
+      });
+    }
 
-  if (currentUser.role_name === ROLES.VICTIM) {
-    return { whereClause: 'c.victim_id = $1', params: [currentUser.id] };
-  }
-
-  if (currentUser.role_name === ROLES.EXCHANGE_NODAL_OFFICER) {
-    return { whereClause: 'c.vasp_id = $1', params: [currentUser.vasp_id] };
-  }
-
-  return { whereClause: 'c.workspace_id = $1', params: [currentUser.workspace_id] };
-}
-
-/**
- * Check if the user is in a read-only role (e.g. Auditor)
- * @param {object} currentUser 
- * @returns {boolean}
- */
-function isReadOnlyRole(currentUser) {
-  return currentUser && currentUser.role_name === ROLES.AUDITOR;
+    req.abacDecision = decision;
+    next();
+  };
 }
 
 module.exports = {
   filterCasesByScope,
-  getCaseScopeFilter,
-  isReadOnlyRole
+  requireABAC,
+  evaluateABAC,
+  systemEnvironment
 };

@@ -14,9 +14,14 @@ const {
 
 const {
   filterCasesByScope,
-  getCaseScopeFilter,
-  isReadOnlyRole
+  requireABAC,
+  evaluateABAC,
+  systemEnvironment
 } = require('./middleware/abac');
+
+const {
+  ABAC_POLICIES
+} = require('./abac-engine');
 
 module.exports = {
   ROLES,
@@ -28,6 +33,8 @@ module.exports = {
   requireRole,
   requirePermission,
   filterCasesByScope,
-  getCaseScopeFilter,
-  isReadOnlyRole
+  requireABAC,
+  evaluateABAC,
+  systemEnvironment,
+  ABAC_POLICIES
 };
