@@ -10,6 +10,34 @@ export function ExchangePortalView() {
   const [kycSubmitted, setKycSubmitted] = useState(false);
   const [freezeTicket, setFreezeTicket] = useState("BIN-ESCROW-2026-9042");
 
+  const handleConfirmFreeze = async () => {
+    setFreezeConfirmed(true);
+    try {
+      await fetch("/api/notices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "Acknowledged",
+          action: "acknowledge",
+          target_vasp: "Binance International",
+          vasp_id: 1,
+          case_number: "MH-CYBER-2026-0842",
+          notice: {
+            ref: "BNSS-2026-0842-BN",
+            to_vasp: "Binance International",
+            serviceable: true
+          }
+        })
+      });
+    } catch {
+      // Offline fallback
+    }
+  };
+
+  const handleUploadKyc = () => {
+    setKycSubmitted(true);
+  };
+
   return (
     <Page width="wide">
       {/* VASP Header Banner */}
@@ -135,7 +163,7 @@ export function ExchangePortalView() {
             <div className="flex flex-wrap gap-3 pt-3 border-t" style={{ borderColor: "var(--border)" }}>
               {!freezeConfirmed ? (
                 <button
-                  onClick={() => setFreezeConfirmed(true)}
+                  onClick={handleConfirmFreeze}
                   className="px-4 py-2.5 rounded-xl text-xs font-bold text-black transition hover:opacity-90 shadow-glow"
                   style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}
                 >
@@ -150,7 +178,7 @@ export function ExchangePortalView() {
 
               {!kycSubmitted ? (
                 <button
-                  onClick={() => setKycSubmitted(true)}
+                  onClick={handleUploadKyc}
                   className="px-4 py-2.5 rounded-xl text-xs font-bold text-white transition border hover:bg-white/5"
                   style={{ borderColor: "var(--border)" }}
                 >

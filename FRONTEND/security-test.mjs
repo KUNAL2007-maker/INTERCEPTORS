@@ -94,6 +94,24 @@ async function runSecurityTests() {
   });
   assert(unauthTrace.status === 401, `POST /api/trace without token rejected with HTTP ${unauthTrace.status} (Expected: 401)`);
 
+  const unauthLockdown = await api('/api/auth', {
+    method: 'POST',
+    body: JSON.stringify({ action: 'toggle_lockdown', active: true })
+  });
+  assert(unauthLockdown.status === 401, `POST /api/auth (toggle_lockdown) without token rejected with HTTP ${unauthLockdown.status} (Expected: 401)`);
+
+  const unauthIngest = await api('/api/ingest/ncrp', {
+    method: 'POST',
+    body: JSON.stringify({ suspect_wallet: '0xAttacker' })
+  });
+  assert(unauthIngest.status === 401, `POST /api/ingest/ncrp without token rejected with HTTP ${unauthIngest.status} (Expected: 401)`);
+
+  const unauthChat = await api('/api/chat', {
+    method: 'POST',
+    body: JSON.stringify({ message: 'Forensic query' })
+  });
+  assert(unauthChat.status === 401, `POST /api/chat without token rejected with HTTP ${unauthChat.status} (Expected: 401)`);
+
   // ──────────────────────────────────────────────────────────────────────────
   // TEST GROUP 2: CITIZEN / VICTIM PRIVILEGE BARRIERS (Rajesh Verma)
   // ──────────────────────────────────────────────────────────────────────────
@@ -134,6 +152,29 @@ async function runSecurityTests() {
     `VICTIM Privacy Isolation verified: Returned 0 other victims' case files (Only victim_id=5 returned: ${victimCases.body?.cases?.length || 0} cases)`
   );
 
+  // Can VICTIM use AI forensic investigator? (MUST BE DENIED: 403)
+  const victimChat = await api('/api/chat', {
+    method: 'POST',
+    token: victimAuth.token,
+    body: JSON.stringify({ message: 'Investigate trace' })
+  });
+  assert(victimChat.status === 403, `VICTIM attempting to use AI forensic investigator rejected with HTTP ${victimChat.status} (Expected: 403)`);
+
+  // Can VICTIM report suspect wallet via /api/ingest/ncrp and ensure victim_id isolation?
+  const victimIngest = await api('/api/ingest/ncrp', {
+    method: 'POST',
+    token: victimAuth.token,
+    body: JSON.stringify({
+      suspect_wallet: '0x9999999999999999999999999999999999999999',
+      loss_amount_inr: 350000,
+      victim_id: 888 // Attempt forged victim ID
+    })
+  });
+  assert(
+    victimIngest.status === 200 && victimIngest.body?.case?.victim_id === 5,
+    `VICTIM filing complaint via NCRP succeeds with forced victim_id isolation (Expected: 5, Got: ${victimIngest.body?.case?.victim_id}): HTTP ${victimIngest.status}`
+  );
+
   // ──────────────────────────────────────────────────────────────────────────
   // TEST GROUP 3: NON-GAZETTED INVESTIGATOR BARRIER (Sub-Inspector Patil)
   // ──────────────────────────────────────────────────────────────────────────
@@ -167,6 +208,14 @@ async function runSecurityTests() {
   // Can Sub-Inspector Patil view audit logs? (MUST BE DENIED: 403)
   const patilAudit = await api('/api/audit', { method: 'GET', token: patilAuth.token });
   assert(patilAudit.status === 403, `Sub-Inspector Patil restricted from inspecting audit logs: HTTP ${patilAudit.status} (Expected: 403)`);
+
+  // Can Sub-Inspector Patil use AI investigator? (MUST BE PERMITTED: 200)
+  const patilChat = await api('/api/chat', {
+    method: 'POST',
+    token: patilAuth.token,
+    body: JSON.stringify({ message: 'What is the transaction volume?' })
+  });
+  assert(patilChat.status === 200, `Sub-Inspector Patil permitted to query AI investigator: HTTP ${patilChat.status}`);
 
   // ──────────────────────────────────────────────────────────────────────────
   // TEST GROUP 4: GAZETTED SENIOR INVESTIGATOR (ACP Sharma)
@@ -214,9 +263,42 @@ async function runSecurityTests() {
   const binanceNoticeCreate = await api('/api/notices', {
     method: 'POST',
     token: binanceAuth.token,
-    body: JSON.stringify({ target_vasp: 'Binance' })
+    body: JSON.stringify({ target_vasp: 'Binance', status: 'Issued' })
   });
   assert(binanceNoticeCreate.status === 403, `Exchange officer blocked from issuing legal notices: HTTP ${binanceNoticeCreate.status} (Expected: 403)`);
+
+  // Can Exchange Officer ingest complaints? (MUST BE DENIED: 403)
+  const binanceIngest = await api('/api/ingest/ncrp', {
+    method: 'POST',
+    token: binanceAuth.token,
+    body: JSON.stringify({ suspect_wallet: '0x123' })
+  });
+  assert(binanceIngest.status === 403, `Exchange officer blocked from ingesting complaints: HTTP ${binanceIngest.status} (Expected: 403)`);
+
+  // Can Exchange Officer access AI investigator? (MUST BE DENIED: 403)
+  const binanceChat = await api('/api/chat', {
+    method: 'POST',
+    token: binanceAuth.token,
+    body: JSON.stringify({ message: 'Explain trace' })
+  });
+  assert(binanceChat.status === 403, `Exchange officer blocked from accessing AI investigator: HTTP ${binanceChat.status} (Expected: 403)`);
+
+  // Can Exchange Officer acknowledge/confirm freeze compliance under Section 94 BNSS? (MUST BE PERMITTED: 200)
+  const binanceConfirmFreeze = await api('/api/notices', {
+    method: 'POST',
+    token: binanceAuth.token,
+    body: JSON.stringify({
+      action: 'acknowledge',
+      status: 'Acknowledged',
+      target_vasp: 'Binance International',
+      vasp_id: 1,
+      notice: { ref: 'BNSS-2026-0842-BN', to_vasp: 'Binance International' }
+    })
+  });
+  assert(
+    binanceConfirmFreeze.status === 200 && binanceConfirmFreeze.body?.success,
+    `Exchange Nodal Officer successfully confirmed Section 94 BNSS freeze compliance: HTTP ${binanceConfirmFreeze.status}`
+  );
 
   // ──────────────────────────────────────────────────────────────────────────
   // TEST GROUP 6: JUDICIAL AUDITOR ZERO-WRITE RESTRICTION (Justice K.S. Rao)
@@ -239,6 +321,14 @@ async function runSecurityTests() {
     judgeCaseCreate.status === 403,
     `Judicial Auditor zero-write rule enforced (POL-02-JUDICIAL-READ-ONLY): HTTP ${judgeCaseCreate.status}`
   );
+
+  // Can Judicial Auditor ingest complaints into police gateway? (MUST BE DENIED: 403)
+  const judgeIngest = await api('/api/ingest/ncrp', {
+    method: 'POST',
+    token: judgeAuth.token,
+    body: JSON.stringify({ suspect_wallet: '0x123' })
+  });
+  assert(judgeIngest.status === 403, `Judicial Auditor zero-write rule blocks complaint ingestion: HTTP ${judgeIngest.status} (Expected: 403)`);
 
   // ──────────────────────────────────────────────────────────────────────────
   // TEST GROUP 7: SUPER ADMIN NATIONAL KILLSWITCH (admin@i4c.gov.in)

@@ -32,7 +32,7 @@ export function TopBar({
   const { theme, toggle } = useTheme();
   const { title, sub } = VIEW_TITLES[view];
   const { user, openLoginModal, signOut } = useAuth();
-  const { refreshing, trace, status, ingestNcrpComplaint } = useTraceStore();
+  const { refreshing, trace, status } = useTraceStore();
 
   const armed = liveFeed && !!trace && status === "ready";
   const feedLabel = !liveFeed
@@ -157,29 +157,31 @@ export function TopBar({
             </button>
           )}
 
-          {/* Live feed toggle */}
-          <button
-            onClick={onToggleFeed}
-            aria-pressed={liveFeed}
-            title={feedLabel}
-            className={`flex h-9 items-center gap-2 whitespace-nowrap rounded-lg border px-2.5 sm:px-3 transition ${
-              liveFeed
-                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200 shadow-glow"
-                : "hover:bg-[var(--hover)]"
-            }`}
-            style={!liveFeed ? { borderColor: "var(--border)", background: "var(--chip)", color: "var(--text)" } : undefined}
-          >
-            <span
-              className={`h-2 w-2 rounded-full ${
-                !liveFeed
-                  ? "bg-slate-500"
-                  : armed
-                    ? "bg-emerald-400 animate-blink"
-                    : "bg-amber-400"
+          {/* Live feed toggle (for investigators & exchange only) */}
+          {user?.role !== "VICTIM" && user?.role !== "AUDITOR" && (
+            <button
+              onClick={onToggleFeed}
+              aria-pressed={liveFeed}
+              title={feedLabel}
+              className={`flex h-9 items-center gap-2 whitespace-nowrap rounded-lg border px-2.5 sm:px-3 transition ${
+                liveFeed
+                  ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200 shadow-glow"
+                  : "hover:bg-[var(--hover)]"
               }`}
-            />
-            <span className="hidden sm:inline text-[12px]">{feedLabel}</span>
-          </button>
+              style={!liveFeed ? { borderColor: "var(--border)", background: "var(--chip)", color: "var(--text)" } : undefined}
+            >
+              <span
+                className={`h-2 w-2 rounded-full ${
+                  !liveFeed
+                    ? "bg-slate-500"
+                    : armed
+                      ? "bg-emerald-400 animate-blink"
+                      : "bg-amber-400"
+                }`}
+              />
+              <span className="hidden sm:inline text-[12px]">{feedLabel}</span>
+            </button>
+          )}
 
           {/* Theme toggle */}
           <button

@@ -20,6 +20,8 @@ import {
   syncFromUsage,
   waitFor,
 } from "@/lib/quota";
+import { extractUserClaims } from "@/lib/auth-crypto";
+import { getUserById } from "@/lib/db";
 
 // A four-agent forensic panel legitimately takes longer than Vercel's 10-second
 // default — more still if the token budget is short and the request waits for it
@@ -325,6 +327,21 @@ function asTrace(context: unknown): TraceResult {
 
 export async function POST(req: Request) {
   try {
+    const claims = extractUserClaims(req);
+    if (!claims) {
+      return NextResponse.json(
+        { error: "Unauthorized: Authentication required to use the AI forensic investigator." },
+        { status: 401 }
+      );
+    }
+    const user = getUserById(claims.id) || (claims as any);
+    if (user.role === "VICTIM" || user.role === "EXCHANGE_NODAL_OFFICER") {
+      return NextResponse.json(
+        { error: "Access Denied: Citizen complainants and exchange officers cannot access police forensic AI tools." },
+        { status: 403 }
+      );
+    }
+
     const { message, history, context, mode: forcedMode, uid } = await req.json();
 
     if (!message || typeof message !== "string") {

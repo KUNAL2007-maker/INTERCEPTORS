@@ -35,21 +35,37 @@ export function AppShell() {
   const [navOpen, setNavOpen] = useState(false);
   const [graphFocus, setGraphFocus] = useState<string[]>([]);
 
-  // Automatically switch active view when role changes to give instant differentiated landing experience
+  const ROLE_ALLOWED_VIEWS: Record<string, ViewKey[]> = {
+    VICTIM: ["victim_portal", "transfers"],
+    AUDITOR: ["audit_logs", "dashboard", "graph"],
+    EXCHANGE_NODAL_OFFICER: ["exchange_portal", "notices"],
+    NORMAL_INVESTIGATOR: ["dashboard", "trace", "graph", "transfers", "notices", "chat"],
+    SENIOR_INVESTIGATOR: ["dashboard", "trace", "graph", "transfers", "notices", "chat", "audit_logs"],
+    WORKSPACE_ADMIN: ["dashboard", "trace", "graph", "transfers", "notices", "chat", "audit_logs"],
+    SUPER_ADMIN: ["dashboard", "trace", "graph", "transfers", "notices", "chat", "audit_logs"],
+  };
+
+  // Enforce role-differentiated view access and automatically switch to primary landing view
   useEffect(() => {
     if (!user) return;
-    if (user.role === "VICTIM") {
-      setView("victim_portal");
-    } else if (user.role === "AUDITOR") {
-      setView("audit_logs");
-    } else if (user.role === "EXCHANGE_NODAL_OFFICER") {
-      setView("exchange_portal");
-    } else {
-      if (view === "victim_portal" || view === "exchange_portal" || (view === "audit_logs" && user.role !== "SUPER_ADMIN")) {
-        setView("dashboard");
-      }
+    const allowed = ROLE_ALLOWED_VIEWS[user.role] || ["dashboard"];
+    if (!allowed.includes(view)) {
+      setView(allowed[0]);
     }
   }, [user?.role]);
+
+  const handleSetView = (targetView: ViewKey) => {
+    if (!user) {
+      setView(targetView);
+      return;
+    }
+    const allowed = ROLE_ALLOWED_VIEWS[user.role] || ["dashboard"];
+    if (allowed.includes(targetView)) {
+      setView(targetView);
+    } else {
+      setView(allowed[0]);
+    }
+  };
 
   const { trace, status, refreshTrace } = useTraceStore();
   const hasTrace = !!trace;
@@ -80,7 +96,7 @@ export function AppShell() {
 
   return (
     <div className="flex h-[100dvh] overflow-hidden radial-glow" style={{ backgroundColor: "var(--bg)" }}>
-      <Sidebar view={view} onChange={setView} open={navOpen} onClose={() => setNavOpen(false)} />
+      <Sidebar view={view} onChange={handleSetView} open={navOpen} onClose={() => setNavOpen(false)} />
       {navOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"

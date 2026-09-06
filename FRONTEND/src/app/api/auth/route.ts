@@ -124,7 +124,13 @@ export async function POST(req: Request) {
     // ── 3. Emergency Lockdown Toggle (Super Admin Only) ─────────────────
     if (action === 'toggle_lockdown') {
       const claims = extractUserClaims(req);
-      const user = claims ? getUserById(claims.id) : getCurrentUser();
+      if (!claims) {
+        return NextResponse.json(
+          { error: 'Unauthorized: Authentication required to trigger emergency lockdown.' },
+          { status: 401 }
+        );
+      }
+      const user = getUserById(claims.id) || (claims as any);
 
       if (!user || user.role !== 'SUPER_ADMIN') {
         recordAuditLog({

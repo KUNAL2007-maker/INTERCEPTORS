@@ -58,12 +58,15 @@ function whenLabel(ts: number): string {
 }
 
 export function LegalNoticesView({ onGoToTrace }: { onGoToTrace: () => void }) {
+  const { user } = useAuth();
   const { notices } = useNotices();
   const { evidence, generateNotice, setNoticeStatus, removeNotice } = useTraceStore();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [picking, setPicking] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+
+  const isExchange = user?.role === "EXCHANGE_NODAL_OFFICER";
 
   // Fall back to the most recent notice so the document panel is never empty
   // while the list has rows — the same discipline FinGuard used for its cases.
@@ -108,13 +111,19 @@ export function LegalNoticesView({ onGoToTrace }: { onGoToTrace: () => void }) {
                     {notices.length} total
                   </div>
                 </div>
-                <button
-                  onClick={() => setPicking((p) => !p)}
-                  disabled={!evidence}
-                  className="text-[11px] rounded-md border border-emerald-500/40 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-200 px-2.5 py-1.5 disabled:opacity-50"
-                >
-                  {picking ? "Cancel" : "+ Generate"}
-                </button>
+                {!isExchange ? (
+                  <button
+                    onClick={() => setPicking((p) => !p)}
+                    disabled={!evidence}
+                    className="text-[11px] rounded-md border border-emerald-500/40 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-200 px-2.5 py-1.5 disabled:opacity-50"
+                  >
+                    {picking ? "Cancel" : "+ Generate"}
+                  </button>
+                ) : (
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold">
+                    Inbound Desk
+                  </span>
+                )}
               </div>
 
               {!evidence && (
@@ -203,15 +212,17 @@ export function LegalNoticesView({ onGoToTrace }: { onGoToTrace: () => void }) {
                         <span>{whenLabel(item.createdAt)}</span>
                       </div>
                     </button>
-                    <button
-                      onClick={() => handleDelete(item.id)}
-                      aria-label="Delete this notice"
-                      title="Delete this notice"
-                      className="absolute top-2.5 right-2 rounded px-1.5 py-0.5 text-[13px] leading-none opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-red-500/20 hover:text-red-200 transition"
-                      style={{ color: "var(--muted-2)" }}
-                    >
-                      ×
-                    </button>
+                    {!isExchange && (
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        aria-label="Delete this notice"
+                        title="Delete this notice"
+                        className="absolute top-2.5 right-2 rounded px-1.5 py-0.5 text-[13px] leading-none opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-red-500/20 hover:text-red-200 transition"
+                        style={{ color: "var(--muted-2)" }}
+                      >
+                        ×
+                      </button>
+                    )}
                   </div>
                 );
               })}
@@ -310,6 +321,8 @@ function NoticeDocument({
 }) {
   const n = stored.notice;
   const { canApproveFreeze, user } = useAuth();
+  const isExchange = user?.role === "EXCHANGE_NODAL_OFFICER";
+  const [forwarded, setForwarded] = useState(false);
   const copyRef = useRef<HTMLButtonElement>(null);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -473,7 +486,7 @@ function NoticeDocument({
           )}
 
           {/* Gazetted vs Non-Gazetted Statutory Gate Banner */}
-          {!canApproveFreeze ? (
+          {!canApproveFreeze && !isExchange ? (
             <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300 flex items-start gap-2.5">
               <span className="text-base">⚠️</span>
               <div>
@@ -483,27 +496,35 @@ function NoticeDocument({
                 <span>
                   Under Section 94 of Bharatiya Nagarik Suraksha Sanhita, 2023 (formerly Sec 91 CrPC), statutory asset freezing requisitions served on crypto exchanges legally require digital signing authority from a Gazetted Police Officer (rank of ACP, DSP, or higher).
                 </span>
-                <div className="mt-2">
-                  <button
-                    onClick={() => {
-                      onSetStatus("Draft");
-                      alert("Notice submitted to ACP Sharma's queue for Gazetted Officer verification and Section 94 BNSS digital signing.");
-                    }}
-                    className="px-2.5 py-1 rounded bg-amber-500/20 text-amber-200 border border-amber-500/40 text-[11px] font-semibold hover:bg-amber-500/30 transition"
-                  >
-                    📨 Forward to ACP Sharma for Statutory Signing
-                  </button>
+                <div className="mt-2.5">
+                  {!forwarded ? (
+                    <button
+                      onClick={() => {
+                        onSetStatus("Draft");
+                        setForwarded(true);
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-200 border border-amber-500/40 text-[11px] font-semibold hover:bg-amber-500/30 transition flex items-center gap-1.5"
+                    >
+                      <span>📨</span>
+                      <span>Forward to ACP Sharma for Statutory Signing</span>
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-2 text-emerald-300 text-[11px] font-semibold bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 rounded-lg">
+                      <span>✓</span>
+                      <span>Notice submitted to ACP Sharma's queue for Gazetted Officer verification and Section 94 BNSS digital signing.</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
-          ) : (
+          ) : !isExchange ? (
             <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-2.5 text-xs text-emerald-300 flex items-center gap-2">
               <span>✅</span>
               <span>
                 <strong className="text-white">Gazetted Officer Authority Active:</strong> {user?.name} is legally authorized to digitally sign and serve statutory Section 94 BNSS freezing orders.
               </span>
             </div>
-          )}
+          ) : null}
 
           {/* Status workflow */}
           <div className="flex items-center justify-between pt-4 border-t flex-wrap gap-3" style={{ borderColor: "var(--border)" }}>
@@ -513,13 +534,19 @@ function NoticeDocument({
             <div className="flex items-center gap-2">
               {(["Draft", "Issued", "Acknowledged"] as NoticeStatus[]).map((s) => {
                 const active = stored.status === s;
-                const locked = s === "Issued" && !canApproveFreeze;
+                const locked = (s === "Issued" && !canApproveFreeze) || (isExchange && s !== "Acknowledged");
                 return (
                   <button
                     key={s}
                     onClick={() => !locked && onSetStatus(s)}
                     disabled={locked}
-                    title={locked ? "Section 94 BNSS statutory freeze requires Gazetted Senior Officer (SP/DCP/Senior PI) approval." : undefined}
+                    title={
+                      isExchange && s !== "Acknowledged"
+                        ? "Exchange compliance officers can only confirm acknowledgment."
+                        : locked
+                        ? "Section 94 BNSS statutory freeze requires Gazetted Senior Officer (SP/DCP/Senior PI) approval."
+                        : undefined
+                    }
                     aria-pressed={active}
                     className={`text-[12px] rounded-md border px-3 py-1.5 transition ${SW[s]} ${
                       locked ? "opacity-30 cursor-not-allowed" : active ? "" : "opacity-60 hover:opacity-100"
@@ -561,12 +588,14 @@ function NoticeDocument({
                 </a>
               )}
             </div>
-            <button
-              onClick={onDelete}
-              className="text-[12px] rounded-md border border-red-500/40 bg-red-500/15 hover:bg-red-500/25 text-red-200 px-3 py-1.5"
-            >
-              Delete
-            </button>
+            {!isExchange && (
+              <button
+                onClick={onDelete}
+                className="text-[12px] rounded-md border border-red-500/40 bg-red-500/15 hover:bg-red-500/25 text-red-200 px-3 py-1.5"
+              >
+                Delete
+              </button>
+            )}
           </div>
         </div>
       </div>

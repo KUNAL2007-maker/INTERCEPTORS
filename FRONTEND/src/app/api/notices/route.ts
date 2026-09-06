@@ -45,32 +45,44 @@ export async function POST(req: Request) {
     }
     const user = getUserById(claims.id) || (claims as any);
 
-    // ── 1. RBAC Gate: Must be an Investigator or Super Admin ─────────────
-    const isInvestigatorOrAdmin = ['SENIOR_INVESTIGATOR', 'WORKSPACE_ADMIN', 'SUPER_ADMIN', 'NORMAL_INVESTIGATOR'].includes(user.role);
-    if (!isInvestigatorOrAdmin) {
-      recordAuditLog({
-        user_id: user.id,
-        user_name: user.name,
-        user_role: user.role,
-        action: 'ISSUE_SECTION_94_BNSS',
-        resource_type: 'FREEZE_NOTICE',
-        decision: 'DENIED',
-        reason: `RBAC Violation: Role '${user.role}' is not authorized to draft or issue statutory legal notices.`
-      });
-
-      return NextResponse.json(
-        {
-          error: `RBAC Access Denied: Role '${user.role}' has no legal authority to issue statutory Section 94 BNSS notices.`
-        },
-        { status: 403 }
-      );
-    }
-
     const body = await req.json().catch(() => ({}));
     const isDraft = body.status === 'Draft' || body.action === 'draft';
+    const isAck = body.status === 'Acknowledged' || body.action === 'acknowledge';
+
+    // ── 1. RBAC Gate: Investigators/Admins can draft/issue; Exchange Officers can only acknowledge ──
+    if (user.role === 'EXCHANGE_NODAL_OFFICER') {
+      if (!isAck) {
+        return NextResponse.json(
+          {
+            error: `RBAC Access Denied: Exchange compliance officers cannot draft or issue statutory Section 94 BNSS police notices.`
+          },
+          { status: 403 }
+        );
+      }
+    } else {
+      const isInvestigatorOrAdmin = ['SENIOR_INVESTIGATOR', 'WORKSPACE_ADMIN', 'SUPER_ADMIN', 'NORMAL_INVESTIGATOR'].includes(user.role);
+      if (!isInvestigatorOrAdmin) {
+        recordAuditLog({
+          user_id: user.id,
+          user_name: user.name,
+          user_role: user.role,
+          action: 'ISSUE_SECTION_94_BNSS',
+          resource_type: 'FREEZE_NOTICE',
+          decision: 'DENIED',
+          reason: `RBAC Violation: Role '${user.role}' is not authorized to draft or issue statutory legal notices.`
+        });
+
+        return NextResponse.json(
+          {
+            error: `RBAC Access Denied: Role '${user.role}' has no legal authority to issue statutory Section 94 BNSS notices.`
+          },
+          { status: 403 }
+        );
+      }
+    }
 
     // ── 2. ABAC Statutory Gate: Section 94 BNSS Gazetted Officer Mandate ───
-    if (!isDraft && !user.is_gazetted) {
+    if (!isDraft && !isAck && !user.is_gazetted) {
       const denialReason = `ABAC Policy Violation: Under Section 94 of Bharatiya Nagarik Suraksha Sanhita (BNSS 2023) / Section 91 CrPC, statutory cryptocurrency freeze and evidence preservation orders require Gazetted Police Officer authorization (ACP, DSP, or higher). ${user.name} (${user.role}) is non-gazetted and legally unauthorized to sign.`;
 
       recordAuditLog({

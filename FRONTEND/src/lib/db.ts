@@ -405,9 +405,10 @@ export async function saveFreezeNotice(
   actingOfficer: AppUser
 ): Promise<{ success: boolean; notice?: StoredFreezeNotice; error?: string; statutory_code?: string }> {
   const isDraft = noticeData.status === 'Draft';
+  const isAck = noticeData.status === 'Acknowledged';
 
   // If attempting to issue or approve a freeze order, enforce Section 94 BNSS statutory gazetted officer check
-  if (!isDraft) {
+  if (!isDraft && !isAck) {
     const abacResult = evaluateABAC(
       actingOfficer,
       { status: 'TRACED', vasp_id: noticeData.vasp_id },
@@ -443,7 +444,7 @@ export async function saveFreezeNotice(
     vasp_id: noticeData.vasp_id || 1,
     status: isDraft ? 'Draft' : (noticeData.status || 'Issued'),
     drafted_by_name: noticeData.drafted_by_name || actingOfficer.name,
-    approved_by_name: isDraft ? undefined : actingOfficer.name,
+    approved_by_name: isDraft ? undefined : (isAck ? noticeData.approved_by_name : actingOfficer.name),
     created_at: Date.now(),
     notice: noticeData.notice
   };
@@ -454,12 +455,18 @@ export async function saveFreezeNotice(
     user_id: actingOfficer.id,
     user_name: actingOfficer.name,
     user_role: actingOfficer.role,
-    action: isDraft ? 'DRAFT_SECTION_94_BNSS' : 'ISSUE_SECTION_94_BNSS',
+    action: isDraft
+      ? 'DRAFT_SECTION_94_BNSS'
+      : isAck
+      ? 'CONFIRM_SECTION_94_BNSS_FREEZE'
+      : 'ISSUE_SECTION_94_BNSS',
     resource_type: 'FREEZE_NOTICE',
     resource_id: stored.id,
     decision: 'GRANTED',
     reason: isDraft
       ? 'Section 94 BNSS requisition draft registered by field investigator.'
+      : isAck
+      ? `Asset freeze compliance confirmed under Sec 94(1) BNSS by ${actingOfficer.name} (${actingOfficer.role}).`
       : 'Statutory Sec 94 BNSS freeze approved and digitally signed by Gazetted Officer.'
   });
 

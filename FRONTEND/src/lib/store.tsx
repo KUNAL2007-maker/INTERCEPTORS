@@ -288,12 +288,16 @@ export function TraceStoreProvider({ children }: { children: ReactNode }) {
             amount_lost_inr: Number(res.case.loss_amount_inr) || 450000,
             jurisdiction_ps: res.case.jurisdiction_code || "MH-CYBER-01"
           });
-          // Automatically run trace on suspect wallet
-          await runTrace(res.case.suspect_wallet_address);
+          // Automatically run trace on suspect wallet for law enforcement roles
+          if (user?.role !== "VICTIM" && user?.role !== "EXCHANGE_NODAL_OFFICER") {
+            await runTrace(res.case.suspect_wallet_address);
+          }
         }
       } catch {
-        // Local demo fallback
-        await runTrace("demo");
+        // Local demo fallback for law enforcement
+        if (user?.role !== "VICTIM" && user?.role !== "EXCHANGE_NODAL_OFFICER") {
+          await runTrace("demo");
+        }
       }
     },
     [user, runTrace]
