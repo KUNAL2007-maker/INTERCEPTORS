@@ -472,6 +472,39 @@ function NoticeDocument({
             </div>
           )}
 
+          {/* Gazetted vs Non-Gazetted Statutory Gate Banner */}
+          {!canApproveFreeze ? (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300 flex items-start gap-2.5">
+              <span className="text-base">⚠️</span>
+              <div>
+                <strong className="block text-white font-semibold mb-0.5">
+                  Section 94 BNSS Statutory Gate: Non-Gazetted Officer ({user?.name || "Sub-Inspector"})
+                </strong>
+                <span>
+                  Under Section 94 of Bharatiya Nagarik Suraksha Sanhita, 2023 (formerly Sec 91 CrPC), statutory asset freezing requisitions served on crypto exchanges legally require digital signing authority from a Gazetted Police Officer (rank of ACP, DSP, or higher).
+                </span>
+                <div className="mt-2">
+                  <button
+                    onClick={() => {
+                      onSetStatus("Draft");
+                      alert("Notice submitted to ACP Sharma's queue for Gazetted Officer verification and Section 94 BNSS digital signing.");
+                    }}
+                    className="px-2.5 py-1 rounded bg-amber-500/20 text-amber-200 border border-amber-500/40 text-[11px] font-semibold hover:bg-amber-500/30 transition"
+                  >
+                    📨 Forward to ACP Sharma for Statutory Signing
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-2.5 text-xs text-emerald-300 flex items-center gap-2">
+              <span>✅</span>
+              <span>
+                <strong className="text-white">Gazetted Officer Authority Active:</strong> {user?.name} is legally authorized to digitally sign and serve statutory Section 94 BNSS freezing orders.
+              </span>
+            </div>
+          )}
+
           {/* Status workflow */}
           <div className="flex items-center justify-between pt-4 border-t flex-wrap gap-3" style={{ borderColor: "var(--border)" }}>
             <div className="text-[11px]" style={{ color: "var(--muted-2)" }}>

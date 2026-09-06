@@ -80,3 +80,36 @@ export function PanelHeader({
     </div>
   );
 }
+
+export function Card({
+  children,
+  title,
+  hint,
+  className = "",
+}: {
+  children: React.ReactNode;
+  title?: string;
+  hint?: string;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`rounded-2xl border p-4 sm:p-5 ${className}`}
+      style={{ background: "var(--panel)", borderColor: "var(--border)" }}
+    >
+      {title && (
+        <div className="mb-3">
+          <div className="text-[13px] font-semibold" style={{ color: "var(--text-strong)" }}>
+            {title}
+          </div>
+          {hint && (
+            <div className="text-[11px]" style={{ color: "var(--muted-2)" }}>
+              {hint}
+            </div>
+          )}
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}

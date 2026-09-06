@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTraceStore } from "@/lib/store";
+import { useAuth } from "./AuthProvider";
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
 import { CommandDashboard } from "./views/CommandDashboard";
@@ -10,37 +11,49 @@ import { GraphView } from "./views/GraphView";
 import { TraceWalletView } from "./views/TraceWalletView";
 import { InvestigatorChat } from "./views/InvestigatorChat";
 import { LegalNoticesView } from "./views/LegalNoticesView";
+import { VictimPortalView } from "./views/VictimPortalView";
+import { AuditorPortalView } from "./views/AuditorPortalView";
+import { ExchangePortalView } from "./views/ExchangePortalView";
 
-export type ViewKey = "dashboard" | "transfers" | "graph" | "trace" | "chat" | "notices";
+export type ViewKey =
+  | "dashboard"
+  | "transfers"
+  | "graph"
+  | "trace"
+  | "chat"
+  | "notices"
+  | "victim_portal"
+  | "audit_logs"
+  | "exchange_portal";
 
-/**
- * How often the live feed re-walks the current seed.
- *
- * Chain data does not move fast enough to justify anything tighter, and every
- * poll costs explorer-API quota against a free tier shared with actual tracing.
- */
 const LIVE_POLL_MS = 60_000;
 
 export function AppShell() {
+  const { user } = useAuth();
   const [view, setView] = useState<ViewKey>("dashboard");
   const [liveFeed, setLiveFeed] = useState(false);
-  // Mobile only: the sidebar is an off-canvas drawer below lg, so it needs an
-  // open/closed state. At lg and up the rail is static and this is inert.
   const [navOpen, setNavOpen] = useState(false);
-  // Wallets an agent named in the chat, so "View on graph" lands on the right
-  // part of the canvas instead of the whole network.
   const [graphFocus, setGraphFocus] = useState<string[]>([]);
 
-  // ── Live feed ─────────────────────────────────────────────────────────────
-  // The toggle used to be decorative: it only animated a couple of status dots.
-  // It now drives a real poll, off by default so an unattended tab never burns
-  // API quota on its own.
+  // Automatically switch active view when role changes to give instant differentiated landing experience
+  useEffect(() => {
+    if (!user) return;
+    if (user.role === "VICTIM") {
+      setView("victim_portal");
+    } else if (user.role === "AUDITOR") {
+      setView("audit_logs");
+    } else if (user.role === "EXCHANGE_NODAL_OFFICER") {
+      setView("exchange_portal");
+    } else {
+      if (view === "victim_portal" || view === "exchange_portal" || (view === "audit_logs" && user.role !== "SUPER_ADMIN")) {
+        setView("dashboard");
+      }
+    }
+  }, [user?.role]);
+
   const { trace, status, refreshTrace } = useTraceStore();
   const hasTrace = !!trace;
 
-  // Held in a ref so the interval below doesn't depend on refreshTrace's
-  // identity — it changes whenever the trace or case metadata does, which would
-  // otherwise tear down and restart the timer on every keystroke in a case field.
   const refresh = useRef(refreshTrace);
   useEffect(() => {
     refresh.current = refreshTrace;
@@ -48,18 +61,11 @@ export function AppShell() {
 
   useEffect(() => {
     if (!liveFeed || !hasTrace || status !== "ready") return;
-    // Poll once on switch-on so the toggle visibly does something, then settle
-    // into the interval. The tracer's per-address cache absorbs this if the
-    // trace was only just run.
     void refresh.current();
     const id = setInterval(() => void refresh.current(), LIVE_POLL_MS);
     return () => clearInterval(id);
   }, [liveFeed, hasTrace, status]);
 
-  // The transcript lives in the chat component's own state, so unmounting it on
-  // every tab switch threw the conversation away. Once opened it stays mounted
-  // and is only hidden — an answer that arrives while you are on another tab is
-  // still waiting when you come back.
   const [chatMounted, setChatMounted] = useState(false);
   useEffect(() => {
     if (view === "chat") setChatMounted(true);
@@ -73,20 +79,8 @@ export function AppShell() {
   }, [navOpen]);
 
   return (
-    // A fixed-height shell, not `min-h-screen`. With min-height the aside grew to
-    // the full document height, so the officer chip it pins to the bottom ended
-    // up thousands of pixels down a long dashboard, and `overflow-auto` on <main>
-    // was inert because main had no height to overflow. Now the frame is exactly
-    // one viewport, the rails stay put, and main is the only thing that scrolls.
-    // 100dvh rather than h-screen: on a phone `vh` resolves against the *large*
-    // viewport, so the bottom of the app sat under the browser's address bar.
-    // dvh tracks the visible box and is identical to vh on desktop.
-    // backgroundColor, not the `background` shorthand — the shorthand would reset
-    // background-image and wipe out `radial-glow`.
     <div className="flex h-[100dvh] overflow-hidden radial-glow" style={{ backgroundColor: "var(--bg)" }}>
       <Sidebar view={view} onChange={setView} open={navOpen} onClose={() => setNavOpen(false)} />
-      {/* Backdrop for the mobile drawer. lg:hidden so it can never appear on
-          desktop, where navOpen is never set in the first place. */}
       {navOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
@@ -102,6 +96,9 @@ export function AppShell() {
           onOpenNav={() => setNavOpen(true)}
         />
         <main className="flex-1 min-h-0 min-w-0 overflow-y-auto scroll-stable">
+          {view === "victim_portal" && <VictimPortalView />}
+          {view === "audit_logs" && <AuditorPortalView />}
+          {view === "exchange_portal" && <ExchangePortalView />}
           {view === "dashboard" && (
             <CommandDashboard liveFeed={liveFeed} onGoToTrace={() => setView("trace")} />
           )}

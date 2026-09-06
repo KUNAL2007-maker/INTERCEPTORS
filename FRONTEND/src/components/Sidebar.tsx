@@ -1,80 +1,17 @@
 "use client";
 
+import { useMemo } from "react";
 import { useAuth } from "./AuthProvider";
 import type { ViewKey } from "./AppShell";
+import type { RoleName } from "@/lib/rbac-abac";
 
-const NAV: { key: ViewKey; label: string; hint: string; icon: React.ReactNode }[] = [
-  {
-    key: "dashboard",
-    label: "Command Dashboard",
-    hint: "Overview & signals",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-        <path d="M3 12h4l3-8 4 16 3-8h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
-  },
-  {
-    key: "transfers",
-    label: "Transfers",
-    hint: "Browse & filter",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-        <path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-      </svg>
-    ),
-  },
-  {
-    key: "graph",
-    label: "Wallet Flow Graph",
-    hint: "Network canvas",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-        <circle cx="5" cy="6" r="2" stroke="currentColor" strokeWidth="1.6" />
-        <circle cx="19" cy="6" r="2" stroke="currentColor" strokeWidth="1.6" />
-        <circle cx="12" cy="13" r="2" stroke="currentColor" strokeWidth="1.6" />
-        <circle cx="6" cy="19" r="2" stroke="currentColor" strokeWidth="1.6" />
-        <circle cx="18" cy="19" r="2" stroke="currentColor" strokeWidth="1.6" />
-        <path d="M6.5 7.5L11 12M17.5 7.5L13 12M11 14L7 18M13 14l4 4" stroke="currentColor" strokeWidth="1.4" />
-      </svg>
-    ),
-  },
-  {
-    key: "trace",
-    label: "Trace Wallet",
-    hint: "Seed a case",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-        <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.6" />
-        <path d="M16 16l5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-      </svg>
-    ),
-  },
-  {
-    key: "chat",
-    label: "AI Investigator",
-    hint: "I4C multi-agent",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-        <path d="M4 6h16v10H8l-4 3V6z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-        <circle cx="9" cy="11" r="1" fill="currentColor" />
-        <circle cx="12" cy="11" r="1" fill="currentColor" />
-        <circle cx="15" cy="11" r="1" fill="currentColor" />
-      </svg>
-    ),
-  },
-  {
-    key: "notices",
-    label: "Legal Notices",
-    hint: "Sec 91 · Sec 94",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-        <path d="M7 3h8l4 4v14H7V3z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-        <path d="M15 3v5h4M9 12h6M9 16h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-      </svg>
-    ),
-  },
-];
+type NavItem = {
+  key: ViewKey;
+  label: string;
+  hint: string;
+  badge?: string;
+  icon: React.ReactNode;
+};
 
 export function Sidebar({
   view,
@@ -87,12 +24,223 @@ export function Sidebar({
   open?: boolean;
   onClose?: () => void;
 }) {
+  const { user } = useAuth();
+  const role = user?.role;
+
+  const navItems = useMemo<NavItem[]>(() => {
+    // 1. Citizen Fraud Victim Navigation
+    if (role === "VICTIM") {
+      return [
+        {
+          key: "victim_portal",
+          label: "My Complaints",
+          hint: "Recovery tracker",
+          badge: "Citizen",
+          icon: (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+              <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          ),
+        },
+        {
+          key: "transfers",
+          label: "Transaction Explorer",
+          hint: "Public blockchain",
+          icon: (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+          ),
+        }
+      ];
+    }
+
+    // 2. High Court Judicial Auditor Navigation
+    if (role === "AUDITOR") {
+      return [
+        {
+          key: "audit_logs",
+          label: "BSA Audit Trail",
+          hint: "Sec 63/65B Logs",
+          badge: "Judicial",
+          icon: (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M12 3v18M3 8l9-5 9 5M6 13l-3 4h6l-3-4zM18 13l-3 4h6l-3-4z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          ),
+        },
+        {
+          key: "dashboard",
+          label: "Evidence Dossiers",
+          hint: "Read-only cases",
+          icon: (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M3 12h4l3-8 4 16 3-8h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          ),
+        },
+        {
+          key: "graph",
+          label: "Money Flow Review",
+          hint: "Forensic canvas",
+          icon: (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <circle cx="5" cy="6" r="2" stroke="currentColor" strokeWidth="1.6" />
+              <circle cx="19" cy="6" r="2" stroke="currentColor" strokeWidth="1.6" />
+              <circle cx="12" cy="13" r="2" stroke="currentColor" strokeWidth="1.6" />
+              <circle cx="6" cy="19" r="2" stroke="currentColor" strokeWidth="1.6" />
+              <circle cx="18" cy="19" r="2" stroke="currentColor" strokeWidth="1.6" />
+              <path d="M6.5 7.5L11 12M17.5 7.5L13 12M11 14L7 18M13 14l4 4" stroke="currentColor" strokeWidth="1.4" />
+            </svg>
+          ),
+        }
+      ];
+    }
+
+    // 3. Exchange Nodal Officer (Binance) Navigation
+    if (role === "EXCHANGE_NODAL_OFFICER") {
+      return [
+        {
+          key: "exchange_portal",
+          label: "Inbound Sec 94 BNSS",
+          hint: "Freezes & KYC orders",
+          badge: "Exchange",
+          icon: (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M3 21h18M5 21V7l7-4 7 4v14M9 10v4M15 10v4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          ),
+        },
+        {
+          key: "notices",
+          label: "Compliance Dossiers",
+          hint: "Legal orders",
+          icon: (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M7 3h8l4 4v14H7V3z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+              <path d="M15 3v5h4M9 12h6M9 16h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+          ),
+        }
+      ];
+    }
+
+    // 4. Investigators & Super Admin Navigation
+    const items: NavItem[] = [
+      {
+        key: "dashboard",
+        label: "Command Dashboard",
+        hint: "Overview & signals",
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M3 12h4l3-8 4 16 3-8h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        ),
+      },
+      {
+        key: "trace",
+        label: "Trace Wallet",
+        hint: "Seed a case",
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.6" />
+            <path d="M16 16l5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          </svg>
+        ),
+      },
+      {
+        key: "graph",
+        label: "Wallet Flow Graph",
+        hint: "Network canvas",
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <circle cx="5" cy="6" r="2" stroke="currentColor" strokeWidth="1.6" />
+            <circle cx="19" cy="6" r="2" stroke="currentColor" strokeWidth="1.6" />
+            <circle cx="12" cy="13" r="2" stroke="currentColor" strokeWidth="1.6" />
+            <circle cx="6" cy="19" r="2" stroke="currentColor" strokeWidth="1.6" />
+            <circle cx="18" cy="19" r="2" stroke="currentColor" strokeWidth="1.6" />
+            <path d="M6.5 7.5L11 12M17.5 7.5L13 12M11 14L7 18M13 14l4 4" stroke="currentColor" strokeWidth="1.4" />
+          </svg>
+        ),
+      },
+      {
+        key: "transfers",
+        label: "Transfers",
+        hint: "Browse & filter",
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          </svg>
+        ),
+      },
+      {
+        key: "notices",
+        label: "Legal Notices",
+        hint: role === "NORMAL_INVESTIGATOR" ? "Draft Only (Non-Gazetted)" : "Sec 94 BNSS",
+        badge: role === "NORMAL_INVESTIGATOR" ? "Draft" : undefined,
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M7 3h8l4 4v14H7V3z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+            <path d="M15 3v5h4M9 12h6M9 16h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          </svg>
+        ),
+      },
+      {
+        key: "chat",
+        label: "AI Investigator",
+        hint: "I4C multi-agent",
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M4 6h16v10H8l-4 3V6z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+            <circle cx="9" cy="11" r="1" fill="currentColor" />
+            <circle cx="12" cy="11" r="1" fill="currentColor" />
+            <circle cx="15" cy="11" r="1" fill="currentColor" />
+          </svg>
+        ),
+      },
+    ];
+
+    if (role === "SUPER_ADMIN") {
+      items.push({
+        key: "audit_logs",
+        label: "National Audit Logs",
+        hint: "Central oversight",
+        badge: "I4C",
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M12 3v18M3 8l9-5 9 5M6 13l-3 4h6l-3-4zM18 13l-3 4h6l-3-4z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        ),
+      });
+    }
+
+    return items;
+  }, [role]);
+
+  // Role Pill Config
+  const roleBadge = useMemo(() => {
+    switch (role) {
+      case "VICTIM":
+        return { label: "CITIZEN FRAUD PORTAL", bg: "bg-cyan-500/15 text-cyan-300 border-cyan-500/30" };
+      case "AUDITOR":
+        return { label: "JUDICIAL EVIDENCE AUDITOR", bg: "bg-yellow-500/15 text-yellow-300 border-yellow-500/30" };
+      case "EXCHANGE_NODAL_OFFICER":
+        return { label: "VASP COMPLIANCE DESK", bg: "bg-amber-500/15 text-amber-300 border-amber-500/30" };
+      case "NORMAL_INVESTIGATOR":
+        return { label: "INVESTIGATOR (NON-GAZETTED)", bg: "bg-amber-500/15 text-amber-300 border-amber-500/30" };
+      case "SENIOR_INVESTIGATOR":
+        return { label: "SENIOR INVESTIGATOR (ACP GAZETTED)", bg: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" };
+      case "SUPER_ADMIN":
+        return { label: "I4C NATIONAL CENTRAL HUB", bg: "bg-red-500/15 text-red-300 border-red-500/30" };
+      case "WORKSPACE_ADMIN":
+        return { label: "STATE UNIT LEAD (SP)", bg: "bg-purple-500/15 text-purple-300 border-purple-500/30" };
+      default:
+        return { label: "LAW ENFORCEMENT", bg: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" };
+    }
+  }, [role]);
+
   return (
-    // Below lg this is an off-canvas drawer: `fixed` takes it out of the shell's
-    // flex row, so the content pane gets the whole screen instead of the ~110px
-    // a 256px rail leaves on a 375px phone. From lg up every class is restored
-    // by the lg: variants — position, width and transform all match the original
-    // static rail, so the desktop layout is byte-identical to before.
     <aside
       id="app-nav"
       aria-label="Main navigation"
@@ -101,7 +249,7 @@ export function Sidebar({
       }`}
       style={{ borderColor: "var(--border)", background: "var(--panel)" }}
     >
-      <div className="px-5 pt-5 pb-4 flex items-center gap-3">
+      <div className="px-5 pt-5 pb-3 flex items-center gap-3">
         <div className="relative w-9 h-9 shrink-0 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-700 grid place-items-center shadow-glow">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
             <path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z" stroke="#052e1a" strokeWidth="1.6" strokeLinejoin="round" fill="rgba(255,255,255,0.15)" />
@@ -113,10 +261,9 @@ export function Sidebar({
             CryptoTrace <span className="text-emerald-400">Intelligence</span>
           </div>
           <div className="text-[10px] uppercase tracking-widest truncate" style={{ color: "var(--muted)" }}>
-            NCRP · I4C Forensic Console
+            NCRP · I4C Forensic Platform
           </div>
         </div>
-        {/* Only reachable while the drawer is open, so it never shows on desktop. */}
         <button
           onClick={onClose}
           aria-label="Close navigation"
@@ -129,138 +276,85 @@ export function Sidebar({
         </button>
       </div>
 
+      {/* Active Persona Banner in Sidebar */}
+      <div className="px-4 pb-3">
+        <div className={`text-[9px] font-mono px-2 py-1 rounded border tracking-wider font-semibold truncate ${roleBadge.bg}`}>
+          {roleBadge.label}
+        </div>
+      </div>
+
       <div className="h-px shrink-0" style={{ background: "var(--border)" }} />
 
-      {/* The nav is the part that gives if the window is short — the brand above
-          and the officer chip below stay visible. */}
+      {/* Role-Specific Navigation Menu */}
       <nav className="p-3 flex flex-col gap-1 overflow-y-auto">
-        {NAV.map((item) => {
+        {navItems.map((item) => {
           const active = view === item.key;
           return (
             <button
               key={item.key}
               onClick={() => {
                 onChange(item.key);
-                onClose?.();     // a tap on mobile should reveal the view it opened
+                onClose?.();
               }}
-              aria-current={active ? "page" : undefined}
-              className={`group relative w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all ${
+              className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition ${
                 active
-                  ? "bg-emerald-500/10 border border-emerald-500/30 shadow-glow"
-                  : "border border-transparent hover:bg-[var(--hover)]"
+                  ? "bg-emerald-500/10 text-emerald-300 font-medium shadow-sm"
+                  : "text-[var(--text-muted)] hover:bg-[var(--hover)] hover:text-[var(--text-strong)]"
               }`}
-              style={{ color: active ? "var(--text-strong)" : "var(--muted)" }}
             >
-              <span
-                className={`grid place-items-center w-8 h-8 shrink-0 rounded-md ${active ? "bg-emerald-500/15 text-emerald-300" : ""}`}
-                style={!active ? { background: "var(--chip)" } : undefined}
-              >
+              <span className={`shrink-0 ${active ? "text-emerald-400" : "text-slate-400 group-hover:text-slate-200"}`}>
                 {item.icon}
               </span>
-              <span className="flex-1 min-w-0">
-                <div className="text-sm font-medium leading-tight truncate">{item.label}</div>
-                <div className="text-[11px] truncate" style={{ color: "var(--muted-2)" }}>{item.hint}</div>
-              </span>
-              {active && <span className="w-1.5 h-1.5 shrink-0 rounded-full bg-emerald-400 shadow-glow" />}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-[13px] truncate">{item.label}</span>
+                  {item.badge && (
+                    <span className="text-[9px] font-mono px-1 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                      {item.badge}
+                    </span>
+                  )}
+                </div>
+                <div className="text-[10.5px] text-muted truncate">{item.hint}</div>
+              </div>
             </button>
           );
         })}
       </nav>
 
-      <div className="mt-auto p-4 shrink-0">
+      {/* Officer / User Profile Footer */}
+      <div className="mt-auto p-3 border-t" style={{ borderColor: "var(--border)" }}>
         <OfficerChip />
       </div>
     </aside>
   );
 }
 
-/**
- * The signed-in officer, and the way out.
- *
- * In offline mode (no Firebase config) there is no session to end, so the chip
- * says so instead of offering a sign-out button that would do nothing — and the
- * warning is worth showing, because nothing the officer does will be saved.
- */
 function OfficerChip() {
-  const { user, persistent, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   if (!user) return null;
 
   return (
-    <div
-      className="rounded-xl p-3 border flex items-center gap-2"
-      style={{ background: "var(--chip)", borderColor: "var(--border)" }}
-    >
+    <div className="flex items-center gap-2.5 p-2 rounded-xl bg-[var(--chip)] border" style={{ borderColor: "var(--border)" }}>
       <div
-        className="w-8 h-8 shrink-0 rounded-full bg-gradient-to-br from-sky-400 to-indigo-500 grid place-items-center text-[11px] font-semibold text-white"
-        aria-hidden
+        className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs"
+        style={{
+          background: user.is_gazetted ? "linear-gradient(135deg, #10b981, #059669)" : "linear-gradient(135deg, #f59e0b, #d97706)",
+          color: "#000"
+        }}
       >
-        {initials(user.fullName)}
+        {user.name ? user.name.slice(0, 2).toUpperCase() : "IO"}
       </div>
-      <div className="flex-1 min-w-0">
-        <div className="text-[12px] truncate" style={{ color: "var(--text)" }} title={user.fullName}>
-          {user.fullName}
-        </div>
-        <div
-          className="text-[11px] truncate"
-          style={{ color: "var(--muted-2)" }}
-          title={persistent ? user.email : undefined}
-        >
-          {persistent ? user.email : "Offline demo · nothing is saved"}
-        </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-[12px] font-semibold text-white truncate">{user.name || user.fullName}</div>
+        <div className="text-[10px] text-muted truncate">{user.email}</div>
       </div>
-      {persistent ? (
-        <button
-          onClick={() => void signOut()}
-          title="Sign out"
-          aria-label="Sign out"
-          className="grid place-items-center w-7 h-7 shrink-0 rounded-md transition hover:bg-[var(--hover)]"
-          style={{ color: "var(--muted)" }}
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M15 12H4m0 0l3.5-3.5M4 12l3.5 3.5"
-              stroke="currentColor"
-              strokeWidth="1.7"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M11 5.5V5a2 2 0 012-2h5a2 2 0 012 2v14a2 2 0 01-2 2h-5a2 2 0 01-2-2v-.5"
-              stroke="currentColor"
-              strokeWidth="1.7"
-              strokeLinecap="round"
-            />
-          </svg>
-        </button>
-      ) : (
-        <span
-          className="grid place-items-center w-7 h-7 shrink-0 rounded-md text-amber-300"
-          title="No database configured — cases clear on refresh"
-          style={{ background: "rgba(245,158,11,0.12)" }}
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M12 9v4m0 3h.01M10.3 3.9L2.4 17.5A2 2 0 004.1 20.5h15.8a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </span>
-      )}
+      <button
+        onClick={() => signOut()}
+        title="Sign Out"
+        className="p-1 rounded text-muted hover:text-white transition text-xs"
+      >
+        ✕
+      </button>
     </div>
   );
-}
-
-/** "Insp. A. Sharma" → "IA". Falls back to a generic badge for empty names. */
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (!parts.length) return "IO";
-  const letters = parts
-    .slice(0, 2)
-    .map((p) => p.replace(/[^\p{L}\p{N}]/gu, "").charAt(0))
-    .filter(Boolean)
-    .join("");
-  return (letters || "IO").toUpperCase();
 }
