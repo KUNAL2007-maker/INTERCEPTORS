@@ -52,8 +52,8 @@ export function Sidebar({
       return [
         {
           key: "audit_logs",
-          label: "BSA Audit Trail",
-          hint: "Sec 63/65B Logs",
+          label: "BSA Audit Trail & Cert",
+          hint: "Sec 63/65B Logs & Cert",
           badge: "Judicial",
           icon: (
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -62,20 +62,9 @@ export function Sidebar({
           ),
         },
         {
-          key: "dashboard",
-          label: "Evidence Review",
-          hint: "Read-only cases",
-          badge: "Read Only",
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M3 12h4l3-8 4 16 3-8h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          ),
-        },
-        {
           key: "cases",
-          label: "Case Dossiers",
-          hint: "Evidence metadata",
+          label: "Evidence Dossiers",
+          hint: "Read-only case files",
           badge: "Read Only",
           icon: (
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -88,6 +77,7 @@ export function Sidebar({
           key: "graph",
           label: "Money Flow Review",
           hint: "Forensic canvas (Read Only)",
+          badge: "Read Only",
           icon: (
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <circle cx="5" cy="6" r="2" stroke="currentColor" strokeWidth="1.6" />
@@ -102,7 +92,7 @@ export function Sidebar({
       ];
     }
 
-    // 3. VASP Compliance Officer Navigation
+    // 3. VASP Compliance Officer Navigation (Exchange Desk)
     if (role === "VASP_COMPLIANCE_OFFICER" || rawRole === "EXCHANGE_NODAL_OFFICER") {
       return [
         {
@@ -115,22 +105,11 @@ export function Sidebar({
               <path d="M3 21h18M5 21V7l7-4 7 4v14M9 10v4M15 10v4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           ),
-        },
-        {
-          key: "notices",
-          label: "Compliance Dossiers",
-          hint: "Exchange directives",
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M7 3h8l4 4v14H7V3z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-              <path d="M15 3v5h4M9 12h6M9 16h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-            </svg>
-          ),
         }
       ];
     }
 
-    // 4. National Coordination Analyst Navigation
+    // 4. National Coordination Analyst Navigation (I4C Hub)
     if (role === "NATIONAL_COORDINATION_ANALYST") {
       return [
         {
@@ -147,16 +126,6 @@ export function Sidebar({
           ),
         },
         {
-          key: "dashboard",
-          label: "Command Dashboard",
-          hint: "National fraud signals",
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M3 12h4l3-8 4 16 3-8h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          ),
-        },
-        {
           key: "cases",
           label: "Multi-State Dockets",
           hint: "Cross-case indicators",
@@ -164,31 +133,6 @@ export function Sidebar({
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
               <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          ),
-        },
-        {
-          key: "graph",
-          label: "Wallet Flow Graph",
-          hint: "Multi-hop clusters",
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <circle cx="5" cy="6" r="2" stroke="currentColor" strokeWidth="1.6" />
-              <circle cx="19" cy="6" r="2" stroke="currentColor" strokeWidth="1.6" />
-              <circle cx="12" cy="13" r="2" stroke="currentColor" strokeWidth="1.6" />
-              <circle cx="6" cy="19" r="2" stroke="currentColor" strokeWidth="1.6" />
-              <circle cx="18" cy="19" r="2" stroke="currentColor" strokeWidth="1.6" />
-              <path d="M6.5 7.5L11 12M17.5 7.5L13 12M11 14L7 18M13 14l4 4" stroke="currentColor" strokeWidth="1.4" />
-            </svg>
-          ),
-        },
-        {
-          key: "audit_logs",
-          label: "Audit Records",
-          hint: "Oversight log trail",
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M12 3v18M3 8l9-5 9 5M6 13l-3 4h6l-3-4zM18 13l-3 4h6l-3-4z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           ),
         }
@@ -200,7 +144,7 @@ export function Sidebar({
       return [
         {
           key: "system_admin",
-          label: "System Admin",
+          label: "User & System Admin",
           hint: "Users & platform health",
           badge: "Admin",
           icon: (
@@ -220,11 +164,18 @@ export function Sidebar({
               <path d="M12 3v18M3 8l9-5 9 5M6 13l-3 4h6l-3-4zM18 13l-3 4h6l-3-4z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           ),
-        },
+        }
+      ];
+    }
+
+    // 6. Cybercrime Supervisor Navigation (SP Deshmukh)
+    if (role === "CYBERCRIME_SUPERVISOR") {
+      return [
         {
           key: "dashboard",
-          label: "System Overview",
-          hint: "Platform dashboard",
+          label: "Unit Triage & Allocation",
+          hint: "SP Deshmukh • Case Triage",
+          badge: "Supervisor",
           icon: (
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path d="M3 12h4l3-8 4 16 3-8h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -233,24 +184,116 @@ export function Sidebar({
         },
         {
           key: "cases",
-          label: "Case Dockets (Audited)",
-          hint: "Audited maintenance",
+          label: "State Unit Cases",
+          hint: "Assign IOs & set priority",
+          badge: "Queue",
           icon: (
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
               <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           ),
-        }
+        },
+        {
+          key: "audit_logs",
+          label: "Unit Audit Trail",
+          hint: "BSA 2023 Sec 63/65B",
+          badge: "Supervisory",
+          icon: (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M12 3v18M3 8l9-5 9 5M6 13l-3 4h6l-3-4zM18 13l-3 4h6l-3-4z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          ),
+        },
       ];
     }
 
-    // 6. Investigating Officer, Supervisor, and Senior Investigator Navigation
-    const items: NavItem[] = [
+    // 7. Senior Investigator Navigation (ACP Sharma - Gazetted)
+    if (role === "SENIOR_INVESTIGATOR") {
+      return [
+        {
+          key: "dashboard",
+          label: "Gazetted Authority Hub",
+          hint: "ACP Sharma • Review & sign-off",
+          badge: "Gazetted",
+          icon: (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M3 12h4l3-8 4 16 3-8h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          ),
+        },
+        {
+          key: "cases",
+          label: "Unit Case Dockets",
+          hint: "Case evidence dossiers",
+          icon: (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          ),
+        },
+        {
+          key: "graph",
+          label: "Money Flow Graph",
+          hint: "Trace topology review",
+          icon: (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <circle cx="5" cy="6" r="2" stroke="currentColor" strokeWidth="1.6" />
+              <circle cx="19" cy="6" r="2" stroke="currentColor" strokeWidth="1.6" />
+              <circle cx="12" cy="13" r="2" stroke="currentColor" strokeWidth="1.6" />
+              <circle cx="6" cy="19" r="2" stroke="currentColor" strokeWidth="1.6" />
+              <circle cx="18" cy="19" r="2" stroke="currentColor" strokeWidth="1.6" />
+              <path d="M6.5 7.5L11 12M17.5 7.5L13 12M11 14L7 18M13 14l4 4" stroke="currentColor" strokeWidth="1.4" />
+            </svg>
+          ),
+        },
+        {
+          key: "notices",
+          label: "Sign Sec 94 BNSS Order",
+          hint: "Digital statutory sign-off",
+          badge: "Sec 94 BNSS",
+          icon: (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M7 3h8l4 4v14H7V3z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+              <path d="M15 3v5h4M9 12h6M9 16h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+          ),
+        },
+        {
+          key: "chat",
+          label: "AI Investigator",
+          hint: "4 forensic agents",
+          icon: (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M4 6h16v10H8l-4 3V6z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+              <circle cx="9" cy="11" r="1" fill="currentColor" />
+              <circle cx="12" cy="11" r="1" fill="currentColor" />
+              <circle cx="15" cy="11" r="1" fill="currentColor" />
+            </svg>
+          ),
+        },
+        {
+          key: "audit_logs",
+          label: "Unit Audit Trail",
+          hint: "BSA 2023 Sec 63/65B",
+          badge: "Supervisory",
+          icon: (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M12 3v18M3 8l9-5 9 5M6 13l-3 4h6l-3-4zM18 13l-3 4h6l-3-4z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          ),
+        },
+      ];
+    }
+
+    // 8. Investigating Officer Navigation (SI Patil - Field IO)
+    return [
       {
         key: "dashboard",
-        label: "Command Dashboard",
-        hint: role === "CYBERCRIME_SUPERVISOR" ? "Unit overview & triage" : "Signals & decisions",
+        label: "Assigned Cases & Trace",
+        hint: "SI Patil • Active dockets",
+        badge: "Assigned",
         icon: (
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
             <path d="M3 12h4l3-8 4 16 3-8h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -258,32 +301,9 @@ export function Sidebar({
         ),
       },
       {
-        key: "cases",
-        label: role === "CYBERCRIME_SUPERVISOR" ? "Unit Cases & Triage" : "Assigned Cases",
-        hint: role === "CYBERCRIME_SUPERVISOR" ? "Assign & prioritize IOs" : "NCRP 1930 dockets",
-        badge: role === "CYBERCRIME_SUPERVISOR" ? "Supervisor" : "Assigned",
-        icon: (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        ),
-      },
-      {
-        key: "trace",
-        label: "Trace Wallet",
-        hint: "Multi-hop on-chain BFS",
-        icon: (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.6" />
-            <path d="M16 16l5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-          </svg>
-        ),
-      },
-      {
         key: "graph",
-        label: "Wallet Flow Graph",
-        hint: "Network topology canvas",
+        label: "Money Flow Graph",
+        hint: "Blockchain trace topology",
         icon: (
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
             <circle cx="5" cy="6" r="2" stroke="currentColor" strokeWidth="1.6" />
@@ -296,36 +316,8 @@ export function Sidebar({
         ),
       },
       {
-        key: "transfers",
-        label: "Transfers",
-        hint: "Browse & filter hops",
-        icon: (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-          </svg>
-        ),
-      },
-      {
-        key: "notices",
-        label: "Legal Notices",
-        hint:
-          role === "INVESTIGATING_OFFICER" || rawRole === "NORMAL_INVESTIGATOR"
-            ? "Draft Only (Non-Gazetted)"
-            : "Sec 94 BNSS Orders",
-        badge:
-          role === "INVESTIGATING_OFFICER" || rawRole === "NORMAL_INVESTIGATOR"
-            ? "Draft"
-            : "Sec 94 BNSS",
-        icon: (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path d="M7 3h8l4 4v14H7V3z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-            <path d="M15 3v5h4M9 12h6M9 16h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-          </svg>
-        ),
-      },
-      {
         key: "chat",
-        label: "AI Investigator",
+        label: "AI Forensics Copilot",
         hint: "4 forensic agents",
         icon: (
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -336,24 +328,19 @@ export function Sidebar({
           </svg>
         ),
       },
-    ];
-
-    // Supervisors and Senior Investigators also see audit logs
-    if (role === "SENIOR_INVESTIGATOR" || role === "CYBERCRIME_SUPERVISOR") {
-      items.push({
-        key: "audit_logs",
-        label: "Unit Audit Trail",
-        hint: "BSA 2023 Sec 63/65B",
-        badge: "Supervisory",
+      {
+        key: "notices",
+        label: "Prepare Draft Notice",
+        hint: "Sec 94 BNSS Draft Only",
+        badge: "Draft Only",
         icon: (
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path d="M12 3v18M3 8l9-5 9 5M6 13l-3 4h6l-3-4zM18 13l-3 4h6l-3-4z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M7 3h8l4 4v14H7V3z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+            <path d="M15 3v5h4M9 12h6M9 16h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
           </svg>
         ),
-      });
-    }
-
-    return items;
+      },
+    ];
   }, [role, rawRole]);
 
   // Role Pill Configuration

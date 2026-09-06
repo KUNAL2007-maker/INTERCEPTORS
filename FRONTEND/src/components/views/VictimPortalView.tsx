@@ -26,12 +26,23 @@ export function VictimPortalView() {
   const [lossAmount, setLossAmount] = useState("350000");
   const [tokenSymbol, setTokenSymbol] = useState("USDT");
   const [network, setNetwork] = useState("Ethereum");
-  const [scamPlatform, setScamPlatform] = useState("Task-based Fake Part-Time Job Scam");
+  const [scamPlatform, setScamPlatform] = useState("Task-based Fake Part-Time Job / VIP Group Scam");
   const [incidentDate, setIncidentDate] = useState(new Date().toISOString().split("T")[0]);
   const [txHash, setTxHash] = useState("");
   const [incidentDesc, setIncidentDesc] = useState("");
   const [filing, setFiling] = useState(false);
   const [filedSuccessCase, setFiledSuccessCase] = useState<StoredCase | null>(null);
+
+  const handleAutofillDemoCase = () => {
+    setSuspectWallet("0x71C7656EC7ab88b098defB751B7401B5f6d8976F");
+    setLossAmount("350000");
+    setTokenSymbol("USDT");
+    setNetwork("Ethereum");
+    setScamPlatform("Task-based Fake Part-Time Job / VIP Group Scam");
+    setIncidentDate(new Date().toISOString().split("T")[0]);
+    setTxHash("0x3a1b49e8d3840291f09e81b37492c019d3847291a0293b89c2");
+    setIncidentDesc("Contacted via Telegram group for hotel review rating tasks, transferred USDT to suspect deposit wallet.");
+  };
 
   // Load victim's cases on mount and auth change with automatic live status polling
   const [refreshingStatus, setRefreshingStatus] = useState(false);
@@ -151,6 +162,16 @@ export function VictimPortalView() {
             >
               <span className={refreshingStatus ? "animate-spin" : ""}>↻</span>
               <span>{refreshingStatus ? "Refreshing..." : "Refresh Status"}</span>
+            </button>
+            <button
+              onClick={() => {
+                handleAutofillDemoCase();
+                setShowFileModal(true);
+              }}
+              className="px-3.5 py-2.5 rounded-xl text-xs font-semibold border border-cyan-500/40 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-200 transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+            >
+              <span>✨</span>
+              <span>Load Demo Case</span>
             </button>
             <button
               onClick={() => setShowFileModal(true)}
@@ -471,13 +492,25 @@ export function VictimPortalView() {
           <p className="text-xs text-muted mt-1 max-w-md mx-auto">
             Have you been defrauded in a cryptocurrency investment scam or task fraud? Register your suspect crypto wallet directly with the state cyber police to initiate automated multi-hop tracing.
           </p>
-          <button
-            onClick={() => setShowFileModal(true)}
-            className="mt-4 px-5 py-2.5 rounded-xl text-xs font-bold text-black transition shadow-glow"
-            style={{ background: "linear-gradient(135deg, #06b6d4, #3b82f6)" }}
-          >
-            + Register Fraud Complaint Now
-          </button>
+          <div className="flex flex-wrap items-center justify-center gap-3 mt-4">
+            <button
+              onClick={() => setShowFileModal(true)}
+              className="px-5 py-2.5 rounded-xl text-xs font-bold text-black transition shadow-glow"
+              style={{ background: "linear-gradient(135deg, #06b6d4, #3b82f6)" }}
+            >
+              + Register Fraud Complaint Now
+            </button>
+            <button
+              onClick={() => {
+                handleAutofillDemoCase();
+                setShowFileModal(true);
+              }}
+              className="px-5 py-2.5 rounded-xl text-xs font-bold text-cyan-200 border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 transition flex items-center gap-1.5 shadow-sm"
+            >
+              <span>✨</span>
+              <span>1-Click Load Demo Case (0x71C7...)</span>
+            </button>
+          </div>
         </div>
       )}
 
@@ -506,6 +539,27 @@ export function VictimPortalView() {
             <p className="text-xs text-muted mb-4">
               Directly forwards fraudster wallet to state cyber police attribution engine for Section 94 BNSS freezing.
             </p>
+
+            {/* Prominent 1-Click Autofill Demo Case Button */}
+            <div className="mb-4 p-3.5 rounded-xl border border-cyan-500/40 bg-gradient-to-r from-cyan-950/40 to-blue-950/40 flex items-center justify-between gap-3 shadow-md">
+              <div className="min-w-0">
+                <div className="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
+                  <span>✨</span>
+                  <span>Evaluator Fast-Track Scenario</span>
+                </div>
+                <div className="text-[11px] text-cyan-200/80 truncate">
+                  Autofill ₹3,50,000 USDT task scam on Ethereum (0x71C7...)
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleAutofillDemoCase}
+                className="px-3.5 py-1.5 rounded-lg text-xs font-bold text-black bg-gradient-to-r from-cyan-400 to-blue-400 hover:from-cyan-300 hover:to-blue-300 transition shadow-md shrink-0 flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>✨</span>
+                <span>Autofill Demo Case</span>
+              </button>
+            </div>
 
             <form onSubmit={handleFileComplaint} className="space-y-3">
               <div>
@@ -628,7 +682,8 @@ export function VictimPortalView() {
                     color: "var(--text-strong)",
                   }}
                 >
-                  <option value="Task-based Fake Part-Time Job Scam">Task-based Fake Part-Time Job / VIP Group Scam</option>
+                  <option value="Task-based Fake Part-Time Job / VIP Group Scam">Task-based Fake Part-Time Job / VIP Group Scam</option>
+                  <option value="Task-based Fake Part-Time Job Scam">Task-based Fake Part-Time Job (Short)</option>
                   <option value="Fake Crypto Investment / Staking Platform">Fake Crypto Investment / Staking High-Return Scheme</option>
                   <option value="Phishing / Seed Phrase Theft">Phishing / Impersonation of Indian Exchange</option>
                   <option value="P2P Escrow Fraud">P2P Escrow / Payment Withholding Fraud</option>

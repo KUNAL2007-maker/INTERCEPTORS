@@ -44,20 +44,20 @@ export function AppShell() {
 
   const ROLE_ALLOWED_VIEWS: Record<string, ViewKey[]> = {
     VICTIM: ["victim_portal"],
-    COURT_REVIEWER: ["audit_logs", "dashboard", "cases", "graph"],
-    VASP_COMPLIANCE_OFFICER: ["exchange_portal", "notices"],
-    NATIONAL_COORDINATION_ANALYST: ["national_coordination", "dashboard", "cases", "graph", "audit_logs"],
-    SYSTEM_ADMIN: ["system_admin", "audit_logs", "dashboard", "cases"],
-    INVESTIGATING_OFFICER: ["dashboard", "cases", "trace", "graph", "transfers", "notices", "chat"],
-    CYBERCRIME_SUPERVISOR: ["dashboard", "cases", "trace", "graph", "transfers", "notices", "audit_logs"],
-    SENIOR_INVESTIGATOR: ["dashboard", "cases", "trace", "graph", "transfers", "notices", "chat", "audit_logs"],
+    COURT_REVIEWER: ["audit_logs", "cases", "graph"],
+    VASP_COMPLIANCE_OFFICER: ["exchange_portal"],
+    NATIONAL_COORDINATION_ANALYST: ["national_coordination", "cases"],
+    SYSTEM_ADMIN: ["system_admin", "audit_logs"],
+    INVESTIGATING_OFFICER: ["dashboard", "graph", "chat", "notices"],
+    CYBERCRIME_SUPERVISOR: ["dashboard", "cases", "audit_logs"],
+    SENIOR_INVESTIGATOR: ["dashboard", "cases", "graph", "notices", "chat", "audit_logs"],
 
     // Legacy role aliases for backward compatibility
-    AUDITOR: ["audit_logs", "dashboard", "cases", "graph"],
-    EXCHANGE_NODAL_OFFICER: ["exchange_portal", "notices"],
-    NORMAL_INVESTIGATOR: ["dashboard", "cases", "trace", "graph", "transfers", "notices", "chat"],
-    WORKSPACE_ADMIN: ["dashboard", "cases", "trace", "graph", "transfers", "notices", "chat", "audit_logs"],
-    SUPER_ADMIN: ["system_admin", "dashboard", "cases", "trace", "graph", "transfers", "notices", "chat", "audit_logs"]
+    AUDITOR: ["audit_logs", "cases", "graph"],
+    EXCHANGE_NODAL_OFFICER: ["exchange_portal"],
+    NORMAL_INVESTIGATOR: ["dashboard", "graph", "chat", "notices"],
+    WORKSPACE_ADMIN: ["dashboard", "cases", "audit_logs"],
+    SUPER_ADMIN: ["system_admin", "audit_logs"]
   };
 
   // Enforce role-differentiated view access and automatically switch to primary landing view
@@ -146,6 +146,9 @@ export function AppShell() {
               liveFeed={liveFeed}
               onGoToTrace={() => handleSetView("trace")}
               onGoToCases={() => handleSetView("cases")}
+              onGoToGraph={() => handleSetView("graph")}
+              onGoToNotices={() => handleSetView("notices")}
+              onGoToChat={() => handleSetView("chat")}
             />
           )}
           {view === "transfers" && <TransfersView onGoToTrace={() => handleSetView("trace")} />}

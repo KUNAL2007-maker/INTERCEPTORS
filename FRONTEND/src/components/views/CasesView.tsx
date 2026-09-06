@@ -43,6 +43,14 @@ export function CasesView({
   const [caseAuditLogs, setCaseAuditLogs] = useState<any[]>([]);
   const [loadingAudit, setLoadingAudit] = useState(false);
 
+  const handleAutofillDemoCase = () => {
+    setNewVictim("Rajesh Verma");
+    setNewWallet("0x71C7656EC7ab88b098defB751B7401B5f6d8976F");
+    setNewNetwork("Ethereum");
+    setNewAmount("350000");
+    setNewCrime("Task-based Fake Part-Time Job / VIP Group Scam");
+  };
+
   const handleOpenAuditHistory = async (caseNumber: string) => {
     setAuditModalCase(caseNumber);
     setLoadingAudit(true);
@@ -421,73 +429,94 @@ export function CasesView({
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                  {c.status === "PENDING_TRACING" && (
-                    canExecuteTrace ? (
-                      <button
-                        onClick={() => handleTraceClick(c)}
-                        disabled={isTracingThis}
-                        className="px-4 py-2 rounded-xl text-xs font-bold text-black transition hover:opacity-90 shadow-glow disabled:opacity-50 flex items-center gap-1.5"
-                        style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}
-                      >
-                        <span>⚡</span>
-                        <span>{isTracingThis ? "Tracing Suspect Wallet..." : "Initiate Trace on Suspect Wallet"}</span>
-                      </button>
-                    ) : (
-                      !isForwarded ? (
-                        <button
-                          onClick={() => handleTraceClick(c)}
-                          className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/40 hover:bg-amber-500/25 transition flex items-center gap-1.5"
-                        >
-                          <span>🔒</span>
-                          <span>Forward to ACP Sharma for BFS Trace</span>
-                        </button>
-                      ) : (
-                        <span className="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 text-xs flex items-center gap-1.5 font-semibold">
-                          <span>✓</span>
-                          <span>Queued for ACP Sharma Trace Approval</span>
-                        </span>
-                      )
-                    )
-                  )}
-
-                  {c.status === "TRACED" && (
+                  {isCourtReviewer ? (
                     <>
+                      <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 text-xs font-mono font-semibold">
+                        ⚖️ BSA SEC 65B READ-ONLY
+                      </span>
                       <button
                         onClick={() => {
                           setActiveCase(c);
                           void runTrace(c.suspect_wallet_address, c);
                           onGoToGraph();
                         }}
-                        className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/25 transition flex items-center gap-1.5"
+                        className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/25 transition flex items-center gap-1.5"
                       >
                         <span>📊</span>
-                        <span>View Money Flow Graph</span>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          setActiveCase(c);
-                          onGoToNotices();
-                        }}
-                        className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/40 hover:bg-amber-500/25 transition flex items-center gap-1.5"
-                      >
-                        <span>⚖️</span>
-                        <span>Issue Sec 94 BNSS Notice</span>
+                        <span>Inspect Flow Graph</span>
                       </button>
                     </>
-                  )}
+                  ) : (
+                    <>
+                      {c.status === "PENDING_TRACING" && (
+                        canExecuteTrace ? (
+                          <button
+                            onClick={() => handleTraceClick(c)}
+                            disabled={isTracingThis}
+                            className="px-4 py-2 rounded-xl text-xs font-bold text-black transition hover:opacity-90 shadow-glow disabled:opacity-50 flex items-center gap-1.5"
+                            style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}
+                          >
+                            <span>⚡</span>
+                            <span>{isTracingThis ? "Tracing Suspect Wallet..." : "Initiate Trace on Suspect Wallet"}</span>
+                          </button>
+                        ) : (
+                          !isForwarded ? (
+                            <button
+                              onClick={() => handleTraceClick(c)}
+                              className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/40 hover:bg-amber-500/25 transition flex items-center gap-1.5"
+                            >
+                              <span>🔒</span>
+                              <span>Forward to ACP Sharma for BFS Trace</span>
+                            </button>
+                          ) : (
+                            <span className="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 text-xs flex items-center gap-1.5 font-semibold">
+                              <span>✓</span>
+                              <span>Queued for ACP Sharma Trace Approval</span>
+                            </span>
+                          )
+                        )
+                      )}
 
-                  {(c.status === "NOTICE_SERVED" || c.status === "FROZEN") && (
-                    <button
-                      onClick={() => {
-                        setActiveCase(c);
-                        onGoToNotices();
-                      }}
-                      className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/25 transition flex items-center gap-1.5"
-                    >
-                      <span>🔒</span>
-                      <span>{c.status === "FROZEN" ? "View Seizure & Escrow Details" : "Track Served Freeze Requisition"}</span>
-                    </button>
+                      {c.status === "TRACED" && (
+                        <>
+                          <button
+                            onClick={() => {
+                              setActiveCase(c);
+                              void runTrace(c.suspect_wallet_address, c);
+                              onGoToGraph();
+                            }}
+                            className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/25 transition flex items-center gap-1.5"
+                          >
+                            <span>📊</span>
+                            <span>View Money Flow Graph</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setActiveCase(c);
+                              onGoToNotices();
+                            }}
+                            className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/40 hover:bg-amber-500/25 transition flex items-center gap-1.5"
+                          >
+                            <span>⚖️</span>
+                            <span>Issue Sec 94 BNSS Notice</span>
+                          </button>
+                        </>
+                      )}
+
+                      {(c.status === "NOTICE_SERVED" || c.status === "FROZEN") && (
+                        <button
+                          onClick={() => {
+                            setActiveCase(c);
+                            onGoToNotices();
+                          }}
+                          className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/25 transition flex items-center gap-1.5"
+                        >
+                          <span>🔒</span>
+                          <span>{c.status === "FROZEN" ? "View Seizure & Escrow Details" : "Track Served Freeze Requisition"}</span>
+                        </button>
+                      )}
+                    </>
                   )}
 
                   {normRole !== "VICTIM" && (
@@ -539,6 +568,27 @@ export function CasesView({
             <p className="text-xs text-muted mb-4">
               Registers fraud allegation directly into Maharashtra Cyber attribution queue.
             </p>
+
+            {/* Prominent 1-Click Autofill Demo Case Button */}
+            <div className="mb-4 p-3.5 rounded-xl border border-cyan-500/40 bg-gradient-to-r from-cyan-950/40 to-blue-950/40 flex items-center justify-between gap-3 shadow-md">
+              <div className="min-w-0">
+                <div className="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
+                  <span>✨</span>
+                  <span>Evaluator Fast-Track Scenario</span>
+                </div>
+                <div className="text-[11px] text-cyan-200/80 truncate">
+                  Autofill ₹3,50,000 USDT task scam on Ethereum (0x71C7...)
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleAutofillDemoCase}
+                className="px-3.5 py-1.5 rounded-lg text-xs font-bold text-black bg-gradient-to-r from-cyan-400 to-blue-400 hover:from-cyan-300 hover:to-blue-300 transition shadow-md shrink-0 flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>✨</span>
+                <span>Autofill Demo Case</span>
+              </button>
+            </div>
 
             <form onSubmit={handleManualIngest} className="space-y-3">
               <div>
