@@ -1221,48 +1221,70 @@ function walletTrailTo(ev: CryptoEvidence, target: VaspHit): LegalNotice["wallet
 // in-memory mock store, partial test payload, or legacy API responses—is safely
 // and completely hydrated with valid fields, avoiding undefined property errors.
 
+function safeNoticeDate(val: any): string {
+  if (val && typeof val === "string" && /^\d{4}-\d{2}-\d{2}$/.test(val.trim())) {
+    return val.trim();
+  }
+  if (val !== undefined && val !== null) {
+    try {
+      const d = new Date(val);
+      if (!isNaN(d.getTime())) {
+        return d.toISOString().slice(0, 10);
+      }
+    } catch {}
+  }
+  return new Date().toISOString().slice(0, 10);
+}
+
 export function ensureLegalNotice(rawNotice?: any, parent?: any): LegalNotice {
   const n = rawNotice && typeof rawNotice === "object" ? rawNotice : {};
   const p = parent && typeof parent === "object" ? parent : {};
 
-  const caseNum =
+  const caseNum = String(
     n.case_number ||
     p.case_number ||
     n.case?.ncrp_ack_no ||
     p.caseMeta?.ncrp_ack_no ||
-    "MH-CYBER-2026-0842";
-  const ref =
+    "MH-CYBER-2026-0842"
+  );
+  const ref = String(
     n.ref ||
     p.ref ||
     (n.id || p.id
       ? `BNSS-2026-${String(n.id || p.id).slice(-4)}-BN`
-      : `BNSS-2026-${String(caseNum).slice(-4)}-BN`);
-  const statute = n.statute || "Section 91 CrPC, 1973 read with Section 94 BNSS, 2023";
-  const to_vasp = n.to_vasp || p.target_vasp || p.vasp_name || "Binance International";
-  const to_email =
+      : `BNSS-2026-${String(caseNum).slice(-4)}-BN`)
+  );
+  const statute = String(n.statute || "Section 91 CrPC, 1973 read with Section 94 BNSS, 2023");
+  const to_vasp = String(n.to_vasp || p.target_vasp || p.vasp_name || "Binance International");
+  const vaspLower = to_vasp.toLowerCase();
+  const to_email = String(
     n.to_email ||
-    (to_vasp.toLowerCase().includes("binance")
+    (vaspLower.includes("binance")
       ? "compliance@binance.com"
-      : to_vasp.toLowerCase().includes("wazirx")
+      : vaspLower.includes("wazirx")
       ? "legal@wazirx.com"
-      : "nodal@coindcx.com");
-  const jurisdiction =
-    n.jurisdiction || p.jurisdiction || p.jurisdiction_code || "Maharashtra Cyber Unit (MH-CYBER-01)";
-  const date =
-    n.date ||
-    (p.createdAt || p.created_at
-      ? new Date(p.createdAt || p.created_at).toISOString().slice(0, 10)
-      : new Date().toISOString().slice(0, 10));
+      : "nodal@coindcx.com")
+  );
+  const jurisdiction = String(
+    n.jurisdiction || p.jurisdiction || p.jurisdiction_code || "Maharashtra Cyber Unit (MH-CYBER-01)"
+  );
+  const date = n.date && typeof n.date === "string" && n.date.trim()
+    ? safeNoticeDate(n.date)
+    : safeNoticeDate(p.createdAt ?? p.created_at);
 
-  const amountInr = Number(n.amountInr ?? p.loss_amount_inr ?? p.amount_lost_inr ?? 450000);
-  const amountUsd =
-    Number(n.amountUsd ?? p.amountUsd ?? (amountInr ? Math.round(amountInr / 85) : 5400)) || 5400;
+  const rawInr = Number(n.amountInr ?? p.loss_amount_inr ?? p.amount_lost_inr);
+  const amountInr = !isNaN(rawInr) && isFinite(rawInr) && rawInr >= 0 ? rawInr : 450000;
+
+  const rawUsd = Number(n.amountUsd ?? p.amountUsd);
+  const amountUsd = !isNaN(rawUsd) && isFinite(rawUsd) && rawUsd >= 0
+    ? rawUsd
+    : (amountInr ? Math.round(amountInr / 85) : 5400);
 
   const candidateAddresses: string[] = [];
-  if (Array.isArray(n.targetAddresses)) candidateAddresses.push(...n.targetAddresses);
-  if (p.suspect_wallet_address) candidateAddresses.push(p.suspect_wallet_address);
-  if (p.wallet_address) candidateAddresses.push(p.wallet_address);
-  if (n.targetAddress) candidateAddresses.push(n.targetAddress);
+  if (Array.isArray(n.targetAddresses)) candidateAddresses.push(...n.targetAddresses.map(String));
+  if (p.suspect_wallet_address) candidateAddresses.push(String(p.suspect_wallet_address));
+  if (p.wallet_address) candidateAddresses.push(String(p.wallet_address));
+  if (n.targetAddress) candidateAddresses.push(String(n.targetAddress));
   if (candidateAddresses.length === 0) candidateAddresses.push("0x71C7656EC7ab88b098defB751B7401B5f6d8976F");
   const targetAddresses = Array.from(new Set(candidateAddresses.filter(Boolean)));
 
@@ -1270,7 +1292,7 @@ export function ensureLegalNotice(rawNotice?: any, parent?: any): LegalNotice {
 
   const kycDemands: string[] =
     Array.isArray(n.kycDemands) && n.kycDemands.length > 0
-      ? n.kycDemands
+      ? n.kycDemands.map(String)
       : [
           "Full KYC of the account holder(s) operating the deposit address(es) below — name, address, Aadhaar and PAN as furnished at onboarding.",
           "Registered mobile number, email, and all linked bank account / UPI details used for fiat deposits and withdrawals.",
@@ -1278,13 +1300,14 @@ export function ensureLegalNotice(rawNotice?: any, parent?: any): LegalNotice {
           "All internal transaction records mapping the deposit address(es) to the account, including internal ledger entries and withdrawal history.",
         ];
 
-  const freezeRequest =
+  const freezeRequest = String(
     n.freezeRequest ||
     `Immediately freeze / place a lien on the balance and all onward withdrawals from the account(s) behind ${targetAddresses
       .map(shortWallet)
-      .join(", ")} pending further orders, and confirm the frozen quantum to this office within 48 hours.`;
+      .join(", ")} pending further orders, and confirm the frozen quantum to this office within 48 hours.`
+  );
   const serviceable = n.serviceable !== undefined ? Boolean(n.serviceable) : true;
-  const subject = n.subject || `Freeze & KYC production — ${formatUSD(amountUsd)} traced to ${to_vasp}`;
+  const subject = String(n.subject || `Freeze & KYC production — ${formatUSD(amountUsd)} traced to ${to_vasp}`);
 
   const defaultBody = [
     `To: The Nodal / Compliance Officer, ${to_vasp} (${to_email}).`,
@@ -1307,8 +1330,8 @@ export function ensureLegalNotice(rawNotice?: any, parent?: any): LegalNotice {
     `Investigating Officer\nCyber Crime Police Station / I4C`,
   ];
 
-  const body: string[] = Array.isArray(n.body) && n.body.length > 0 ? n.body : defaultBody;
-  const rendered = n.rendered || `NOTICE UNDER ${statute}\n\n${body.join("\n\n")}`;
+  const body: string[] = Array.isArray(n.body) && n.body.length > 0 ? n.body.map(String) : defaultBody;
+  const rendered = String(n.rendered || `NOTICE UNDER ${statute}\n\n${body.join("\n\n")}`);
 
   return {
     ref,
@@ -1341,7 +1364,7 @@ export function normalizeStoredNotice(item: any): {
   drafted_by_name?: string;
   approved_by_name?: string;
 } {
-  if (!item) {
+  if (!item || typeof item !== "object") {
     return {
       id: `NOTICE-${Date.now()}`,
       status: "Draft",
@@ -1353,7 +1376,23 @@ export function normalizeStoredNotice(item: any): {
   const id = String(item.id || (item.notice as any)?.id || `NOTICE-${Date.now()}`);
   const status: "Draft" | "Issued" | "Acknowledged" =
     item.status === "Acknowledged" ? "Acknowledged" : item.status === "Issued" ? "Issued" : "Draft";
-  const createdAt = Number(item.createdAt ?? item.created_at) || Date.now();
+
+  let createdAt = Date.now();
+  if (item.createdAt !== undefined && item.createdAt !== null) {
+    const ts = Number(item.createdAt);
+    if (!isNaN(ts) && isFinite(ts) && ts > 0) createdAt = ts;
+  } else if (item.created_at !== undefined && item.created_at !== null) {
+    const ts = Number(item.created_at);
+    if (!isNaN(ts) && isFinite(ts) && ts > 0) {
+      createdAt = ts;
+    } else {
+      try {
+        const parsed = new Date(item.created_at).getTime();
+        if (!isNaN(parsed) && parsed > 0) createdAt = parsed;
+      } catch {}
+    }
+  }
+
   const notice = ensureLegalNotice(item.notice, item);
 
   return {

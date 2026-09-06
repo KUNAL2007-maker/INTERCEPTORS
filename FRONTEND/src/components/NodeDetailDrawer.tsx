@@ -147,7 +147,14 @@ export function NodeDetailDrawer({
   // A notice already drafted for this exchange desk, matched on the VASP name the
   // store writes into the notice. The footer flips to its filed state at once.
   const existing = useMemo(
-    () => (targetVasp ? notices.find((n) => n.notice.to_vasp === targetVasp) ?? null : null),
+    () =>
+      targetVasp
+        ? notices.find(
+            (n) =>
+              n?.notice?.to_vasp === targetVasp ||
+              (n as any)?.target_vasp === targetVasp
+          ) ?? null
+        : null,
     [notices, targetVasp]
   );
 

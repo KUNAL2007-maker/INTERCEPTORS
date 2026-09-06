@@ -39,12 +39,12 @@ const SW: Record<NoticeStatus, string> = {
 };
 
 function StatusPill({ status, size = "sm" }: { status: NoticeStatus; size?: "sm" | "md" }) {
-  const m = PILL[status];
+  const m = (status && PILL[status]) || PILL.Draft;
   const pad = size === "md" ? "px-2.5 py-1 text-[12px]" : "px-2 py-0.5 text-[11px]";
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-full border ${m.border} ${m.bg} ${m.text} ${pad}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${m.dot}`} />
-      {status}
+      {status || "Draft"}
     </span>
   );
 }
@@ -361,7 +361,7 @@ function NoticeDocument({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${(n.ref || stored.id || "notice").replace(/[^\w.-]/g, "_")}.txt`;
+    a.download = `${(n.ref || stored?.id || "notice").replace(/[^\w.-]/g, "_")}.txt`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -378,13 +378,13 @@ function NoticeDocument({
               <span className="text-[11px] uppercase tracking-widest" style={{ color: "var(--muted)" }}>
                 {n.statute || "Section 91 CrPC / Section 94 BNSS"}
               </span>
-              <StatusPill status={stored.status} size="md" />
+              <StatusPill status={stored?.status || "Draft"} size="md" />
             </div>
             <div className="mt-1 text-[17px] font-semibold" style={{ color: "var(--text-strong)" }}>
               {n.serviceable ? `Freeze & KYC notice — ${n.to_vasp}` : `No serviceable endpoint — ${n.to_vasp}`}
             </div>
             <div className="text-[12px]" style={{ color: "var(--muted)" }}>
-              Ref {n.ref || (stored as any).case_number || stored.id || "N/A"}
+              Ref {n.ref || (stored as any)?.case_number || stored?.id || "N/A"}
               {n.serviceable && n.to_email ? ` · to ${n.to_email}` : ""}
               {n.serviceable ? ` · ${formatUSD(n.amountUsd ?? 0)}` : ""}
               {n.amountInr ? ` · loss ${formatINR(n.amountInr)}` : ""}
@@ -439,25 +439,25 @@ function NoticeDocument({
                     </tr>
                   </thead>
                   <tbody>
-                    {(n.walletTrail || []).map((h) => (
+                    {(n.walletTrail || []).filter(Boolean).map((h, i) => (
                       <tr
-                        key={`${h.hop}-${h.tx_hash}`}
+                        key={`${h?.hop ?? i}-${h?.tx_hash ?? i}`}
                         className="border-t"
                         style={{ borderColor: "var(--border)", color: "var(--text)" }}
                       >
-                        <td className="px-3 py-2 font-mono">{h.hop}</td>
+                        <td className="px-3 py-2 font-mono">{h?.hop ?? (i + 1)}</td>
                         <td className="px-3 py-2 font-mono whitespace-nowrap">
-                          {shortWallet(h.from)} → {shortWallet(h.to)}
+                          {shortWallet(h?.from)} → {shortWallet(h?.to)}
                         </td>
                         <td className="px-3 py-2">
                           <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                            <span className="w-2 h-2 rounded-full" style={{ background: chainColor(h.chain) }} />
-                            {CHAINS[h.chain]?.short ?? h.chain}
+                            <span className="w-2 h-2 rounded-full" style={{ background: chainColor(h?.chain) }} />
+                            {CHAINS[h?.chain]?.short ?? h?.chain ?? "UNKNOWN"}
                           </span>
                         </td>
-                        <td className="px-3 py-2">{h.token}</td>
-                        <td className="px-3 py-2 font-mono text-right">{formatUSD(h.valueUsd)}</td>
-                        <td className="px-3 py-2 font-mono">{shortWallet(h.tx_hash)}</td>
+                        <td className="px-3 py-2">{h?.token || "USDT"}</td>
+                        <td className="px-3 py-2 font-mono text-right">{formatUSD(h?.valueUsd)}</td>
+                        <td className="px-3 py-2 font-mono">{shortWallet(h?.tx_hash)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -469,8 +469,8 @@ function NoticeDocument({
           {(n.kycDemands || []).length > 0 && (
             <Section title="3 · KYC production demanded">
               <ol className="list-decimal pl-5 space-y-1.5">
-                {(n.kycDemands || []).map((d, i) => (
-                  <li key={i}>{d}</li>
+                {(n.kycDemands || []).filter(Boolean).map((d, i) => (
+                  <li key={i}>{String(d)}</li>
                 ))}
               </ol>
             </Section>
@@ -486,7 +486,7 @@ function NoticeDocument({
 
           {(n.targetAddresses || []).length > 0 && (
             <div className="flex flex-wrap gap-1.5">
-              {(n.targetAddresses || []).map((a, i) => (
+              {(n.targetAddresses || []).filter(Boolean).map((a, i) => (
                 <span
                   key={`${a}-${i}`}
                   className="text-[10px] font-mono px-1.5 py-0.5 rounded"
@@ -542,11 +542,11 @@ function NoticeDocument({
           {/* Status workflow */}
           <div className="flex items-center justify-between pt-4 border-t flex-wrap gap-3" style={{ borderColor: "var(--border)" }}>
             <div className="text-[11px]" style={{ color: "var(--muted-2)" }}>
-              Status: <span className="font-semibold" style={{ color: "var(--text)" }}>{stored.status}</span>
+              Status: <span className="font-semibold" style={{ color: "var(--text)" }}>{stored?.status || "Draft"}</span>
             </div>
             <div className="flex items-center gap-2">
               {(["Draft", "Issued", "Acknowledged"] as NoticeStatus[]).map((s) => {
-                const active = stored.status === s;
+                const active = (stored?.status || "Draft") === s;
                 const locked = (s === "Issued" && !canApproveFreeze) || (isExchange && s !== "Acknowledged");
                 return (
                   <button
@@ -593,7 +593,7 @@ function NoticeDocument({
               </button>
               {n.serviceable && n.to_email && (
                 <a
-                  href={`mailto:${n.to_email}?subject=${encodeURIComponent(n.subject || "Legal Notice")}&body=${encodeURIComponent(n.rendered || (n.body || []).join("\n\n"))}`}
+                  href={`mailto:${n.to_email}?subject=${encodeURIComponent(n.subject || "Legal Notice")}&body=${encodeURIComponent((n.rendered || (n.body || []).join("\n\n")).slice(0, 1500))}`}
                   className="text-[12px] rounded-md border px-3 py-1.5 transition hover:opacity-80"
                   style={{ borderColor: "var(--border)", background: "var(--chip)", color: "var(--text)" }}
                 >

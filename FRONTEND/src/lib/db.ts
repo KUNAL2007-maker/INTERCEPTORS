@@ -481,7 +481,7 @@ export async function getNoticesForUser(user: SubjectAttributes): Promise<Stored
     : memoryStore.notices;
 
   // Defensive hydration: ensure every notice returned has a complete, valid notice payload
-  return filtered.map((n) => {
+  return filtered.filter(Boolean).map((n) => {
     const linkedCase = n.case_number
       ? memoryStore.cases.find((c) => c.case_number === n.case_number)
       : null;

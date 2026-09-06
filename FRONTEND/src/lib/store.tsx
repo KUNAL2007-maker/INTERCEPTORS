@@ -159,8 +159,16 @@ export function TraceStoreProvider({ children }: { children: ReactNode }) {
           }));
         }
 
-        if (mounted && noticesRes && Array.isArray(noticesRes.notices)) {
-          setNotices(noticesRes.notices.map((n: any) => normalizeStoredNotice(n)));
+        const rawNotices = noticesRes
+          ? Array.isArray(noticesRes)
+            ? noticesRes
+            : Array.isArray(noticesRes.notices)
+            ? noticesRes.notices
+            : []
+          : [];
+
+        if (mounted && rawNotices.length > 0) {
+          setNotices(rawNotices.map((n: any) => normalizeStoredNotice(n)));
         }
       } catch {
         // Fallback to local memory state
