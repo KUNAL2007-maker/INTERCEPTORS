@@ -227,7 +227,7 @@ export function VictimPortalView() {
                     {shortWallet(c.suspect_wallet_address)}
                   </div>
                   <div className="flex items-center justify-between text-[11px] text-muted">
-                    <span className="font-bold text-slate-200">{formatINR(Number(c.loss_amount_inr))}</span>
+                    <span className="font-bold text-slate-200">{formatINR(c.loss_amount_inr ?? 0)}</span>
                     <span>{chainItem ? CHAINS[chainItem].short : "ETH"}</span>
                   </div>
                 </button>
@@ -244,10 +244,10 @@ export function VictimPortalView() {
             <Card>
               <div className="text-[11px] uppercase tracking-wider text-muted font-medium mb-1">Reported Fraud Loss</div>
               <div className="text-2xl font-bold text-rose-400 font-mono">
-                {formatINR(Number(activeComplaint.loss_amount_inr))}
+                {formatINR(activeComplaint.loss_amount_inr ?? 0)}
               </div>
               <div className="text-[11px] text-muted mt-1">
-                ~{Math.round(Number(activeComplaint.loss_amount_inr) / 85).toLocaleString()}{" "}
+                ~{Math.round((Number(activeComplaint.loss_amount_inr) || 0) / 85).toLocaleString("en-US")}{" "}
                 {activeComplaint.token_symbol || "USDT"}
               </div>
             </Card>
@@ -741,7 +741,7 @@ export function VictimPortalView() {
               <div className="flex justify-between py-1 border-b border-white/5">
                 <span className="text-muted">Reported Loss Amount:</span>
                 <span className="font-bold text-rose-400 font-mono">
-                  {formatINR(Number(activeComplaint.loss_amount_inr))}
+                  {formatINR(activeComplaint.loss_amount_inr ?? 0)}
                 </span>
               </div>
               <div className="flex justify-between py-1 border-b border-white/5">

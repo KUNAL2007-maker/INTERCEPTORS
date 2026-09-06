@@ -204,28 +204,52 @@ export const SUGGESTED_QUERIES = [
 ];
 
 // ── Formatters ──────────────────────────────────────────────────────────────
-export function formatUSD(n: number): string {
-  const v = Math.abs(n);
-  if (v >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
-  if (v >= 1_000) return `$${(n / 1_000).toFixed(1)}K`;
-  return `$${n.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+export function formatUSD(n?: number | null | string): string {
+  const num = typeof n === "number" ? n : Number(n);
+  const val = isNaN(num) ? 0 : num;
+  const v = Math.abs(val);
+  if (v >= 1_000_000) return `$${(val / 1_000_000).toFixed(2)}M`;
+  if (v >= 1_000) return `$${(val / 1_000).toFixed(1)}K`;
+  return `$${val.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
 }
 
-export function formatINR(n: number): string {
-  if (n >= 10_000_000) return `₹${(n / 10_000_000).toFixed(2)} Cr`;
-  if (n >= 100_000) return `₹${(n / 100_000).toFixed(2)} L`;
-  return `₹${n.toLocaleString("en-IN")}`;
+export function formatINR(n?: number | null | string): string {
+  const num = typeof n === "number" ? n : Number(n);
+  const val = isNaN(num) ? 0 : num;
+  const v = Math.abs(val);
+  if (v >= 10_000_000) return `₹${(val / 10_000_000).toFixed(2)} Cr`;
+  if (v >= 100_000) return `₹${(val / 100_000).toFixed(2)} L`;
+  return `₹${val.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 }
 
-export function formatToken(n: number, sym: TokenSymbol): string {
+export function formatToken(n?: number | null | string, sym: TokenSymbol | string = "USDT"): string {
+  const num = typeof n === "number" ? n : Number(n);
+  const val = isNaN(num) ? 0 : num;
   // BTC/ETH need more decimals than stablecoins to stay meaningful.
   const dp = sym === "BTC" ? 6 : sym === "ETH" || sym === "SOL" ? 4 : 2;
-  return `${n.toLocaleString("en-US", { maximumFractionDigits: dp })} ${sym}`;
+  const symStr = sym ? ` ${sym}` : "";
+  return `${val.toLocaleString("en-US", { maximumFractionDigits: dp })}${symStr}`;
+}
+
+export function formatNumber(n?: number | null | string, maxDigits = 2): string {
+  const num = typeof n === "number" ? n : Number(n);
+  const val = isNaN(num) ? 0 : num;
+  return val.toLocaleString("en-US", { maximumFractionDigits: maxDigits });
+}
+
+export function formatCompact(n?: number | null | string): string {
+  const num = typeof n === "number" ? n : Number(n);
+  const val = isNaN(num) ? 0 : num;
+  const v = Math.abs(val);
+  if (v >= 1_000_000_000) return `${(val / 1_000_000_000).toFixed(2)}B`;
+  if (v >= 1_000_000) return `${(val / 1_000_000).toFixed(2)}M`;
+  if (v >= 1_000) return `${(val / 1_000).toFixed(1)}K`;
+  return `${val.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
 }
 
 // 0x1234…5678 for EVM/Tron, kept short enough for on-canvas labels. Replaces the
 // fiat shortAccountLabel — the layout engine's measure() calls this.
-export function shortWallet(addr: string): string {
+export function shortWallet(addr?: string | null): string {
   if (!addr) return "";
   if (addr.length <= 13) return addr;
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;

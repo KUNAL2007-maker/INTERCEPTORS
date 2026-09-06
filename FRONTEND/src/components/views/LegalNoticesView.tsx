@@ -48,7 +48,8 @@ function StatusPill({ status, size = "sm" }: { status: NoticeStatus; size?: "sm"
   );
 }
 
-function whenLabel(ts: number): string {
+function whenLabel(ts?: number | null): string {
+  if (!ts || isNaN(Number(ts))) return "—";
   return new Date(ts).toLocaleString("en-IN", {
     day: "2-digit",
     month: "short",

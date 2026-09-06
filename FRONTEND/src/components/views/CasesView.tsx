@@ -275,10 +275,10 @@ export function CasesView({
                 <div className="text-right">
                   <div className="text-xs font-semibold text-muted uppercase tracking-wider">Claimed Loss</div>
                   <div className="text-lg font-bold text-rose-400 font-mono">
-                    {formatINR(Number(c.loss_amount_inr))}
+                    {formatINR(c.loss_amount_inr ?? 0)}
                   </div>
                   <div className="text-[10px] text-muted">
-                    ~{Math.round(Number(c.loss_amount_inr) / 85).toLocaleString()} {c.token_symbol || "USDT"}
+                    ~{Math.round((Number(c.loss_amount_inr) || 0) / 85).toLocaleString("en-US")} {c.token_symbol || "USDT"}
                   </div>
                 </div>
               </div>

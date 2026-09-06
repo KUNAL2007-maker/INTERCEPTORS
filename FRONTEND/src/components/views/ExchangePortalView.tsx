@@ -203,7 +203,7 @@ export function ExchangePortalView() {
                   <div>
                     <span className="text-muted block text-[10px] uppercase font-semibold">Tainted Deposit Volume</span>
                     <span className="font-bold text-white text-sm">
-                      {formatINR ? formatINR(amountInr) : `₹${amountInr.toLocaleString()}`} INR
+                      {formatINR(amountInr ?? 0)} INR
                     </span>
                   </div>
 

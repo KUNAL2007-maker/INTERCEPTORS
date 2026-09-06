@@ -258,10 +258,10 @@ export function CommandDashboard({
 
                   <div className="text-right shrink-0">
                     <div className="text-base font-bold text-rose-400 font-mono">
-                      {formatINR(Number(c.loss_amount_inr))}
+                      {formatINR(c.loss_amount_inr ?? 0)}
                     </div>
                     <div className="text-[10px] text-muted mb-2">
-                      ~{Math.round(Number(c.loss_amount_inr) / 85).toLocaleString()} {c.token_symbol || "USDT"}
+                      ~{Math.round((Number(c.loss_amount_inr) || 0) / 85).toLocaleString("en-US")} {c.token_symbol || "USDT"}
                     </div>
 
                     {canExecuteTrace ? (
@@ -313,7 +313,7 @@ export function CommandDashboard({
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <MetricCard
           label="Wallets Traced"
-          value={wallets.toLocaleString("en-US")}
+          value={(wallets ?? 0).toLocaleString("en-US")}
           sub="Across this trace"
           accent="#a78bfa"
           spark={spark1}
@@ -639,10 +639,10 @@ export function CommandDashboard({
 
                 <div className="text-right shrink-0">
                   <div className="text-base font-bold text-rose-400 font-mono">
-                    {formatINR(Number(c.loss_amount_inr))}
+                    {formatINR(c.loss_amount_inr ?? 0)}
                   </div>
                   <div className="text-[10px] text-muted mb-2">
-                    ~{Math.round(Number(c.loss_amount_inr) / 85).toLocaleString()} {c.token_symbol || "USDT"}
+                    ~{Math.round((Number(c.loss_amount_inr) || 0) / 85).toLocaleString("en-US")} {c.token_symbol || "USDT"}
                   </div>
 
                   <button

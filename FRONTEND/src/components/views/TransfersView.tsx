@@ -221,7 +221,7 @@ export function TransfersView({ onGoToTrace }: { onGoToTrace: () => void }) {
                   <div className="flex items-center justify-between gap-2">
                     <span className="flex items-center gap-2">
                       <span className="font-mono text-[11.5px] tabular-nums" style={{ color: "var(--muted)" }}>
-                        {new Date(t.timestamp).toLocaleString()}
+                        {t.timestamp ? new Date(t.timestamp).toLocaleString() : "—"}
                       </span>
                       {isNew(t) && <NewChip />}
                     </span>
@@ -314,7 +314,7 @@ export function TransfersView({ onGoToTrace }: { onGoToTrace: () => void }) {
                             and "when did this land" is exactly what it qualifies. */}
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-[12px] tabular-nums">
-                            {new Date(t.timestamp).toLocaleString()}
+                            {t.timestamp ? new Date(t.timestamp).toLocaleString() : "—"}
                           </span>
                           {isNew(t) && <NewChip />}
                         </div>
