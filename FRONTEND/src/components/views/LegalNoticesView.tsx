@@ -10,7 +10,7 @@
 // store: `useNotices()` supplies the drafted notices, `useTraceStore()` the
 // evidence and the generate / status / remove actions.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Page } from "@/components/ui/Page";
 import {
@@ -21,6 +21,7 @@ import {
 } from "@/lib/store";
 import { useAuth } from "@/components/AuthProvider";
 import { formatUSD, formatINR, shortWallet, CHAINS, chainColor } from "@/lib/domain";
+import { ensureLegalNotice, normalizeStoredNotice } from "@/lib/investigation";
 
 // ── Status pill (mirrors SeverityBadge's shape, coloured by workflow state) ───
 const PILL: Record<NoticeStatus, { text: string; bg: string; border: string; dot: string }> = {
@@ -69,9 +70,13 @@ export function LegalNoticesView({ onGoToTrace }: { onGoToTrace: () => void }) {
 
   const isExchange = user?.role === "EXCHANGE_NODAL_OFFICER";
 
+  const normalizedNotices = useMemo(() => {
+    return (notices || []).map((item) => normalizeStoredNotice(item));
+  }, [notices]);
+
   // Fall back to the most recent notice so the document panel is never empty
   // while the list has rows — the same discipline FinGuard used for its cases.
-  const selected = notices.find((n) => n.id === selectedId) ?? notices[0] ?? null;
+  const selected = normalizedNotices.find((n) => n.id === selectedId) ?? normalizedNotices[0] ?? null;
 
   // Serviceable freeze targets: every attributed exchange that is not a mixer.
   const serviceable = evidence?.vasps.filter((v) => !v.is_mixer) ?? [];
@@ -109,7 +114,7 @@ export function LegalNoticesView({ onGoToTrace }: { onGoToTrace: () => void }) {
                     Legal notices
                   </div>
                   <div className="mt-0.5 text-[15px] font-semibold" style={{ color: "var(--text-strong)" }}>
-                    {notices.length} total
+                    {normalizedNotices.length} total
                   </div>
                 </div>
                 {!isExchange ? (
@@ -186,8 +191,14 @@ export function LegalNoticesView({ onGoToTrace }: { onGoToTrace: () => void }) {
             </div>
 
             <div className="max-h-[560px] overflow-auto divide-y" style={{ borderColor: "var(--border)" }}>
-              {notices.map((item) => {
+              {normalizedNotices.map((item) => {
                 const active = item.id === (selected?.id ?? "");
+                const ref = item.notice?.ref || (item as any).ref || item.case_number || item.id || "N/A";
+                const isServiceable = item.notice?.serviceable ?? true;
+                const vaspName = item.notice?.to_vasp || item.target_vasp || "Attributed Exchange";
+                const amountUsd = item.notice?.amountUsd ?? (item as any).amountUsd ?? 0;
+                const createdTime = item.createdAt ?? (item as any).created_at;
+
                 return (
                   <div key={item.id} className="group relative">
                     <button
@@ -199,18 +210,18 @@ export function LegalNoticesView({ onGoToTrace }: { onGoToTrace: () => void }) {
                       <div className="flex items-center gap-2">
                         <StatusPill status={item.status} />
                         <span className="text-[10.5px] font-mono truncate" style={{ color: "var(--muted-2)" }}>
-                          {item.notice.ref}
+                          {ref}
                         </span>
                       </div>
                       <div className="mt-1 text-[13px] line-clamp-2" style={{ color: "var(--text-strong)" }}>
-                        {item.notice.serviceable
-                          ? `Freeze & KYC — ${item.notice.to_vasp}`
-                          : `No serviceable endpoint — ${item.notice.to_vasp}`}
+                        {isServiceable
+                          ? `Freeze & KYC — ${vaspName}`
+                          : `No serviceable endpoint — ${vaspName}`}
                       </div>
                       <div className="mt-1 flex items-center gap-2 text-[11px]" style={{ color: "var(--muted)" }}>
-                        <span className="font-mono">{formatUSD(item.notice.amountUsd)}</span>
+                        <span className="font-mono">{formatUSD(amountUsd)}</span>
                         <span>·</span>
-                        <span>{whenLabel(item.createdAt)}</span>
+                        <span>{whenLabel(createdTime)}</span>
                       </div>
                     </button>
                     {!isExchange && (
@@ -227,7 +238,7 @@ export function LegalNoticesView({ onGoToTrace }: { onGoToTrace: () => void }) {
                   </div>
                 );
               })}
-              {notices.length === 0 && (
+              {normalizedNotices.length === 0 && (
                 <div className="p-6 text-center text-[13px]" style={{ color: "var(--muted)" }}>
                   {evidence
                     ? "No notices yet. Use “+ Generate” to draft one against this trace."
@@ -320,7 +331,7 @@ function NoticeDocument({
   onSetStatus: (s: NoticeStatus) => void;
   onDelete: () => void;
 }) {
-  const n = stored.notice;
+  const n = useMemo(() => ensureLegalNotice(stored?.notice, stored), [stored]);
   const { canApproveFreeze, user } = useAuth();
   const isExchange = user?.role === "EXCHANGE_NODAL_OFFICER";
   const [forwarded, setForwarded] = useState(false);
@@ -330,7 +341,7 @@ function NoticeDocument({
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(n.rendered);
+      await navigator.clipboard.writeText(n.rendered || (n.body || []).join("\n\n"));
       if (copyRef.current) {
         const el = copyRef.current;
         const prev = el.textContent;
@@ -345,11 +356,12 @@ function NoticeDocument({
   };
 
   const download = () => {
-    const blob = new Blob([n.rendered], { type: "text/plain;charset=utf-8" });
+    const textToDownload = n.rendered || (n.body || []).join("\n\n");
+    const blob = new Blob([textToDownload], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${n.ref.replace(/[^\w.-]/g, "_")}.txt`;
+    a.download = `${(n.ref || stored.id || "notice").replace(/[^\w.-]/g, "_")}.txt`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -364,17 +376,17 @@ function NoticeDocument({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[11px] uppercase tracking-widest" style={{ color: "var(--muted)" }}>
-                {n.statute}
+                {n.statute || "Section 91 CrPC / Section 94 BNSS"}
               </span>
               <StatusPill status={stored.status} size="md" />
             </div>
             <div className="mt-1 text-[17px] font-semibold" style={{ color: "var(--text-strong)" }}>
-              {n.serviceable ? `Freeze & KYC notice — ${n.to_vasp}` : "No serviceable endpoint"}
+              {n.serviceable ? `Freeze & KYC notice — ${n.to_vasp}` : `No serviceable endpoint — ${n.to_vasp}`}
             </div>
             <div className="text-[12px]" style={{ color: "var(--muted)" }}>
-              Ref {n.ref}
+              Ref {n.ref || (stored as any).case_number || stored.id || "N/A"}
               {n.serviceable && n.to_email ? ` · to ${n.to_email}` : ""}
-              {n.serviceable ? ` · ${formatUSD(n.amountUsd)}` : ""}
+              {n.serviceable ? ` · ${formatUSD(n.amountUsd ?? 0)}` : ""}
               {n.amountInr ? ` · loss ${formatINR(n.amountInr)}` : ""}
             </div>
             {n.date && (
@@ -405,14 +417,14 @@ function NoticeDocument({
           )}
 
           <Section title="1 · Notice served">
-            {n.body.map((p, i) => (
+            {(n.body || []).map((p, i) => (
               <p key={i} className={i ? "mt-2" : ""} style={{ whiteSpace: "pre-wrap" }}>
                 {p}
               </p>
             ))}
           </Section>
 
-          {n.walletTrail.length > 0 && (
+          {(n.walletTrail || []).length > 0 && (
             <Section title="2 · Traced deposit trail">
               <div className="overflow-hidden rounded-lg border" style={{ borderColor: "var(--border)" }}>
                 <table className="w-full text-[12.5px]">
@@ -427,7 +439,7 @@ function NoticeDocument({
                     </tr>
                   </thead>
                   <tbody>
-                    {n.walletTrail.map((h) => (
+                    {(n.walletTrail || []).map((h) => (
                       <tr
                         key={`${h.hop}-${h.tx_hash}`}
                         className="border-t"
@@ -454,10 +466,10 @@ function NoticeDocument({
             </Section>
           )}
 
-          {n.kycDemands.length > 0 && (
+          {(n.kycDemands || []).length > 0 && (
             <Section title="3 · KYC production demanded">
               <ol className="list-decimal pl-5 space-y-1.5">
-                {n.kycDemands.map((d, i) => (
+                {(n.kycDemands || []).map((d, i) => (
                   <li key={i}>{d}</li>
                 ))}
               </ol>
@@ -472,9 +484,9 @@ function NoticeDocument({
             </Section>
           )}
 
-          {n.targetAddresses.length > 0 && (
+          {(n.targetAddresses || []).length > 0 && (
             <div className="flex flex-wrap gap-1.5">
-              {n.targetAddresses.map((a, i) => (
+              {(n.targetAddresses || []).map((a, i) => (
                 <span
                   key={`${a}-${i}`}
                   className="text-[10px] font-mono px-1.5 py-0.5 rounded"
@@ -581,7 +593,7 @@ function NoticeDocument({
               </button>
               {n.serviceable && n.to_email && (
                 <a
-                  href={`mailto:${n.to_email}?subject=${encodeURIComponent(n.subject)}&body=${encodeURIComponent(n.rendered)}`}
+                  href={`mailto:${n.to_email}?subject=${encodeURIComponent(n.subject || "Legal Notice")}&body=${encodeURIComponent(n.rendered || (n.body || []).join("\n\n"))}`}
                   className="text-[12px] rounded-md border px-3 py-1.5 transition hover:opacity-80"
                   style={{ borderColor: "var(--border)", background: "var(--chip)", color: "var(--text)" }}
                 >
@@ -605,8 +617,8 @@ function NoticeDocument({
       {mounted &&
         createPortal(
           <div id="sar-print-portal">
-            <h1>NOTICE UNDER {n.statute}</h1>
-            {n.body.map((para, i) => (
+            <h1>NOTICE UNDER {n.statute || "SECTION 91 CrPC / SECTION 94 BNSS"}</h1>
+            {(n.body || []).map((para, i) => (
               <p key={i} style={{ whiteSpace: "pre-wrap" }}>
                 {para}
               </p>

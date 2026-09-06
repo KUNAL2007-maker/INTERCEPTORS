@@ -13,6 +13,7 @@ import {
   type SubjectAttributes
 } from './rbac-abac';
 import { hashPassword, verifyPassword } from './auth-crypto';
+import { ensureLegalNotice } from './investigation';
 
 export type StoredCase = {
   id: number;
@@ -190,7 +191,28 @@ const memoryStore = {
       created_at: '2026-08-10T14:20:00.000Z'
     }
   ] as StoredCase[],
-  notices: [] as StoredFreezeNotice[],
+  notices: [
+    {
+      id: 'NOTICE-2026-0842-BN',
+      case_id: 3,
+      case_number: 'IN-I4C-2026-9901',
+      target_vasp: 'Binance International',
+      vasp_id: 1,
+      status: 'Issued',
+      drafted_by_name: 'ACP Sharma (Gazetted Officer)',
+      approved_by_name: 'ACP Sharma (Gazetted Officer)',
+      created_at: 1788710000000,
+      notice: ensureLegalNotice({
+        ref: 'BNSS-2026-0842-BN',
+        case_number: 'IN-I4C-2026-9901',
+        to_vasp: 'Binance International',
+        to_email: 'compliance@binance.com',
+        amountInr: 125000000.0,
+        amountUsd: 1500000,
+        targetAddresses: ['0x55aa33bb110022cc44dd99ee88ff77aa66bb55cc']
+      })
+    }
+  ] as StoredFreezeNotice[],
   audit_logs: [] as StoredAuditLog[],
   traces: [] as any[]
 };
@@ -454,10 +476,22 @@ export async function updateCase(
 // 6. Section 94 BNSS Legal Freeze Notices (Statutory Gate + Audit Log)
 // ----------------------------------------------------------------------------
 export async function getNoticesForUser(user: SubjectAttributes): Promise<StoredFreezeNotice[]> {
-  if (user.role === 'EXCHANGE_NODAL_OFFICER') {
-    return memoryStore.notices.filter((n) => !n.vasp_id || n.vasp_id === user.vasp_id);
-  }
-  return memoryStore.notices;
+  const filtered = user.role === 'EXCHANGE_NODAL_OFFICER'
+    ? memoryStore.notices.filter((n) => !n.vasp_id || n.vasp_id === user.vasp_id)
+    : memoryStore.notices;
+
+  // Defensive hydration: ensure every notice returned has a complete, valid notice payload
+  return filtered.map((n) => {
+    const linkedCase = n.case_number
+      ? memoryStore.cases.find((c) => c.case_number === n.case_number)
+      : null;
+    n.notice = ensureLegalNotice(n.notice, {
+      ...n,
+      loss_amount_inr: linkedCase?.loss_amount_inr,
+      suspect_wallet_address: linkedCase?.suspect_wallet_address
+    });
+    return n;
+  });
 }
 
 export async function saveFreezeNotice(
@@ -496,47 +530,64 @@ export async function saveFreezeNotice(
     }
   }
 
+  const existingIdx = memoryStore.notices.findIndex((n) => n.id === noticeData.id);
+  const existingNotice = existingIdx >= 0 ? memoryStore.notices[existingIdx] : null;
+
+  // CRITICAL: Preserve existing notice object if update payload does not specify notice
+  const mergedNoticeData = noticeData.notice !== undefined ? noticeData.notice : existingNotice?.notice;
+
+  const targetCaseKey =
+    noticeData.case_id ||
+    noticeData.case_number ||
+    existingNotice?.case_number ||
+    (mergedNoticeData as any)?.case_number;
+  const linkedCase = targetCaseKey
+    ? memoryStore.cases.find((c) => String(c.id) === String(targetCaseKey) || c.case_number === String(targetCaseKey))
+    : null;
+
+  const resolvedNotice = ensureLegalNotice(mergedNoticeData, {
+    ...existingNotice,
+    ...noticeData,
+    case_number: noticeData.case_number || existingNotice?.case_number || linkedCase?.case_number,
+    target_vasp: noticeData.target_vasp || existingNotice?.target_vasp || linkedCase?.target_vasp,
+    loss_amount_inr: linkedCase?.loss_amount_inr,
+    suspect_wallet_address: linkedCase?.suspect_wallet_address,
+  });
+
   const stored: StoredFreezeNotice = {
-    id: noticeData.id || `NOTICE-${Date.now()}`,
-    case_id: noticeData.case_id,
-    case_number: noticeData.case_number,
-    target_vasp: noticeData.target_vasp || 'Binance International',
-    vasp_id: noticeData.vasp_id || 1,
-    status: isDraft ? 'Draft' : (noticeData.status || 'Issued'),
-    drafted_by_name: noticeData.drafted_by_name || actingOfficer.name,
-    approved_by_name: isDraft ? undefined : (isAck ? noticeData.approved_by_name : actingOfficer.name),
-    created_at: Date.now(),
-    notice: noticeData.notice
+    id: noticeData.id || existingNotice?.id || `NOTICE-${Date.now()}`,
+    case_id: noticeData.case_id ?? existingNotice?.case_id ?? (linkedCase?.id as any),
+    case_number: noticeData.case_number ?? existingNotice?.case_number ?? linkedCase?.case_number ?? 'MH-CYBER-2026-0842',
+    target_vasp: noticeData.target_vasp || existingNotice?.target_vasp || linkedCase?.target_vasp || 'Binance International',
+    vasp_id: noticeData.vasp_id ?? existingNotice?.vasp_id ?? linkedCase?.vasp_id ?? 1,
+    status: isDraft ? 'Draft' : (noticeData.status || existingNotice?.status || 'Issued'),
+    drafted_by_name: noticeData.drafted_by_name || existingNotice?.drafted_by_name || actingOfficer.name,
+    approved_by_name: isDraft ? undefined : (isAck ? (noticeData.approved_by_name || existingNotice?.approved_by_name || actingOfficer.name) : actingOfficer.name),
+    created_at: existingNotice?.created_at || Date.now(),
+    notice: resolvedNotice
   };
 
-  const existingIdx = memoryStore.notices.findIndex((n) => n.id === stored.id);
   if (existingIdx >= 0) {
-    memoryStore.notices[existingIdx] = { ...memoryStore.notices[existingIdx], ...stored };
+    memoryStore.notices[existingIdx] = stored;
   } else {
     memoryStore.notices.unshift(stored);
   }
 
   // Synchronize case status and metadata if this notice is linked to a case
-  const targetCaseKey = stored.case_id || stored.case_number || (stored.notice as any)?.case_number;
-  if (targetCaseKey) {
-    const matchedCase = memoryStore.cases.find(
-      (c) => String(c.id) === String(targetCaseKey) || c.case_number === String(targetCaseKey)
-    );
-    if (matchedCase) {
-      if (stored.status === 'Acknowledged') {
-        matchedCase.status = 'FROZEN';
-      } else if (stored.status === 'Issued') {
-        matchedCase.status = 'NOTICE_SERVED';
-      }
-      matchedCase.target_vasp = stored.target_vasp || matchedCase.target_vasp;
-      matchedCase.freeze_notice_id = stored.id;
+  if (targetCaseKey && linkedCase) {
+    if (stored.status === 'Acknowledged') {
+      linkedCase.status = 'FROZEN';
+    } else if (stored.status === 'Issued') {
+      linkedCase.status = 'NOTICE_SERVED';
+    }
+    linkedCase.target_vasp = stored.target_vasp || linkedCase.target_vasp;
+    linkedCase.freeze_notice_id = stored.id;
 
-      if (pgAvailable && pool) {
-        pool.query('UPDATE cases SET status = $1 WHERE case_number = $2', [
-          matchedCase.status,
-          matchedCase.case_number
-        ]).catch(() => {});
-      }
+    if (pgAvailable && pool) {
+      pool.query('UPDATE cases SET status = $1 WHERE case_number = $2', [
+        linkedCase.status,
+        linkedCase.case_number
+      ]).catch(() => {});
     }
   }
 

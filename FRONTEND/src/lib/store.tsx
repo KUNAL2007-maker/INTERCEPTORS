@@ -19,6 +19,8 @@ import type { TraceResult, CaseMeta, WalletTransfer } from "@/lib/domain";
 import {
   buildEvidence,
   section91Notice,
+  ensureLegalNotice,
+  normalizeStoredNotice,
   type CryptoEvidence,
   type CryptoFinding,
   type LegalNotice,
@@ -38,6 +40,10 @@ export type StoredNotice = {
   status: NoticeStatus;
   createdAt: number;
   notice: LegalNotice;
+  case_number?: string;
+  target_vasp?: string;
+  drafted_by_name?: string;
+  approved_by_name?: string;
 };
 
 type TraceStore = {
@@ -153,8 +159,8 @@ export function TraceStoreProvider({ children }: { children: ReactNode }) {
           }));
         }
 
-        if (mounted && noticesRes && noticesRes.notices) {
-          setNotices(noticesRes.notices);
+        if (mounted && noticesRes && Array.isArray(noticesRes.notices)) {
+          setNotices(noticesRes.notices.map((n: any) => normalizeStoredNotice(n)));
         }
       } catch {
         // Fallback to local memory state
@@ -309,6 +315,9 @@ export function TraceStoreProvider({ children }: { children: ReactNode }) {
         status: defaultStatus,
         createdAt: Date.now(),
         notice,
+        case_number: cNumber,
+        target_vasp: targetVaspName,
+        drafted_by_name: user?.fullName || user?.name || "Officer Sharma",
       };
 
       setNotices((prev) => [newNotice, ...prev]);
@@ -335,15 +344,18 @@ export function TraceStoreProvider({ children }: { children: ReactNode }) {
       prev.map((n) => (n.id === id ? { ...n, status: newStatus } : n))
     );
 
+    const targetNotice = notices.find((n) => n.id === id);
+
     postJSON("/api/notices", {
       id,
       status: newStatus,
       action: newStatus === "Acknowledged" ? "acknowledge" : undefined,
-      case_number: activeCase?.case_number,
+      case_number: activeCase?.case_number || targetNotice?.case_number || targetNotice?.notice?.case?.ncrp_ack_no,
+      notice: targetNotice?.notice,
     }).then(() => {
       void loadCases();
     }).catch(() => {});
-  }, [activeCase, loadCases]);
+  }, [activeCase, notices, loadCases]);
 
   const removeNotice = useCallback((id: string) => {
     setNotices((prev) => prev.filter((n) => n.id !== id));
