@@ -165,10 +165,11 @@ a:/SIH/
 ---
 
 #### Member 3: Kunal (`KUNAL/`)
-* **Role / Focus**: Forensics Engine, Access Control (RBAC/ABAC) & Clustering (`ENGINE/`, `AUTH_RBAC_ABAC/`)
+* **Role / Focus**: Forensics Engine, Access Control (RBAC/ABAC) & Clustering (`ENGINE/`, `AUTH_RBAC_ABAC/`, `FRONTEND/`)
 * **✅ Tasks Done (Completed)**:
   * [x] Reviewed algorithmic specifications in `RESEARCH/SET 2` and `RESEARCH/SET 3`.
   * [x] Consolidated complete 7-role RBAC & ABAC access control engine into single self-contained `AUTH_RBAC_ABAC/` module with dedicated frontend, backend API, 35 automated tests, and documentation.
+  * [x] Merged `Chain_Traicer` multi-chain forensic tracing engine into `FRONTEND/` with PostgreSQL persistence (purged Firebase), 7-role RBAC & 7-policy ABAC, 1930/NCRP ingestion gateway, and Sec 94 BNSS freeze notices.
 * **🔄 Tasks Working On (In Progress)**:
   * [ ] Designing traversal algorithm (BFS/DFS with pruning) for multi-hop transaction trails.
 * **📋 Tasks to be Started (Assigned / Backlog)**:
