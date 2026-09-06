@@ -73,8 +73,11 @@ export async function POST(req: Request) {
 
     // Explicit demo, or nothing usable to trace → the built-in scenario. It
     // honours a pasted seed as the victim-entry address if one was given.
-    if (demo || !rawSeed) {
-      const trace = loadMockTrace(rawSeed || undefined, caseMeta);
+    if (demo || !rawSeed || rawSeed.toLowerCase() === "demo") {
+      const trace = loadMockTrace(
+        rawSeed && rawSeed.toLowerCase() !== "demo" ? rawSeed : undefined,
+        caseMeta
+      );
       return NextResponse.json({ ...trace, generatedAt: Date.now() });
     }
 

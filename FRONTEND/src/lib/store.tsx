@@ -152,30 +152,33 @@ export function TraceStoreProvider({ children }: { children: ReactNode }) {
     setTraceNote(null);
 
     try {
-      const res = await postJSON<{
-        success: boolean;
-        trace?: TraceResult;
-        error?: string;
-        hint?: string;
-      }>("/api/trace", { seed: s });
+      const isDemo = s.toLowerCase() === "demo";
+      const payload = isDemo ? { demo: true } : { seed: s };
+      const res = await postJSON<any>("/api/trace", payload);
 
-      if (!res.success || !res.trace) {
+      if (!res || res.error || !res.nodes) {
         setStatus("error");
-        setError(res.error || "Trace request failed.");
-        setTraceNote(res.hint || null);
+        setError(res?.error || "Trace request failed.");
+        setTraceNote(res?.note || res?.hint || null);
         return;
       }
 
-      setTrace(res.trace);
-      setHistory((prev) => [res.trace!, ...prev.slice(0, 19)]);
+      const traceResult = (res.trace || res) as TraceResult;
+      setTrace(traceResult);
+      setHistory((prev) => [traceResult, ...prev.slice(0, 19)]);
+      if (res.note) {
+        setTraceNote(res.note);
+      } else if (res.warnings && res.warnings.length > 0) {
+        setTraceNote(res.warnings.join(" | "));
+      }
       setStatus("ready");
 
       // Persist to PostgreSQL case table
       try {
         await postJSON("/api/cases", {
           case_number: `MH-${Date.now().toString().slice(-6)}`,
-          suspect_wallet_address: s,
-          blockchain_network: res.trace.seed_chain,
+          suspect_wallet_address: isDemo ? (traceResult.seed || "0x24f3aeabd426f663385b80e89f85ec997e8f06f3") : s,
+          blockchain_network: traceResult.seed_chain || "ETHEREUM",
           status: "TRACED"
         });
       } catch {
@@ -243,17 +246,21 @@ export function TraceStoreProvider({ children }: { children: ReactNode }) {
     if (!trace?.seed) return;
     setRefreshing(true);
     try {
-      const res = await postJSON<{ success: boolean; trace?: TraceResult }>("/api/trace", {
-        seed: trace.seed
+      const res = await postJSON<any>("/api/trace", {
+        seed: trace.seed,
+        chain: trace.seed_chain,
       });
-      if (res.success && res.trace) {
+      const traceResult = (res?.trace || (res?.nodes ? res : null)) as TraceResult | null;
+      if (traceResult && traceResult.transfers) {
         const oldHashes = new Set(trace.transfers.map((t) => t.tx_hash));
-        const newlyDiscovered = res.trace.transfers
+        const newlyDiscovered = traceResult.transfers
           .map((t) => t.tx_hash)
           .filter((h) => !oldHashes.has(h));
         setNewTxHashes(newlyDiscovered);
-        setTrace(res.trace);
+        setTrace(traceResult);
       }
+    } catch (err) {
+      console.error("Refresh trace failed:", err);
     } finally {
       setRefreshing(false);
     }
