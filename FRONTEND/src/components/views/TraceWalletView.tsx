@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Page, PanelHeader } from "../ui/Page";
 import {
   detectChain,
@@ -37,6 +37,7 @@ export function TraceWalletView({ onDone }: { onDone: () => void }) {
     trace,
     evidence,
     caseMeta,
+    activeCase,
     runTrace,
     loadDemo,
     clearTrace,
@@ -45,7 +46,16 @@ export function TraceWalletView({ onDone }: { onDone: () => void }) {
   const { traces } = useTraceHistory();
 
   const [tab, setTab] = useState<"trace" | "history">("trace");
-  const [seed, setSeed] = useState(DEMO_SEED);
+  const [seed, setSeed] = useState(activeCase?.suspect_wallet_address || trace?.seed || "");
+
+  useEffect(() => {
+    if (activeCase?.suspect_wallet_address) {
+      setSeed(activeCase.suspect_wallet_address);
+    } else if (trace?.seed) {
+      setSeed(trace.seed);
+    }
+  }, [activeCase?.suspect_wallet_address, trace?.seed]);
+
   const [batchOpen, setBatchOpen] = useState(false);
   const [batch, setBatch] = useState("");
 
@@ -67,7 +77,7 @@ export function TraceWalletView({ onDone }: { onDone: () => void }) {
     const s = addr.trim();
     if (!s) return;
     setSeed(s);
-    void runTrace(s);
+    void runTrace(s, activeCase ?? undefined);
   };
 
   return (

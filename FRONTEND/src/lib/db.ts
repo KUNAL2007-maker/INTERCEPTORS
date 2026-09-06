@@ -18,19 +18,25 @@ export type StoredCase = {
   id: number;
   case_number: string;
   victim_id: number;
+  victim_name?: string;
+  victim_email?: string;
   workspace_id: number;
   jurisdiction_code: string;
   assigned_investigator_id?: number | null;
+  assigned_investigator_name?: string;
   suspect_wallet_address: string;
   blockchain_network: string;
   loss_amount_inr: number;
+  token_symbol?: string;
   crime_type: string;
+  incident_date?: string;
   target_vasp?: string;
   vasp_id?: number;
   classification: string;
   status: string;
   created_at: string;
   tx_hashes?: string[];
+  freeze_notice_id?: string;
   notes?: string;
 };
 
@@ -114,55 +120,74 @@ const memoryStore = {
       id: 1,
       case_number: 'MH-CYBER-2026-0842',
       victim_id: 5,
+      victim_name: 'Rajesh Verma',
+      victim_email: 'victim.verma@gmail.com',
       workspace_id: 1,
       jurisdiction_code: 'MH-CYBER-01',
       assigned_investigator_id: 3,
+      assigned_investigator_name: 'Sub-Inspector Patil',
       suspect_wallet_address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F',
       blockchain_network: 'Ethereum',
       loss_amount_inr: 450000.0,
-      crime_type: 'Task-based Investment Scam',
+      token_symbol: 'USDT',
+      crime_type: 'Task-based Fake Part-Time Job Scam',
+      incident_date: '2026-08-17',
       target_vasp: 'Binance International',
       vasp_id: 1,
       classification: 'CONFIDENTIAL',
       status: 'TRACED',
-      tx_hashes: ['0x3a1b...89c2'],
-      created_at: new Date().toISOString()
+      tx_hashes: ['0x3a1b49e8d3840291f09e81b37492c019d3847291a0293b89c2'],
+      notes: 'Complainant promised high daily returns for rating hotels on Telegram group. Transferred USDT via P2P.',
+      created_at: '2026-08-17T09:15:00.000Z'
     },
     {
       id: 2,
       case_number: 'DL-CYBER-2026-0319',
       victim_id: 99,
+      victim_name: 'Aakash Sharma',
+      victim_email: 'aakash.sharma@gmail.com',
       workspace_id: 2,
       jurisdiction_code: 'DL-CYBER-02',
       assigned_investigator_id: 12,
+      assigned_investigator_name: 'Inspector Mehra',
       suspect_wallet_address: '0x1928aBc849102c98Dfe10293bC8419280918234A',
       blockchain_network: 'Polygon',
       loss_amount_inr: 8500000.0,
+      token_symbol: 'MATIC',
       crime_type: 'Fake Crypto Exchange Phishing',
+      incident_date: '2026-08-20',
       target_vasp: 'WazirX India',
       vasp_id: 2,
       classification: 'RESTRICTED',
       status: 'PENDING_TRACING',
-      tx_hashes: ['0x992a...bb14'],
-      created_at: new Date().toISOString()
+      tx_hashes: ['0x992a8371902bc9182a01948572b9182019a84712bb14'],
+      notes: 'Phishing website mimicking Indian crypto exchange lured victim into entering seed phrase.',
+      created_at: '2026-08-20T11:30:00.000Z'
     },
     {
       id: 3,
       case_number: 'IN-I4C-2026-9901',
       victim_id: 5,
+      victim_name: 'Rajesh Verma',
+      victim_email: 'victim.verma@gmail.com',
       workspace_id: 3,
       jurisdiction_code: 'IN-I4C-00',
       assigned_investigator_id: 1,
+      assigned_investigator_name: 'Central Cyber Cell',
       suspect_wallet_address: '0x55aa33bb110022cc44dd99ee88ff77aa66bb55cc',
       blockchain_network: 'TRON',
       loss_amount_inr: 125000000.0,
+      token_symbol: 'USDT',
       crime_type: 'Cross-Border Syndicate Laundering',
+      incident_date: '2026-08-10',
       target_vasp: 'Binance International',
       vasp_id: 1,
       classification: 'TOP_SECRET',
-      status: 'TRACED',
-      tx_hashes: ['0xcc77...11aa'],
-      created_at: new Date().toISOString()
+      status: 'NOTICE_SERVED',
+      freeze_notice_id: 'NOTICE-2026-0842-BN',
+      tx_hashes: ['0xcc77192837461902837461928374619283746111aa'],
+      notes: 'International organized cyber crime syndicate laundering funds across bridge into Tron USDT.',
+      created_at: '2026-08-10T14:20:00.000Z'
     }
   ] as StoredCase[],
   notices: [] as StoredFreezeNotice[],
@@ -348,18 +373,26 @@ export async function createCase(newCase: Partial<StoredCase>): Promise<StoredCa
     id: memoryStore.cases.length + 1,
     case_number: newCase.case_number || `CRIME-${Date.now().toString().slice(-6)}`,
     victim_id: newCase.victim_id || 5,
+    victim_name: newCase.victim_name || (newCase.victim_id === 5 ? 'Rajesh Verma' : 'Complainant'),
+    victim_email: newCase.victim_email || (newCase.victim_id === 5 ? 'victim.verma@gmail.com' : undefined),
     workspace_id: newCase.workspace_id || 1,
     jurisdiction_code: newCase.jurisdiction_code || 'MH-CYBER-01',
     assigned_investigator_id: newCase.assigned_investigator_id || null,
+    assigned_investigator_name: newCase.assigned_investigator_name || 'Sub-Inspector Patil',
     suspect_wallet_address: newCase.suspect_wallet_address || '',
     blockchain_network: newCase.blockchain_network || 'Ethereum',
     loss_amount_inr: Number(newCase.loss_amount_inr) || 0,
+    token_symbol: newCase.token_symbol || 'USDT',
     crime_type: newCase.crime_type || 'Crypto Fraud',
+    incident_date: newCase.incident_date || new Date().toISOString().split('T')[0],
     target_vasp: newCase.target_vasp || 'Binance International',
     vasp_id: newCase.vasp_id || 1,
     classification: newCase.classification || 'CONFIDENTIAL',
-    status: newCase.status || 'TRACED',
-    created_at: new Date().toISOString()
+    status: newCase.status || 'PENDING_TRACING',
+    created_at: newCase.created_at || new Date().toISOString(),
+    tx_hashes: newCase.tx_hashes || [],
+    freeze_notice_id: newCase.freeze_notice_id,
+    notes: newCase.notes || ''
   };
 
   if (pgAvailable && pool) {
@@ -380,7 +413,7 @@ export async function createCase(newCase: Partial<StoredCase>): Promise<StoredCa
         caseObj.status
       ];
       const res = await pool.query(q, values);
-      return res.rows[0];
+      return { ...caseObj, ...res.rows[0] };
     } catch {
       // Fall through to memory
     }
@@ -388,6 +421,33 @@ export async function createCase(newCase: Partial<StoredCase>): Promise<StoredCa
 
   memoryStore.cases.unshift(caseObj);
   return caseObj;
+}
+
+export async function updateCase(
+  caseIdOrNumber: string | number,
+  updates: Partial<StoredCase>
+): Promise<StoredCase | null> {
+  const found = memoryStore.cases.find(
+    (c) => String(c.id) === String(caseIdOrNumber) || c.case_number === String(caseIdOrNumber)
+  );
+  if (!found) return null;
+
+  Object.assign(found, updates);
+
+  if (pgAvailable && pool) {
+    try {
+      if (updates.status) {
+        await pool.query('UPDATE cases SET status = $1 WHERE case_number = $2', [
+          updates.status,
+          found.case_number
+        ]);
+      }
+    } catch {
+      // Ignore postgres update error on fallback
+    }
+  }
+
+  return found;
 }
 
 // ----------------------------------------------------------------------------
@@ -449,7 +509,29 @@ export async function saveFreezeNotice(
     notice: noticeData.notice
   };
 
-  memoryStore.notices.unshift(stored);
+  const existingIdx = memoryStore.notices.findIndex((n) => n.id === stored.id);
+  if (existingIdx >= 0) {
+    memoryStore.notices[existingIdx] = { ...memoryStore.notices[existingIdx], ...stored };
+  } else {
+    memoryStore.notices.unshift(stored);
+  }
+
+  // Synchronize case status and metadata if this notice is linked to a case
+  const targetCaseKey = stored.case_id || stored.case_number || (stored.notice as any)?.case_number;
+  if (targetCaseKey) {
+    const matchedCase = memoryStore.cases.find(
+      (c) => String(c.id) === String(targetCaseKey) || c.case_number === String(targetCaseKey)
+    );
+    if (matchedCase) {
+      if (stored.status === 'Acknowledged') {
+        matchedCase.status = 'FROZEN';
+      } else if (stored.status === 'Issued') {
+        matchedCase.status = 'NOTICE_SERVED';
+      }
+      matchedCase.target_vasp = stored.target_vasp || matchedCase.target_vasp;
+      matchedCase.freeze_notice_id = stored.id;
+    }
+  }
 
   recordAuditLog({
     user_id: actingOfficer.id,

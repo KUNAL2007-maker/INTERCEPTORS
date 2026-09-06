@@ -40,16 +40,22 @@ export async function POST(req: Request) {
     const newCase = await createCase({
       case_number: complaintId,
       victim_id: assignedVictimId,
+      victim_name: user.role === 'VICTIM' ? user.name : (body.victim_name || 'Rajesh Verma'),
+      victim_email: user.role === 'VICTIM' ? user.email : (body.victim_email || 'victim.verma@gmail.com'),
       workspace_id: user.workspace_id || 1,
       jurisdiction_code: user.jurisdiction_code || 'MH-CYBER-01',
       suspect_wallet_address: suspectWallet,
       blockchain_network: body.blockchain_network || 'Ethereum',
       loss_amount_inr: amountInr,
+      token_symbol: body.token_symbol || body.currency || 'USDT',
       crime_type: crimeCategory,
+      incident_date: body.incident_date || new Date().toISOString().split('T')[0],
       target_vasp: body.target_vasp || 'Binance International',
       vasp_id: body.vasp_id || 1,
       classification: user.role === 'VICTIM' ? 'RESTRICTED' : 'CONFIDENTIAL',
-      status: 'PENDING_TRACING'
+      status: 'PENDING_TRACING',
+      tx_hashes: body.tx_hash ? [body.tx_hash] : (body.tx_hashes || []),
+      notes: body.notes || body.incident_description || ''
     });
 
     recordAuditLog({

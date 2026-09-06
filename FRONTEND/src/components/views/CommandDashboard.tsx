@@ -50,12 +50,49 @@ const SEV_GROUPS: { key: CryptoFinding["severity"]; label: string; dot: string }
   { key: "info", label: "Informational", dot: "bg-emerald-400" },
 ];
 
-export function CommandDashboard({ liveFeed, onGoToTrace }: { liveFeed: boolean; onGoToTrace: () => void }) {
+import { useAuth } from "../AuthProvider";
+import type { StoredCase } from "@/lib/db";
+import { formatINR, detectChain, CHAINS, chainColor } from "@/lib/domain";
+
+export function CommandDashboard({
+  liveFeed,
+  onGoToTrace,
+  onGoToCases,
+}: {
+  liveFeed: boolean;
+  onGoToTrace: () => void;
+  onGoToCases?: () => void;
+}) {
+  const { user } = useAuth();
   const { wallets, highRisk, tracedUsd, openFindings } = useTraceStats();
   const { findings } = useFindings();
   const { transfers } = useTransfers();
-  const { evidence, trace } = useTraceStore();
+  const { evidence, trace, cases, runTrace, setActiveCase } = useTraceStore();
   const [expandedFinding, setExpandedFinding] = useState<string | null>(null);
+  const [tracingCase, setTracingCase] = useState<string | null>(null);
+  const [forwardedMap, setForwardedMap] = useState<Record<string, boolean>>({});
+
+  const canExecuteTrace =
+    Boolean(user?.is_gazetted) ||
+    user?.role === "SENIOR_INVESTIGATOR" ||
+    user?.role === "SUPER_ADMIN" ||
+    user?.role === "WORKSPACE_ADMIN";
+
+  const handleTraceFromDashboard = async (c: StoredCase) => {
+    if (!canExecuteTrace) {
+      setForwardedMap((prev) => ({ ...prev, [c.case_number]: true }));
+      return;
+    }
+    setTracingCase(c.case_number);
+    try {
+      setActiveCase(c);
+      await runTrace(c.suspect_wallet_address, c);
+    } catch {
+      // Ignore
+    } finally {
+      setTracingCase(null);
+    }
+  };
 
   // Crypto transfers carry no severity of their own — derive it from the trace
   // nodes: a transfer inherits the severity of the wallet it landed in (or left).
@@ -83,29 +120,179 @@ export function CommandDashboard({ liveFeed, onGoToTrace }: { liveFeed: boolean;
     };
   }, [evidence]);
 
-  // Empty state — the dashboard is entirely trace-driven, so with no trace it
-  // points the officer at the one action that fills it in.
+  // If no trace is active, show the incoming complaints inbox front and center
   if (!evidence || evidence.txCount === 0) {
     return (
-      <Page>
-        <section className="glass rounded-2xl p-8 text-center">
-          <div className="text-3xl mb-2">⛓️‍💥</div>
-          <p className="text-sm" style={{ color: "var(--text-strong)" }}>
-            No wallet traced yet — the command dashboard lights up once you trace a wallet.
-          </p>
-          <p className="mt-1 mx-auto max-w-md text-[12px]" style={{ color: "var(--muted)" }}>
-            The KPIs, risk heatmap, multi-agent fleet, finding feed and typology
-            distribution all read from the current trace. Trace a victim-reported
-            address (or load the demo case) to populate them.
-          </p>
-          <button
-            onClick={onGoToTrace}
-            className="mt-4 rounded-xl px-4 py-2.5 text-sm font-medium text-black transition hover:opacity-90"
-            style={{ background: "linear-gradient(135deg,#22c55e,#10b981)" }}
-          >
-            Go to Trace Wallet
-          </button>
-        </section>
+      <Page width="wide">
+        {/* Officer Welcome & Authority Banner */}
+        <div
+          className="rounded-2xl border p-5 mb-6 shadow-lg"
+          style={{
+            background: "linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(59, 130, 246, 0.04))",
+            borderColor: "rgba(16, 185, 129, 0.25)",
+          }}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold shadow-md"
+                style={{ background: "#10b981", color: "#000" }}
+              >
+                ⚖️
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-lg font-bold text-white tracking-tight">
+                    Law Enforcement Command Console &bull; NCRP Attribution Engine
+                  </h1>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold">
+                    {user?.role === "SUPER_ADMIN" ? "CENTRAL I4C OVERSIGHT" : user?.jurisdiction_code || "MH-CYBER-01"}
+                  </span>
+                </div>
+                <p className="text-xs text-muted mt-0.5">
+                  Logged in as <strong className="text-white">{user?.name}</strong> ({user?.role}) &bull;{" "}
+                  {canExecuteTrace
+                    ? "Authorized for Multi-Hop Cross-Chain Tracing & Section 94 BNSS Freezes"
+                    : "Field Investigator (Select complaint to forward for Gazetted Officer trace)"}
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={onGoToTrace}
+              className="px-4 py-2.5 rounded-xl text-xs font-bold text-black transition hover:opacity-90 shadow-glow"
+              style={{ background: "linear-gradient(135deg, #22c55e, #10b981)" }}
+            >
+              + Run Custom Seed Trace
+            </button>
+          </div>
+        </div>
+
+        {/* Incoming Victim Complaints Queue */}
+        <div
+          className="rounded-2xl border p-5 mb-6 shadow-md"
+          style={{ background: "var(--panel)", borderColor: "var(--border)" }}
+        >
+          <div className="flex items-center justify-between gap-3 border-b pb-4 mb-4" style={{ borderColor: "var(--border)" }}>
+            <div>
+              <div className="text-[11px] uppercase tracking-widest text-emerald-400 font-semibold">Incoming Citizen Complaints</div>
+              <h2 className="text-base font-bold text-white mt-0.5">NCRP 1930 Helpline Fraud Reports</h2>
+              <p className="text-xs text-muted mt-0.5">
+                Select any victim-reported suspect wallet below to execute automated multi-hop blockchain tracing.
+              </p>
+            </div>
+            {onGoToCases && (
+              <button
+                onClick={onGoToCases}
+                className="text-xs text-emerald-300 hover:text-emerald-200 border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 rounded-xl transition"
+              >
+                View Full Inbox ({cases.length}) &rarr;
+              </button>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            {cases.map((c) => {
+              const chain = detectChain(c.suspect_wallet_address);
+              const isTracing = tracingCase === c.case_number;
+              const isForwarded = forwardedMap[c.case_number];
+
+              return (
+                <div
+                  key={c.case_number}
+                  className="rounded-xl border p-4 transition hover:border-emerald-500/40 bg-white/[0.01] flex flex-wrap items-center justify-between gap-4"
+                  style={{ borderColor: "var(--border)" }}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2.5 flex-wrap mb-1">
+                      <span className="font-mono font-bold text-xs text-white">{c.case_number}</span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                        {c.jurisdiction_code}
+                      </span>
+                      <span
+                        className={`text-[10px] font-mono px-2 py-0.5 rounded font-semibold ${
+                          c.status === "PENDING_TRACING"
+                            ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse"
+                            : c.status === "TRACED"
+                            ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
+                            : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                        }`}
+                      >
+                        {c.status}
+                      </span>
+                      {c.target_vasp && (
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+                          VASP: {c.target_vasp}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="text-xs text-muted flex items-center gap-3 flex-wrap">
+                      <span>
+                        Complainant: <strong className="text-white">{c.victim_name || "Rajesh Verma"}</strong>
+                      </span>
+                      <span>&bull;</span>
+                      <span className="text-slate-300 font-medium">{c.crime_type}</span>
+                    </div>
+
+                    <div className="mt-2 flex items-center gap-2 flex-wrap">
+                      <span className="text-[11px] text-muted">Suspect:</span>
+                      <code className="text-xs font-mono text-cyan-300 bg-black/40 px-2 py-0.5 rounded border border-white/5">
+                        {c.suspect_wallet_address}
+                      </code>
+                      {chain && (
+                        <span
+                          className="text-[10px] font-semibold px-1.5 py-0.5 rounded font-mono"
+                          style={{
+                            background: `${chainColor(chain)}22`,
+                            color: chainColor(chain),
+                          }}
+                        >
+                          {CHAINS[chain].short}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="text-right shrink-0">
+                    <div className="text-base font-bold text-rose-400 font-mono">
+                      {formatINR(Number(c.loss_amount_inr))}
+                    </div>
+                    <div className="text-[10px] text-muted mb-2">
+                      ~{Math.round(Number(c.loss_amount_inr) / 85).toLocaleString()} {c.token_symbol || "USDT"}
+                    </div>
+
+                    {canExecuteTrace ? (
+                      <button
+                        onClick={() => handleTraceFromDashboard(c)}
+                        disabled={isTracing}
+                        className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-black transition hover:opacity-90 shadow-glow disabled:opacity-50 flex items-center gap-1.5 ml-auto"
+                        style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}
+                      >
+                        <span>⚡</span>
+                        <span>{isTracing ? "Tracing..." : "Trace Suspect Wallet"}</span>
+                      </button>
+                    ) : (
+                      !isForwarded ? (
+                        <button
+                          onClick={() => handleTraceFromDashboard(c)}
+                          className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/40 hover:bg-amber-500/25 transition flex items-center gap-1.5 ml-auto"
+                        >
+                          <span>🔒</span>
+                          <span>Forward to ACP Sharma</span>
+                        </button>
+                      ) : (
+                        <span className="text-xs font-semibold text-emerald-300 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/30">
+                          ✓ Queued for ACP
+                        </span>
+                      )
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </Page>
     );
   }
@@ -164,6 +351,40 @@ export function CommandDashboard({ liveFeed, onGoToTrace }: { liveFeed: boolean;
       <div className="mt-5">
         <TrackBanner track={evidence.track} />
       </div>
+
+      {/* Active Traced Case Dossier Bar */}
+      {trace && (
+        <div
+          className="mt-4 rounded-xl border px-4 py-3 flex flex-wrap items-center justify-between gap-3"
+          style={{ background: "var(--panel)", borderColor: "var(--border)" }}
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-lg">🎯</span>
+            <div>
+              <div className="text-xs font-semibold text-white flex items-center gap-2">
+                <span>Active Traced Suspect Wallet:</span>
+                <code className="text-cyan-300 font-mono bg-black/40 px-2 py-0.5 rounded text-xs">
+                  {trace.seed}
+                </code>
+              </div>
+              <div className="text-[11px] text-muted mt-0.5">
+                Linked Case: <strong className="text-slate-300">{evidence.case?.ncrp_ack_no || "MH-CYBER-2026-0842"}</strong>
+                {evidence.case?.victim_name ? ` &bull; Complainant: ${evidence.case.victim_name}` : ""}
+                {evidence.case?.amount_lost_inr ? ` &bull; Loss: ${formatINR(evidence.case.amount_lost_inr)}` : ""}
+              </div>
+            </div>
+          </div>
+
+          {onGoToCases && (
+            <button
+              onClick={onGoToCases}
+              className="text-xs text-emerald-300 hover:text-emerald-200 border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 rounded-lg transition"
+            >
+              Switch / View Other Cases &rarr;
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Middle strip — 2 panels */}
       <div className="mt-5 grid grid-cols-1 lg:grid-cols-2 gap-4">

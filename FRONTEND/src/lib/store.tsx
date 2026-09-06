@@ -24,6 +24,7 @@ import {
   type LegalNotice,
   type TrackDecision,
 } from "@/lib/investigation";
+import type { StoredCase } from "@/lib/db";
 import { useAuth } from "@/components/AuthProvider";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -48,6 +49,8 @@ type TraceStore = {
   caseMeta: CaseMeta;
   history: TraceResult[];
   notices: StoredNotice[];
+  cases: StoredCase[];
+  activeCase: StoredCase | null;
 
   // Derived engine outputs (memoised on `trace`)
   evidence: CryptoEvidence | null;
@@ -59,15 +62,17 @@ type TraceStore = {
   newTxHashes: string[];
 
   // Actions
-  runTrace: (seed: string) => Promise<void>;
+  runTrace: (seed: string, linkedCase?: StoredCase) => Promise<void>;
   loadDemo: () => Promise<void>;
   clearTrace: () => void;
   setCaseMeta: (patch: Partial<CaseMeta>) => void;
-  generateNotice: (targetVaspName: string) => string | null;
+  setActiveCase: (c: StoredCase | null) => void;
+  loadCases: () => Promise<StoredCase[]>;
+  generateNotice: (targetVaspName: string, targetCaseNumber?: string) => string | null;
   setNoticeStatus: (id: string, status: NoticeStatus) => void;
   removeNotice: (id: string) => void;
   refreshTrace: () => Promise<void>;
-  ingestNcrpComplaint: (complaintData?: any) => Promise<void>;
+  ingestNcrpComplaint: (complaintData?: any) => Promise<any>;
 };
 
 // ── Context ──────────────────────────────────────────────────────────────────
@@ -97,6 +102,8 @@ export function TraceStoreProvider({ children }: { children: ReactNode }) {
     amount_lost_inr: 450000,
     jurisdiction_ps: "MH-CYBER-01"
   });
+  const [cases, setCases] = useState<StoredCase[]>([]);
+  const [activeCase, setActiveCase] = useState<StoredCase | null>(null);
   const [history, setHistory] = useState<TraceResult[]>([]);
   const [notices, setNotices] = useState<StoredNotice[]>([]);
   const [hydrating, setHydrating] = useState(false);
@@ -107,7 +114,21 @@ export function TraceStoreProvider({ children }: { children: ReactNode }) {
   const evidence = useMemo(() => (trace ? buildEvidence(trace) : null), [trace]);
   const track = useMemo(() => evidence?.track ?? null, [evidence]);
 
-  // Sync with PostgreSQL API on user change
+  const loadCases = useCallback(async (): Promise<StoredCase[]> => {
+    try {
+      const res = await fetch("/api/cases");
+      if (res.ok) {
+        const data = await res.json();
+        if (data && Array.isArray(data.cases)) {
+          setCases(data.cases);
+          return data.cases;
+        }
+      }
+    } catch {}
+    return [];
+  }, []);
+
+  // Sync with PostgreSQL / memory API on user change
   useEffect(() => {
     let mounted = true;
     async function hydrate() {
@@ -119,12 +140,16 @@ export function TraceStoreProvider({ children }: { children: ReactNode }) {
         ]);
 
         if (mounted && casesRes && casesRes.cases && casesRes.cases.length > 0) {
+          setCases(casesRes.cases);
           const firstCase = casesRes.cases[0];
+          setActiveCase(firstCase);
           setCaseMetaState((prev) => ({
             ...prev,
             ncrp_ack_no: firstCase.case_number,
             amount_lost_inr: Number(firstCase.loss_amount_inr) || prev.amount_lost_inr,
-            jurisdiction_ps: firstCase.jurisdiction_code || prev.jurisdiction_ps
+            jurisdiction_ps: firstCase.jurisdiction_code || prev.jurisdiction_ps,
+            victim_name: firstCase.victim_name || prev.victim_name,
+            io_name: firstCase.assigned_investigator_name || prev.io_name,
           }));
         }
 
@@ -144,16 +169,53 @@ export function TraceStoreProvider({ children }: { children: ReactNode }) {
     };
   }, [user?.role, user?.jurisdiction_code]);
 
-  const runTrace = useCallback(async (seed: string) => {
+  const runTrace = useCallback(async (seed: string, linkedCase?: StoredCase) => {
     const s = seed.trim();
     if (!s) return;
     setStatus("tracing");
     setError(null);
     setTraceNote(null);
 
+    const targetCase = linkedCase || activeCase;
+    if (targetCase) {
+      setActiveCase(targetCase);
+      setCaseMetaState((prev) => ({
+        ...prev,
+        ncrp_ack_no: targetCase.case_number,
+        victim_name: targetCase.victim_name || prev.victim_name,
+        amount_lost_inr: Number(targetCase.loss_amount_inr) || prev.amount_lost_inr,
+        jurisdiction_ps: targetCase.jurisdiction_code || prev.jurisdiction_ps,
+        io_name: user?.name || prev.io_name,
+      }));
+    }
+
     try {
       const isDemo = s.toLowerCase() === "demo";
-      const payload = isDemo ? { demo: true } : { seed: s };
+      const payload = isDemo
+        ? {
+            demo: true,
+            caseMeta: targetCase
+              ? {
+                  ncrp_ack_no: targetCase.case_number,
+                  victim_name: targetCase.victim_name,
+                  amount_lost_inr: Number(targetCase.loss_amount_inr),
+                  jurisdiction_ps: targetCase.jurisdiction_code,
+                  io_name: user?.name,
+                }
+              : undefined,
+          }
+        : {
+            seed: s,
+            caseMeta: targetCase
+              ? {
+                  ncrp_ack_no: targetCase.case_number,
+                  victim_name: targetCase.victim_name,
+                  amount_lost_inr: Number(targetCase.loss_amount_inr),
+                  jurisdiction_ps: targetCase.jurisdiction_code,
+                  io_name: user?.name,
+                }
+              : undefined,
+          };
       const res = await postJSON<any>("/api/trace", payload);
 
       if (!res || res.error || !res.nodes) {
@@ -173,22 +235,42 @@ export function TraceStoreProvider({ children }: { children: ReactNode }) {
       }
       setStatus("ready");
 
-      // Persist to PostgreSQL case table
-      try {
-        await postJSON("/api/cases", {
-          case_number: `MH-${Date.now().toString().slice(-6)}`,
-          suspect_wallet_address: isDemo ? (traceResult.seed || "0x24f3aeabd426f663385b80e89f85ec997e8f06f3") : s,
-          blockchain_network: traceResult.seed_chain || "ETHEREUM",
-          status: "TRACED"
-        });
-      } catch {
-        // Non-blocking
+      // Synchronize with database: Update case status to TRACED
+      if (targetCase) {
+        try {
+          await fetch("/api/cases", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              case_number: targetCase.case_number,
+              status: "TRACED",
+              suspect_wallet_address: s,
+              blockchain_network: traceResult.seed_chain || targetCase.blockchain_network || "Ethereum",
+            }),
+          });
+          void loadCases();
+        } catch {
+          // Non-blocking
+        }
+      } else {
+        // Persist new case record
+        try {
+          await postJSON("/api/cases", {
+            case_number: `MH-${Date.now().toString().slice(-6)}`,
+            suspect_wallet_address: isDemo ? (traceResult.seed || "0x24f3aeabd426f663385b80e89f85ec997e8f06f3") : s,
+            blockchain_network: traceResult.seed_chain || "ETHEREUM",
+            status: "TRACED",
+          });
+          void loadCases();
+        } catch {
+          // Non-blocking
+        }
       }
     } catch (err: any) {
       setStatus("error");
       setError(err?.message || "Failed to reach tracing engine.");
     }
-  }, []);
+  }, [activeCase, user?.name, loadCases]);
 
   const loadDemo = useCallback(async () => {
     return runTrace("demo");
@@ -206,37 +288,60 @@ export function TraceStoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const generateNotice = useCallback(
-    (targetVaspName: string): string | null => {
+    (targetVaspName: string, targetCaseNumber?: string): string | null => {
       if (!evidence) return null;
-      const notice = section91Notice(evidence, caseMeta, targetVaspName);
+      const cNumber = targetCaseNumber || activeCase?.case_number || caseMeta.ncrp_ack_no;
+      const metaToUse: CaseMeta = activeCase
+        ? {
+            ...caseMeta,
+            ncrp_ack_no: activeCase.case_number,
+            victim_name: activeCase.victim_name || caseMeta.victim_name,
+            amount_lost_inr: Number(activeCase.loss_amount_inr) || caseMeta.amount_lost_inr,
+            jurisdiction_ps: activeCase.jurisdiction_code || caseMeta.jurisdiction_ps,
+          }
+        : caseMeta;
+
+      const notice = section91Notice(evidence, metaToUse, targetVaspName);
       const newNotice: StoredNotice = {
         id: `NOTICE-${Date.now()}`,
         status: "Issued",
         createdAt: Date.now(),
-        notice
+        notice,
       };
 
       setNotices((prev) => [newNotice, ...prev]);
 
-      // Save to PostgreSQL
+      // Save to server
       postJSON("/api/notices", {
         id: newNotice.id,
+        case_number: cNumber,
         target_vasp: targetVaspName,
         status: "Issued",
-        drafted_by_name: user?.fullName || "Officer Sharma",
-        notice
+        drafted_by_name: user?.fullName || user?.name || "Officer Sharma",
+        notice,
+      }).then(() => {
+        void loadCases();
       }).catch(() => {});
 
       return newNotice.id;
     },
-    [evidence, caseMeta, user]
+    [evidence, caseMeta, activeCase, user, loadCases]
   );
 
   const setNoticeStatus = useCallback((id: string, newStatus: NoticeStatus) => {
     setNotices((prev) =>
       prev.map((n) => (n.id === id ? { ...n, status: newStatus } : n))
     );
-  }, []);
+
+    postJSON("/api/notices", {
+      id,
+      status: newStatus,
+      action: newStatus === "Acknowledged" ? "acknowledge" : undefined,
+      case_number: activeCase?.case_number,
+    }).then(() => {
+      void loadCases();
+    }).catch(() => {});
+  }, [activeCase, loadCases]);
 
   const removeNotice = useCallback((id: string) => {
     setNotices((prev) => prev.filter((n) => n.id !== id));
@@ -275,32 +380,40 @@ export function TraceStoreProvider({ children }: { children: ReactNode }) {
         suspect_wallet: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F",
         crime_category: "Task-based Investment Scam",
         loss_amount_inr: 450000,
-        blockchain_network: "Ethereum"
+        blockchain_network: "Ethereum",
       };
 
       try {
         const res = await postJSON<any>("/api/ingest/ncrp", payload);
         if (res.success && res.case) {
+          const ingestedCase = res.case as StoredCase;
+          setActiveCase(ingestedCase);
           setCaseMetaState({
-            ncrp_ack_no: res.case.case_number,
-            io_name: user?.fullName || "Officer Sharma",
-            victim_name: "Rajesh Verma",
-            amount_lost_inr: Number(res.case.loss_amount_inr) || 450000,
-            jurisdiction_ps: res.case.jurisdiction_code || "MH-CYBER-01"
+            ncrp_ack_no: ingestedCase.case_number,
+            io_name: user?.fullName || user?.name || "Officer Sharma",
+            victim_name: ingestedCase.victim_name || "Rajesh Verma",
+            amount_lost_inr: Number(ingestedCase.loss_amount_inr) || 450000,
+            jurisdiction_ps: ingestedCase.jurisdiction_code || "MH-CYBER-01",
           });
-          // Automatically run trace on suspect wallet for law enforcement roles
-          if (user?.role !== "VICTIM" && user?.role !== "EXCHANGE_NODAL_OFFICER") {
-            await runTrace(res.case.suspect_wallet_address);
+
+          await loadCases();
+
+          // Only automatically run trace for law enforcement roles (not citizen victims)
+          if (user?.role !== "VICTIM" && user?.role !== "EXCHANGE_NODAL_OFFICER" && user?.role !== "AUDITOR") {
+            await runTrace(ingestedCase.suspect_wallet_address, ingestedCase);
           }
+
+          return ingestedCase;
         }
       } catch {
-        // Local demo fallback for law enforcement
-        if (user?.role !== "VICTIM" && user?.role !== "EXCHANGE_NODAL_OFFICER") {
+        // Fallback for law enforcement roles
+        if (user?.role !== "VICTIM" && user?.role !== "EXCHANGE_NODAL_OFFICER" && user?.role !== "AUDITOR") {
           await runTrace("demo");
         }
       }
+      return null;
     },
-    [user, runTrace]
+    [user, runTrace, loadCases]
   );
 
   return (
@@ -313,6 +426,8 @@ export function TraceStoreProvider({ children }: { children: ReactNode }) {
         caseMeta,
         history,
         notices,
+        cases,
+        activeCase,
         evidence,
         track,
         hydrating,
@@ -323,11 +438,13 @@ export function TraceStoreProvider({ children }: { children: ReactNode }) {
         loadDemo,
         clearTrace,
         setCaseMeta,
+        setActiveCase,
+        loadCases,
         generateNotice,
         setNoticeStatus,
         removeNotice,
         refreshTrace,
-        ingestNcrpComplaint
+        ingestNcrpComplaint,
       }}
     >
       {children}

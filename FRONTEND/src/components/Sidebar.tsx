@@ -43,16 +43,6 @@ export function Sidebar({
             </svg>
           ),
         },
-        {
-          key: "transfers",
-          label: "Transaction Explorer",
-          hint: "Public blockchain",
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-            </svg>
-          ),
-        }
       ];
     }
 
@@ -77,6 +67,17 @@ export function Sidebar({
           icon: (
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path d="M3 12h4l3-8 4 16 3-8h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          ),
+        },
+        {
+          key: "cases",
+          label: "Case Dossiers",
+          hint: "NCRP intake review",
+          icon: (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           ),
         },
@@ -135,6 +136,18 @@ export function Sidebar({
         icon: (
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
             <path d="M3 12h4l3-8 4 16 3-8h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        ),
+      },
+      {
+        key: "cases",
+        label: "Complaints & Cases",
+        hint: "NCRP 1930 inbox",
+        badge: "NCRP",
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         ),
       },

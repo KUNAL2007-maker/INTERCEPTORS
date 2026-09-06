@@ -14,9 +14,11 @@ import { LegalNoticesView } from "./views/LegalNoticesView";
 import { VictimPortalView } from "./views/VictimPortalView";
 import { AuditorPortalView } from "./views/AuditorPortalView";
 import { ExchangePortalView } from "./views/ExchangePortalView";
+import { CasesView } from "./views/CasesView";
 
 export type ViewKey =
   | "dashboard"
+  | "cases"
   | "transfers"
   | "graph"
   | "trace"
@@ -36,13 +38,13 @@ export function AppShell() {
   const [graphFocus, setGraphFocus] = useState<string[]>([]);
 
   const ROLE_ALLOWED_VIEWS: Record<string, ViewKey[]> = {
-    VICTIM: ["victim_portal", "transfers"],
-    AUDITOR: ["audit_logs", "dashboard", "graph"],
+    VICTIM: ["victim_portal"],
+    AUDITOR: ["audit_logs", "dashboard", "cases", "graph"],
     EXCHANGE_NODAL_OFFICER: ["exchange_portal", "notices"],
-    NORMAL_INVESTIGATOR: ["dashboard", "trace", "graph", "transfers", "notices", "chat"],
-    SENIOR_INVESTIGATOR: ["dashboard", "trace", "graph", "transfers", "notices", "chat", "audit_logs"],
-    WORKSPACE_ADMIN: ["dashboard", "trace", "graph", "transfers", "notices", "chat", "audit_logs"],
-    SUPER_ADMIN: ["dashboard", "trace", "graph", "transfers", "notices", "chat", "audit_logs"],
+    NORMAL_INVESTIGATOR: ["dashboard", "cases", "trace", "graph", "transfers", "notices", "chat"],
+    SENIOR_INVESTIGATOR: ["dashboard", "cases", "trace", "graph", "transfers", "notices", "chat", "audit_logs"],
+    WORKSPACE_ADMIN: ["dashboard", "cases", "trace", "graph", "transfers", "notices", "chat", "audit_logs"],
+    SUPER_ADMIN: ["dashboard", "cases", "trace", "graph", "transfers", "notices", "chat", "audit_logs"],
   };
 
   // Enforce role-differentiated view access and automatically switch to primary landing view
@@ -115,8 +117,19 @@ export function AppShell() {
           {view === "victim_portal" && <VictimPortalView />}
           {view === "audit_logs" && <AuditorPortalView />}
           {view === "exchange_portal" && <ExchangePortalView />}
+          {view === "cases" && (
+            <CasesView
+              onGoToTrace={() => setView("trace")}
+              onGoToGraph={() => setView("graph")}
+              onGoToNotices={() => setView("notices")}
+            />
+          )}
           {view === "dashboard" && (
-            <CommandDashboard liveFeed={liveFeed} onGoToTrace={() => setView("trace")} />
+            <CommandDashboard
+              liveFeed={liveFeed}
+              onGoToTrace={() => setView("trace")}
+              onGoToCases={() => setView("cases")}
+            />
           )}
           {view === "transfers" && <TransfersView onGoToTrace={() => setView("trace")} />}
           {view === "graph" && (

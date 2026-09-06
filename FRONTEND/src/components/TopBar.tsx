@@ -14,6 +14,7 @@ const VIEW_TITLES: Record<ViewKey, { title: string; sub: string }> = {
   chat: { title: "AI Investigator · I4C", sub: "Ask in plain English · 4 specialist agents grounded in this trace" },
   notices: { title: "Legal Notices · Sec 94 BNSS", sub: "Draft & export statutory freeze requisitions to exchanges" },
   victim_portal: { title: "Citizen Fraud Victim Portal · NCRP 1930", sub: "Live recovery tracking & incident reporting" },
+  cases: { title: "Complaints & Cases", sub: "NCRP 1930 victim complaints · triage, authorize & trace" },
   audit_logs: { title: "Judicial Evidence Audit Chamber", sub: "BSA 2023 Sec 63 / 65B tamper-evident log inspection" },
   exchange_portal: { title: "Exchange Compliance Gateway", sub: "Inbound Section 94 BNSS statutory freezing directives" },
 };

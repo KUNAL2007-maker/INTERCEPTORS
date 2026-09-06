@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import {
   getCasesForUser,
   createCase,
+  updateCase,
   getCurrentUser,
   getUserById,
   recordAuditLog,
@@ -84,8 +85,12 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     const created = await createCase({
       ...body,
-      victim_id: user.role === 'VICTIM' ? user.id : body.victim_id,
-      jurisdiction_code: user.jurisdiction_code || body.jurisdiction_code || 'MH-CYBER-01'
+      victim_id: user.role === 'VICTIM' ? user.id : (body.victim_id || user.id),
+      victim_name: user.role === 'VICTIM' ? user.name : (body.victim_name || 'Rajesh Verma'),
+      victim_email: user.role === 'VICTIM' ? user.email : (body.victim_email || 'victim.verma@gmail.com'),
+      jurisdiction_code: user.jurisdiction_code || body.jurisdiction_code || 'MH-CYBER-01',
+      classification: user.role === 'VICTIM' ? 'RESTRICTED' : (body.classification || 'CONFIDENTIAL'),
+      status: body.status || 'PENDING_TRACING'
     });
 
     recordAuditLog({
@@ -102,5 +107,51 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, case: created });
   } catch (err: any) {
     return NextResponse.json({ error: err?.message || 'Case registration error' }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: Request) {
+  try {
+    const claims = extractUserClaims(req);
+    if (!claims) {
+      return NextResponse.json(
+        { error: 'Unauthorized: Authentication required to update cases.' },
+        { status: 401 }
+      );
+    }
+    const user = getUserById(claims.id) || (claims as any);
+
+    if (user.role === 'AUDITOR') {
+      return NextResponse.json(
+        { error: 'Access Denied: Judicial Auditor accounts possess zero mutation permissions under BSA 2023 Sec 65B.' },
+        { status: 403 }
+      );
+    }
+
+    const body = await req.json().catch(() => ({}));
+    const targetId = body.id || body.case_number;
+    if (!targetId) {
+      return NextResponse.json({ error: 'Missing case id or case_number' }, { status: 400 });
+    }
+
+    const updated = await updateCase(targetId, body);
+    if (!updated) {
+      return NextResponse.json({ error: 'Case not found' }, { status: 404 });
+    }
+
+    recordAuditLog({
+      user_id: user.id,
+      user_name: user.name,
+      user_role: user.role,
+      action: 'UPDATE_CASE_STATUS',
+      resource_type: 'CASE_DOSSIER',
+      resource_id: updated.case_number,
+      decision: 'GRANTED',
+      reason: `Updated case ${updated.case_number} status to ${updated.status}.`
+    });
+
+    return NextResponse.json({ success: true, case: updated });
+  } catch (err: any) {
+    return NextResponse.json({ error: err?.message || 'Case update error' }, { status: 500 });
   }
 }
