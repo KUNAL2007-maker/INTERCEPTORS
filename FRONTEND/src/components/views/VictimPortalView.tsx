@@ -33,9 +33,21 @@ export function VictimPortalView() {
   const [filing, setFiling] = useState(false);
   const [filedSuccessCase, setFiledSuccessCase] = useState<StoredCase | null>(null);
 
-  // Load victim's cases on mount and auth change
+  // Load victim's cases on mount and auth change with automatic live status polling
+  const [refreshingStatus, setRefreshingStatus] = useState(false);
+
+  const handleManualRefresh = async () => {
+    setRefreshingStatus(true);
+    await loadCases();
+    setTimeout(() => setRefreshingStatus(false), 500);
+  };
+
   useEffect(() => {
     void loadCases();
+    const interval = setInterval(() => {
+      void loadCases();
+    }, 10000);
+    return () => clearInterval(interval);
   }, [loadCases]);
 
   // Detected chain for suspect wallet input
@@ -117,27 +129,38 @@ export function VictimPortalView() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-lg font-bold text-white tracking-tight">
-                  Citizen Cyber Fraud Victim Portal &bull; NCRP 1930 Gateway
+                  Citizen Cyber Fraud Victim Portal · NCRP 1930 Gateway
                 </h1>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-semibold">
                   PRIVACY-ISOLATED CITIZEN DESK
                 </span>
               </div>
               <p className="text-xs text-muted mt-0.5">
-                Logged in as <strong className="text-white">{user?.name || "Rajesh Verma"}</strong> &bull;{" "}
-                <span>{user?.email || "victim.verma@gmail.com"}</span> &bull; Mobile: +91 98765 43210
+                Logged in as <strong className="text-white">{user?.name || "Rajesh Verma"}</strong> ·{" "}
+                <span>{user?.email || "victim.verma@gmail.com"}</span> · Mobile: +91 98765 43210
               </p>
             </div>
           </div>
 
-          <button
-            onClick={() => setShowFileModal(true)}
-            className="px-4 py-2.5 rounded-xl text-xs font-bold text-black transition hover:opacity-90 shadow-glow flex items-center gap-1.5"
-            style={{ background: "linear-gradient(135deg, #06b6d4, #3b82f6)" }}
-          >
-            <span>+</span>
-            <span>Register New Fraud Complaint</span>
-          </button>
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={handleManualRefresh}
+              disabled={refreshingStatus}
+              title="Poll latest investigation milestone from Maharashtra Cyber Desk"
+              className="px-3.5 py-2.5 rounded-xl text-xs font-semibold border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-200 transition flex items-center gap-1.5"
+            >
+              <span className={refreshingStatus ? "animate-spin" : ""}>↻</span>
+              <span>{refreshingStatus ? "Refreshing..." : "Refresh Status"}</span>
+            </button>
+            <button
+              onClick={() => setShowFileModal(true)}
+              className="px-4 py-2.5 rounded-xl text-xs font-bold text-black transition hover:opacity-90 shadow-glow flex items-center gap-1.5"
+              style={{ background: "linear-gradient(135deg, #06b6d4, #3b82f6)" }}
+            >
+              <span>+</span>
+              <span>Register New Fraud Complaint</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -257,7 +280,7 @@ export function VictimPortalView() {
               <div className="text-[11px] uppercase tracking-wider text-muted font-medium mb-1">Assigned Cyber Unit</div>
               <div className="text-sm font-bold text-white mt-1">Maharashtra Cyber Unit</div>
               <div className="text-[11px] text-muted mt-0.5">
-                IO: {activeComplaint.assigned_investigator_name || "ACP Sharma &bull; BKC Mumbai"}
+                IO: {activeComplaint.assigned_investigator_name || "ACP Sharma · BKC Mumbai"}
               </div>
             </Card>
           </div>
@@ -278,7 +301,7 @@ export function VictimPortalView() {
                     isActive={false}
                     title="1. Fraud Incident Ingested via NCRP Gateway"
                     description={`Registered with Ack No. ${activeComplaint.case_number}. Suspect wallet recorded in police database.`}
-                    timestamp={`${activeComplaint.incident_date || "17 Aug 2026"} &bull; Ingestion Confirmed`}
+                    timestamp={`${activeComplaint.incident_date || "17 Aug 2026"} · Ingestion Confirmed`}
                   />
 
                   {/* Step 2: Police Assigned & Money Flow Mapped */}
@@ -419,7 +442,7 @@ export function VictimPortalView() {
                     <span className="text-muted block text-[10px] uppercase font-bold mb-1">Police Support Contact</span>
                     <div className="text-white font-medium">Maharashtra Cyber Crime HQ</div>
                     <div className="text-muted text-[11px]">Bandra Kurla Complex (BKC), Mumbai</div>
-                    <div className="text-cyan-400 text-[11px] mt-0.5 font-mono">Helpline: 1930 &bull; Ext: 441</div>
+                    <div className="text-cyan-400 text-[11px] mt-0.5 font-mono">Helpline: 1930 · Ext: 441</div>
                   </div>
                 </div>
               </Card>
@@ -687,7 +710,7 @@ export function VictimPortalView() {
               <div className="text-2xl mb-1">🇮🇳</div>
               <h2 className="text-sm font-bold text-white tracking-wide">NATIONAL CYBER CRIME REPORTING PORTAL</h2>
               <div className="text-[11px] text-cyan-300 font-semibold mt-0.5">
-                Government of India &bull; Ministry of Home Affairs (I4C)
+                Government of India · Ministry of Home Affairs (I4C)
               </div>
               <div className="text-[10px] text-muted uppercase tracking-widest mt-1">
                 Official Complaint Acknowledgment Receipt
@@ -705,7 +728,7 @@ export function VictimPortalView() {
               </div>
               <div className="flex justify-between py-1 border-b border-white/5">
                 <span className="text-muted">Complainant Contact:</span>
-                <span className="text-white">+91 98765 43210 &bull; {user?.email || "victim.verma@gmail.com"}</span>
+                <span className="text-white">+91 98765 43210 · {user?.email || "victim.verma@gmail.com"}</span>
               </div>
               <div className="flex justify-between py-1 border-b border-white/5">
                 <span className="text-muted">Reported Date:</span>

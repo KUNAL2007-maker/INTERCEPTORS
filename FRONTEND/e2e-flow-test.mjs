@@ -107,6 +107,22 @@ async function runE2EFlow() {
   const officerFoundCase = officerCasesRes.body?.cases?.find(c => c.case_number === createdCase.case_number);
   assert(officerFoundCase !== undefined, `Investigating officer sees victim complaint ${createdCase.case_number} in queue`);
 
+  // Sub-Inspector Patil executes forensic trace on suspect wallet
+  const patilTraceRes = await api('/api/trace', {
+    method: 'POST',
+    token: officerAuth.token,
+    body: JSON.stringify({
+      seed: createdCase.suspect_wallet_address,
+      caseMeta: {
+        caseNumber: createdCase.case_number,
+        victimName: createdCase.victim_name,
+        amountInr: createdCase.loss_amount_inr
+      }
+    })
+  });
+  assert(patilTraceRes.status === 200, 'Field Investigating Officer (SI Patil) permitted to execute suspect wallet trace');
+  assert(patilTraceRes.body?.nodes?.length > 0, `Patil trace mapped ${patilTraceRes.body?.nodes?.length} blockchain nodes`);
+
   // STEP 3: Gazetted Officer executes forensic trace on victim's suspect wallet
   console.log('\n[STEP 3] Forensic Tracing: Gazetted Officer Tracing Suspect Wallet');
   const acpAuth = await login('senior.sharma@mhcyber.gov.in', 'Police@123');

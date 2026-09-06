@@ -530,6 +530,13 @@ export async function saveFreezeNotice(
       }
       matchedCase.target_vasp = stored.target_vasp || matchedCase.target_vasp;
       matchedCase.freeze_notice_id = stored.id;
+
+      if (pgAvailable && pool) {
+        pool.query('UPDATE cases SET status = $1 WHERE case_number = $2', [
+          matchedCase.status,
+          matchedCase.case_number
+        ]).catch(() => {});
+      }
     }
   }
 

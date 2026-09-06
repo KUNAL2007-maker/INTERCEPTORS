@@ -98,7 +98,7 @@ export function ExchangePortalView() {
                 </span>
               </div>
               <p className="text-xs text-muted mt-0.5">
-                Officer: <strong className="text-white">{user?.name || "Binance Compliance Lead"}</strong> &bull; FIU-IND Registered Reporting Entity &bull; Strict VASP Data Boundary
+                Officer: <strong className="text-white">{user?.name || "Binance Compliance Lead"}</strong> · FIU-IND Registered Reporting Entity · Strict VASP Data Boundary
               </p>
             </div>
           </div>
@@ -178,7 +178,7 @@ export function ExchangePortalView() {
                   <div>
                     <span className="text-xs font-mono font-bold text-white">REQUISITION REF: {ref}</span>
                     <span className="text-[11px] text-muted block mt-0.5">
-                      Originating Case: {item.case_number || "MH-CYBER-2026-0842"} &bull; Maharashtra Cyber Cell BKC
+                      Originating Case: {item.case_number || "MH-CYBER-2026-0842"} · Maharashtra Cyber Cell BKC
                     </span>
                   </div>
                   <span
@@ -231,7 +231,7 @@ export function ExchangePortalView() {
                   ) : (
                     <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold">
                       <span>🔒</span>
-                      <span>Assets Locked in Escrow &bull; Ticket ID: BIN-ESCROW-{item.id?.slice(-4) || "9042"}</span>
+                      <span>Assets Locked in Escrow · Ticket ID: BIN-ESCROW-{item.id?.slice(-4) || "9042"}</span>
                     </div>
                   )}
 

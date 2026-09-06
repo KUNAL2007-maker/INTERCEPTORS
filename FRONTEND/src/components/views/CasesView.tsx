@@ -39,12 +39,13 @@ export function CasesView({
   const [newVictim, setNewVictim] = useState("Rajesh Verma");
   const [ingesting, setIngesting] = useState(false);
 
-  // Authority check: Senior Investigator (ACP Sharma), Super Admin, and Workspace Admin have trace execution permission
+  // Authority check: All investigating officers, gazetted officers, and administrators can initiate traces
   const canExecuteTrace =
-    Boolean(user?.is_gazetted) ||
+    user?.role === "NORMAL_INVESTIGATOR" ||
     user?.role === "SENIOR_INVESTIGATOR" ||
     user?.role === "SUPER_ADMIN" ||
-    user?.role === "WORKSPACE_ADMIN";
+    user?.role === "WORKSPACE_ADMIN" ||
+    Boolean(user?.is_gazetted);
 
   useEffect(() => {
     void loadCases();

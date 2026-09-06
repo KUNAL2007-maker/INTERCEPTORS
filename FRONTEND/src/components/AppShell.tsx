@@ -140,7 +140,13 @@ export function AppShell() {
               onGoToTrace={() => setView("trace")}
             />
           )}
-          {view === "trace" && <TraceWalletView onDone={() => setView("dashboard")} />}
+          {view === "trace" && (
+            <TraceWalletView
+              onDone={() => setView("dashboard")}
+              onGoToGraph={() => setView("graph")}
+              onGoToNotices={() => setView("notices")}
+            />
+          )}
           {chatMounted && (
             <div hidden={view !== "chat"} className="h-full">
               <InvestigatorChat

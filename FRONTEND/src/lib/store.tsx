@@ -302,9 +302,11 @@ export function TraceStoreProvider({ children }: { children: ReactNode }) {
         : caseMeta;
 
       const notice = section91Notice(evidence, metaToUse, targetVaspName);
+      const isGazettedOrSuper = Boolean(user?.is_gazetted) || user?.role === "SUPER_ADMIN";
+      const defaultStatus: NoticeStatus = isGazettedOrSuper ? "Issued" : "Draft";
       const newNotice: StoredNotice = {
         id: `NOTICE-${Date.now()}`,
-        status: "Issued",
+        status: defaultStatus,
         createdAt: Date.now(),
         notice,
       };
@@ -316,7 +318,7 @@ export function TraceStoreProvider({ children }: { children: ReactNode }) {
         id: newNotice.id,
         case_number: cNumber,
         target_vasp: targetVaspName,
-        status: "Issued",
+        status: defaultStatus,
         drafted_by_name: user?.fullName || user?.name || "Officer Sharma",
         notice,
       }).then(() => {

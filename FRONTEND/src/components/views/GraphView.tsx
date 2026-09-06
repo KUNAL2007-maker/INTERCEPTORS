@@ -51,7 +51,7 @@ export function GraphView({
   // Empty-state CTA — the graph only fills once a trace has seeded the store.
   onGoToTrace?: () => void;
 } = {}) {
-  const { trace, status } = useTraceStore();
+  const { trace, status, activeCase } = useTraceStore();
   const loading = status === "tracing";
 
   // Lane and typology hues were chosen to read on the dark canvas; as lettering
@@ -269,9 +269,23 @@ export function GraphView({
                 )}
               </span>
             )}
+            {activeCase && (
+              <span className="text-[11px] font-mono rounded px-2 py-0.5 bg-cyan-500/15 border border-cyan-500/30 text-cyan-300">
+                Case: {activeCase.case_number} · {shortWallet(activeCase.suspect_wallet_address)}
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            {onOpenNotices && (
+              <button
+                onClick={onOpenNotices}
+                className="text-[11.5px] rounded-md border border-amber-500/40 bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 px-2.5 py-1.5 transition flex items-center gap-1.5"
+              >
+                <span>⚖️</span>
+                <span>Issue Notice</span>
+              </button>
+            )}
             <div className="flex gap-1">
               {(["all", "high", "medium", "safe"] as FilterKey[]).map((k) => (
                 <button

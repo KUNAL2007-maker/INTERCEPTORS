@@ -29,7 +29,15 @@ const LAYER_LABEL: Record<string, string> = {
   VASP_HOT_WALLET: "Exchange hot wallet",
 };
 
-export function TraceWalletView({ onDone }: { onDone: () => void }) {
+export function TraceWalletView({
+  onDone,
+  onGoToGraph,
+  onGoToNotices,
+}: {
+  onDone: () => void;
+  onGoToGraph?: () => void;
+  onGoToNotices?: () => void;
+}) {
   const {
     status,
     error,
@@ -324,6 +332,24 @@ export function TraceWalletView({ onDone }: { onDone: () => void }) {
                 {evidence.track.overall === "DUAL" ? "Dual-track" : `Track ${evidence.track.overall}`} freeze decision
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-2">
+                {onGoToGraph && (
+                  <button
+                    onClick={onGoToGraph}
+                    className="rounded-lg border border-cyan-500/40 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-200 px-4 py-2 text-[13px] font-medium transition flex items-center gap-1.5"
+                  >
+                    <span>📊</span>
+                    <span>View Money Flow Graph →</span>
+                  </button>
+                )}
+                {onGoToNotices && (
+                  <button
+                    onClick={onGoToNotices}
+                    className="rounded-lg border border-amber-500/40 bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 px-4 py-2 text-[13px] font-medium transition flex items-center gap-1.5"
+                  >
+                    <span>⚖️</span>
+                    <span>Issue Section 94 BNSS Order →</span>
+                  </button>
+                )}
                 <button
                   onClick={onDone}
                   className="rounded-lg border border-emerald-500/40 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-200 px-4 py-2 text-[13px] font-medium transition"

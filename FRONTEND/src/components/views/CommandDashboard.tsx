@@ -73,10 +73,11 @@ export function CommandDashboard({
   const [forwardedMap, setForwardedMap] = useState<Record<string, boolean>>({});
 
   const canExecuteTrace =
-    Boolean(user?.is_gazetted) ||
+    user?.role === "NORMAL_INVESTIGATOR" ||
     user?.role === "SENIOR_INVESTIGATOR" ||
     user?.role === "SUPER_ADMIN" ||
-    user?.role === "WORKSPACE_ADMIN";
+    user?.role === "WORKSPACE_ADMIN" ||
+    Boolean(user?.is_gazetted);
 
   const handleTraceFromDashboard = async (c: StoredCase) => {
     if (!canExecuteTrace) {
@@ -87,6 +88,7 @@ export function CommandDashboard({
     try {
       setActiveCase(c);
       await runTrace(c.suspect_wallet_address, c);
+      onGoToTrace?.();
     } catch {
       // Ignore
     } finally {
@@ -143,17 +145,17 @@ export function CommandDashboard({
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-lg font-bold text-white tracking-tight">
-                    Law Enforcement Command Console &bull; NCRP Attribution Engine
+                    Law Enforcement Command Console · NCRP Attribution Engine
                   </h1>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold">
                     {user?.role === "SUPER_ADMIN" ? "CENTRAL I4C OVERSIGHT" : user?.jurisdiction_code || "MH-CYBER-01"}
                   </span>
                 </div>
                 <p className="text-xs text-muted mt-0.5">
-                  Logged in as <strong className="text-white">{user?.name}</strong> ({user?.role}) &bull;{" "}
+                  Logged in as <strong className="text-white">{user?.name}</strong> ({user?.role}) ·{" "}
                   {canExecuteTrace
-                    ? "Authorized for Multi-Hop Cross-Chain Tracing & Section 94 BNSS Freezes"
-                    : "Field Investigator (Select complaint to forward for Gazetted Officer trace)"}
+                    ? "Authorized for Multi-Hop Cross-Chain Tracing & Case Attribution"
+                    : "Field Investigator (Select complaint to investigate)"}
                 </p>
               </div>
             </div>
@@ -369,8 +371,8 @@ export function CommandDashboard({
               </div>
               <div className="text-[11px] text-muted mt-0.5">
                 Linked Case: <strong className="text-slate-300">{evidence.case?.ncrp_ack_no || "MH-CYBER-2026-0842"}</strong>
-                {evidence.case?.victim_name ? ` &bull; Complainant: ${evidence.case.victim_name}` : ""}
-                {evidence.case?.amount_lost_inr ? ` &bull; Loss: ${formatINR(evidence.case.amount_lost_inr)}` : ""}
+                {evidence.case?.victim_name ? ` · Complainant: ${evidence.case.victim_name}` : ""}
+                {evidence.case?.amount_lost_inr ? ` · Loss: ${formatINR(evidence.case.amount_lost_inr)}` : ""}
               </div>
             </div>
           </div>
@@ -547,6 +549,115 @@ export function CommandDashboard({
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Incoming Citizen Complaints Queue (Always visible for quick officer triage) */}
+      <div
+        className="mt-6 rounded-2xl border p-5 shadow-md"
+        style={{ background: "var(--panel)", borderColor: "var(--border)" }}
+      >
+        <div className="flex items-center justify-between gap-3 border-b pb-4 mb-4" style={{ borderColor: "var(--border)" }}>
+          <div>
+            <div className="text-[11px] uppercase tracking-widest text-emerald-400 font-semibold">Incoming Citizen Complaints</div>
+            <h2 className="text-base font-bold text-white mt-0.5">NCRP 1930 Helpline Fraud Reports</h2>
+            <p className="text-xs text-muted mt-0.5">
+              Select any victim-reported suspect wallet below to execute automated multi-hop blockchain tracing.
+            </p>
+          </div>
+          {onGoToCases && (
+            <button
+              onClick={onGoToCases}
+              className="text-xs text-emerald-300 hover:text-emerald-200 border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 rounded-xl transition"
+            >
+              View Full Inbox ({cases.length}) &rarr;
+            </button>
+          )}
+        </div>
+
+        <div className="space-y-3">
+          {cases.slice(0, 5).map((c) => {
+            const chain = detectChain(c.suspect_wallet_address);
+            const isTracing = tracingCase === c.case_number;
+
+            return (
+              <div
+                key={c.case_number}
+                className="rounded-xl border p-4 transition hover:border-emerald-500/40 bg-white/[0.01] flex flex-wrap items-center justify-between gap-4"
+                style={{ borderColor: "var(--border)" }}
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2.5 flex-wrap mb-1">
+                    <span className="font-mono font-bold text-xs text-white">{c.case_number}</span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                      {c.jurisdiction_code}
+                    </span>
+                    <span
+                      className={`text-[10px] font-mono px-2 py-0.5 rounded font-semibold ${
+                        c.status === "PENDING_TRACING"
+                          ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                          : c.status === "TRACED"
+                          ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
+                          : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                      }`}
+                    >
+                      {c.status}
+                    </span>
+                    {c.target_vasp && (
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+                        VASP: {c.target_vasp}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="text-xs text-muted flex items-center gap-3 flex-wrap">
+                    <span>
+                      Complainant: <strong className="text-white">{c.victim_name || "Rajesh Verma"}</strong>
+                    </span>
+                    <span>·</span>
+                    <span className="text-slate-300 font-medium">{c.crime_type}</span>
+                  </div>
+
+                  <div className="mt-2 flex items-center gap-2 flex-wrap">
+                    <span className="text-[11px] text-muted">Suspect:</span>
+                    <code className="text-xs font-mono text-cyan-300 bg-black/40 px-2 py-0.5 rounded border border-white/5">
+                      {c.suspect_wallet_address}
+                    </code>
+                    {chain && (
+                      <span
+                        className="text-[10px] font-semibold px-1.5 py-0.5 rounded font-mono"
+                        style={{
+                          background: `${chainColor(chain)}22`,
+                          color: chainColor(chain),
+                        }}
+                      >
+                        {CHAINS[chain].short}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="text-right shrink-0">
+                  <div className="text-base font-bold text-rose-400 font-mono">
+                    {formatINR(Number(c.loss_amount_inr))}
+                  </div>
+                  <div className="text-[10px] text-muted mb-2">
+                    ~{Math.round(Number(c.loss_amount_inr) / 85).toLocaleString()} {c.token_symbol || "USDT"}
+                  </div>
+
+                  <button
+                    onClick={() => handleTraceFromDashboard(c)}
+                    disabled={isTracing}
+                    className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-black transition hover:opacity-90 shadow-glow disabled:opacity-50 flex items-center gap-1.5 ml-auto"
+                    style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}
+                  >
+                    <span>⚡</span>
+                    <span>{isTracing ? "Tracing..." : "Trace Suspect Wallet"}</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </Page>
