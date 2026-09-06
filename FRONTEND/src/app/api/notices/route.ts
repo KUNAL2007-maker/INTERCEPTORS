@@ -66,9 +66,48 @@ export async function POST(req: Request) {
       );
     }
 
-    // ── 2. RBAC Gate: Investigators/Supervisors can draft/issue; Exchange Officers can only acknowledge ──
-    if (normRole === 'VASP_COMPLIANCE_OFFICER' || user.role === 'EXCHANGE_NODAL_OFFICER') {
-      if (!isAck) {
+    // ── 2. RBAC Gate: Only VASP Compliance Officers can acknowledge/respond; only police roles can draft/issue ──
+    const isVaspRole = normRole === 'VASP_COMPLIANCE_OFFICER' || user.role === 'EXCHANGE_NODAL_OFFICER';
+
+    if (isAck) {
+      if (!isVaspRole) {
+        recordAuditLog({
+          user_id: user.id,
+          user_name: user.name,
+          user_role: user.role,
+          action: 'ACKNOWLEDGE_SECTION_94_BNSS',
+          resource_type: 'FREEZE_NOTICE',
+          decision: 'DENIED',
+          reason: `Access Denied: Role '${user.role}' cannot pretend to be an external VASP or record exchange compliance responses.`
+        });
+        return NextResponse.json(
+          {
+            error: 'Access Denied: Only VASP Compliance Officers can acknowledge freeze notices on behalf of their exchange. Law enforcement personnel cannot represent external VASP actions.'
+          },
+          { status: 403 }
+        );
+      }
+
+      // VASP Organization Isolation: Cannot acknowledge notices directed to other VASPs
+      if (user.vasp_id && body.vasp_id && user.vasp_id !== body.vasp_id) {
+        recordAuditLog({
+          user_id: user.id,
+          user_name: user.name,
+          user_role: user.role,
+          action: 'ACKNOWLEDGE_CROSS_VASP_NOTICE',
+          resource_type: 'FREEZE_NOTICE',
+          decision: 'DENIED',
+          reason: `VASP Isolation Violation: VASP #${user.vasp_id} attempted to acknowledge requisition for VASP #${body.vasp_id}.`
+        });
+        return NextResponse.json(
+          {
+            error: 'Access Denied: VASP Compliance Officers can only respond to requests addressed to their own organization.'
+          },
+          { status: 403 }
+        );
+      }
+    } else {
+      if (isVaspRole) {
         return NextResponse.json(
           {
             error: `RBAC Access Denied: Exchange compliance officers cannot draft or issue statutory Section 94 BNSS police notices.`
@@ -76,7 +115,7 @@ export async function POST(req: Request) {
           { status: 403 }
         );
       }
-    } else {
+
       const isAuthorizedPoliceRole = [
         'INVESTIGATING_OFFICER',
         'CYBERCRIME_SUPERVISOR',

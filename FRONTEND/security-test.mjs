@@ -483,6 +483,95 @@ async function runSecurityTests() {
     `System Admin blocked from directly creating police cases (Separation of Powers): HTTP ${adminCaseCreate.status} (Expected: 403)`
   );
 
+  // ──────────────────────────────────────────────────────────────────────────
+  // TEST GROUP 12: PARAMETER DEFENSE, VASP ISOLATION & CASE AUDIT ACCESS
+  // ──────────────────────────────────────────────────────────────────────────
+  console.log('\n\x1b[36m[GROUP 12] Testing Parameter Pollution, VASP Boundaries & Case Audit Trail:\x1b[0m');
+
+  // 1. Parameter pollution attempt on case queries (Expect 403 Forbidden)
+  const pollutedCase = await api('/api/cases?case_number=CRIME-165445&case_number=CRIME-999999', {
+    method: 'GET',
+    token: authTokens['INVESTIGATING_OFFICER']
+  });
+  assert(
+    pollutedCase.status === 403,
+    `Parameter pollution IDOR attack blocked with HTTP ${pollutedCase.status} (Expected: 403)`
+  );
+
+  // 2. Array notation bypass attempt (Expect 403 Forbidden)
+  const arrayCase = await api('/api/cases?case_number[]=CRIME-999999', {
+    method: 'GET',
+    token: authTokens['INVESTIGATING_OFFICER']
+  });
+  assert(
+    arrayCase.status === 403,
+    `Array notation IDOR attack blocked with HTTP ${arrayCase.status} (Expected: 403)`
+  );
+
+  // 3. Investigating Officer barred from spoofing VASP acknowledgment (Expect 403 Forbidden)
+  const ioSpoofVasp = await api('/api/notices', {
+    method: 'POST',
+    token: authTokens['INVESTIGATING_OFFICER'],
+    body: JSON.stringify({ action: 'acknowledge', status: 'Acknowledged', id: 'NOTICE-1', vasp_id: 1 })
+  });
+  assert(
+    ioSpoofVasp.status === 403,
+    `Investigating Officer blocked from spoofing external VASP acknowledgment: HTTP ${ioSpoofVasp.status} (Expected: 403)`
+  );
+
+  // 4. Cross-VASP Tenant Isolation: Binance officer acknowledging WazirX notice (Expect 403 Forbidden)
+  const crossVaspAck = await api('/api/notices', {
+    method: 'POST',
+    token: authTokens['VASP_COMPLIANCE_OFFICER'],
+    body: JSON.stringify({ action: 'acknowledge', status: 'Acknowledged', id: 'NOTICE-WAZIRX-01', vasp_id: 2 })
+  });
+  assert(
+    crossVaspAck.status === 403,
+    `Cross-VASP tenant isolation enforced (Binance blocked from WazirX directive): HTTP ${crossVaspAck.status} (Expected: 403)`
+  );
+
+  // 5. National Coordination Analyst blocked from ingesting state complaints (Expect 403 Forbidden)
+  const nationalIngest = await api('/api/ingest/ncrp', {
+    method: 'POST',
+    token: authTokens['NATIONAL_COORDINATION_ANALYST'],
+    body: JSON.stringify({ suspect_wallet: '0x123', loss_amount_inr: 50000 })
+  });
+  assert(
+    nationalIngest.status === 403,
+    `National Analyst blocked from ingesting complaints into state gateway: HTTP ${nationalIngest.status} (Expected: 403)`
+  );
+
+  // 6. Investigating Officer accessing assigned case audit history (Expect 200 OK)
+  const ioCaseAudit = await api('/api/audit?case_number=CRIME-165445', {
+    method: 'GET',
+    token: authTokens['INVESTIGATING_OFFICER']
+  });
+  assert(
+    ioCaseAudit.status === 200 && Array.isArray(ioCaseAudit.body?.logs),
+    `Investigating Officer permitted to view assigned case audit history: HTTP ${ioCaseAudit.status}`
+  );
+
+  // 7. Investigating Officer accessing unassigned case audit history (Expect 403 Forbidden)
+  const ioForeignAudit = await api('/api/audit?case_number=CRIME-999999', {
+    method: 'GET',
+    token: authTokens['INVESTIGATING_OFFICER']
+  });
+  assert(
+    ioForeignAudit.status === 403,
+    `Investigating Officer blocked from viewing unassigned case audit history: HTTP ${ioForeignAudit.status} (Expected: 403)`
+  );
+
+  // 8. Complainant data sanitization: victim cannot view internal investigator notes (Expect no notes/priority)
+  const victimCaseList = await api('/api/cases', {
+    method: 'GET',
+    token: authTokens['VICTIM']
+  });
+  const firstVictimCase = victimCaseList.body?.cases?.[0];
+  assert(
+    firstVictimCase && !('notes' in firstVictimCase) && !('priority' in firstVictimCase),
+    `Victim response sanitization verified: Internal investigator notes and priority stripped from payload`
+  );
+
   console.log('\n================================================================');
   console.log(`  FINAL VERIFICATION RESULTS: ${passed} PASSED, ${failed} FAILED`);
   console.log('================================================================\n');

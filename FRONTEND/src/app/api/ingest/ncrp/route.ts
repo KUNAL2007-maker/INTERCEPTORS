@@ -29,7 +29,14 @@ export async function POST(req: Request) {
       );
     }
 
-    if (normRole === 'SYSTEM_ADMIN' && user.role !== 'SUPER_ADMIN') {
+    if (normRole === 'NATIONAL_COORDINATION_ANALYST') {
+      return NextResponse.json(
+        { error: 'Access Denied: National Coordination Analysts possess intelligence view-only access and cannot register state police cases.' },
+        { status: 403 }
+      );
+    }
+
+    if (normRole === 'SYSTEM_ADMIN') {
       return NextResponse.json(
         { error: 'Access Denied: System Administrators are separated from investigative intake authority.' },
         { status: 403 }

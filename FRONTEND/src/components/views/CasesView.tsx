@@ -39,6 +39,27 @@ export function CasesView({
   const [newNetwork, setNewNetwork] = useState("Ethereum");
   const [newVictim, setNewVictim] = useState("Rajesh Verma");
   const [ingesting, setIngesting] = useState(false);
+  const [auditModalCase, setAuditModalCase] = useState<string | null>(null);
+  const [caseAuditLogs, setCaseAuditLogs] = useState<any[]>([]);
+  const [loadingAudit, setLoadingAudit] = useState(false);
+
+  const handleOpenAuditHistory = async (caseNumber: string) => {
+    setAuditModalCase(caseNumber);
+    setLoadingAudit(true);
+    try {
+      const res = await fetch(`/api/audit?case_number=${encodeURIComponent(caseNumber)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setCaseAuditLogs(data.logs || []);
+      } else {
+        setCaseAuditLogs([]);
+      }
+    } catch {
+      setCaseAuditLogs([]);
+    } finally {
+      setLoadingAudit(false);
+    }
+  };
 
   const normRole = user ? normalizeRole(user.role) : null;
   const isSupervisor = normRole === "CYBERCRIME_SUPERVISOR" || user?.role === "WORKSPACE_ADMIN";
@@ -468,6 +489,17 @@ export function CasesView({
                       <span>{c.status === "FROZEN" ? "View Seizure & Escrow Details" : "Track Served Freeze Requisition"}</span>
                     </button>
                   )}
+
+                  {normRole !== "VICTIM" && (
+                    <button
+                      onClick={() => handleOpenAuditHistory(c.case_number)}
+                      className="px-3 py-1.5 rounded-xl text-xs font-medium border border-white/10 hover:border-white/20 bg-white/5 text-slate-300 hover:text-white transition flex items-center gap-1.5"
+                      title="View immutable Section 65B audit history for this case"
+                    >
+                      <span>📜</span>
+                      <span>Audit Trail</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -605,6 +637,82 @@ export function CasesView({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Case Audit History Modal */}
+      {auditModalCase && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+          <div
+            className="w-full max-w-2xl rounded-2xl border p-6 shadow-2xl relative max-h-[85vh] flex flex-col"
+            style={{
+              background: "#0d1117",
+              borderColor: "var(--border)",
+              color: "var(--text-strong)",
+            }}
+          >
+            <div className="flex items-center justify-between border-b pb-3 mb-4" style={{ borderColor: "var(--border)" }}>
+              <div className="flex items-center gap-2">
+                <span className="text-xl">📜</span>
+                <div>
+                  <h2 className="text-base font-bold text-white">Immutable Case Audit History</h2>
+                  <p className="text-xs text-muted font-mono">{auditModalCase} &bull; BSA 2023 Section 63/65B Tamper-Evident Trail</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setAuditModalCase(null)}
+                className="text-muted hover:text-white text-lg p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+              {loadingAudit ? (
+                <div className="p-8 text-center text-xs text-muted">Retrieving tamper-evident audit trail...</div>
+              ) : caseAuditLogs.length === 0 ? (
+                <div className="p-8 text-center text-xs text-muted">
+                  No audit events recorded yet for {auditModalCase}.
+                </div>
+              ) : (
+                caseAuditLogs.map((log: any) => (
+                  <div
+                    key={log.id}
+                    className="p-3 rounded-xl border text-xs"
+                    style={{ background: "var(--chip)", borderColor: "var(--border)" }}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-semibold text-white">{log.action}</span>
+                      <span className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold ${
+                        log.decision === "GRANTED"
+                          ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                          : "bg-red-500/20 text-red-300 border border-red-500/40"
+                      }`}>
+                        {log.decision}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-muted mb-1">
+                      Actor: <strong className="text-slate-300">{log.user_name}</strong> ({log.user_role}) &bull; Timestamp: <span className="font-mono">{new Date(log.timestamp).toLocaleString()}</span>
+                    </div>
+                    {log.reason && (
+                      <div className="text-[11px] text-slate-400 bg-black/30 p-2 rounded border border-white/5 font-mono">
+                        {log.reason}
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="pt-4 border-t mt-4 flex justify-end" style={{ borderColor: "var(--border)" }}>
+              <button
+                onClick={() => setAuditModalCase(null)}
+                className="px-4 py-1.5 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition"
+              >
+                Close Audit Log
+              </button>
+            </div>
           </div>
         </div>
       )}

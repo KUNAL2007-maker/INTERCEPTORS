@@ -96,7 +96,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (normRole === "SYSTEM_ADMIN" && user.role !== "SUPER_ADMIN") {
+    if (normRole === "SYSTEM_ADMIN") {
       recordAuditLog({
         user_id: user.id,
         user_name: user.name,

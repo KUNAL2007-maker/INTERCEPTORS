@@ -685,7 +685,12 @@ export async function getNoticesForUser(user: SubjectAttributes): Promise<Stored
   const normRole = normalizeRole(user.role);
   const filtered =
     normRole === 'VASP_COMPLIANCE_OFFICER' || user.role === 'EXCHANGE_NODAL_OFFICER'
-      ? memoryStore.notices.filter((n) => !n.vasp_id || n.vasp_id === user.vasp_id)
+      ? memoryStore.notices.filter((n) => {
+          if (!user.vasp_id) return false;
+          if (n.vasp_id && n.vasp_id === user.vasp_id) return true;
+          if (user.vasp_name && n.target_vasp && n.target_vasp.toLowerCase().includes(user.vasp_name.toLowerCase())) return true;
+          return false;
+        })
       : memoryStore.notices;
 
   return filtered.filter(Boolean).map((n) => {
@@ -704,7 +709,37 @@ export async function saveFreezeNotice(
   actingOfficer: AppUser
 ): Promise<{ success: boolean; notice?: StoredFreezeNotice; error?: string; statutory_code?: string }> {
   const isDraft = noticeData.status === 'Draft';
-  const isAck = noticeData.status === 'Acknowledged';
+  const isAck = noticeData.status === 'Acknowledged' || (noticeData as any).action === 'acknowledge';
+
+  const existingIdx = memoryStore.notices.findIndex((n) => n.id === noticeData.id);
+  const existingNotice = existingIdx >= 0 ? memoryStore.notices[existingIdx] : null;
+
+  const mergedNoticeData = noticeData.notice !== undefined ? noticeData.notice : existingNotice?.notice;
+
+  const targetCaseKey =
+    noticeData.case_id ||
+    noticeData.case_number ||
+    existingNotice?.case_number ||
+    (mergedNoticeData as any)?.case_number;
+  const linkedCase = targetCaseKey ? getCaseByIdOrNumber(targetCaseKey) : null;
+
+  // Strict VASP validation for acknowledgments
+  if (isAck) {
+    const normActingRole = normalizeRole(actingOfficer.role);
+    if (normActingRole !== 'VASP_COMPLIANCE_OFFICER' && actingOfficer.role !== 'EXCHANGE_NODAL_OFFICER') {
+      return {
+        success: false,
+        error: 'Access Denied: Only VASP Compliance Officers can acknowledge freeze notices on behalf of their exchange.'
+      };
+    }
+    const targetVaspId = noticeData.vasp_id ?? existingNotice?.vasp_id ?? linkedCase?.vasp_id;
+    if (actingOfficer.vasp_id && targetVaspId && actingOfficer.vasp_id !== targetVaspId) {
+      return {
+        success: false,
+        error: 'Access Denied: VASP Compliance Officers can only respond to requests addressed to their own organization.'
+      };
+    }
+  }
 
   // If issuing or approving a freeze order, enforce Section 94 BNSS statutory check
   if (!isDraft && !isAck) {
@@ -734,18 +769,6 @@ export async function saveFreezeNotice(
       };
     }
   }
-
-  const existingIdx = memoryStore.notices.findIndex((n) => n.id === noticeData.id);
-  const existingNotice = existingIdx >= 0 ? memoryStore.notices[existingIdx] : null;
-
-  const mergedNoticeData = noticeData.notice !== undefined ? noticeData.notice : existingNotice?.notice;
-
-  const targetCaseKey =
-    noticeData.case_id ||
-    noticeData.case_number ||
-    existingNotice?.case_number ||
-    (mergedNoticeData as any)?.case_number;
-  const linkedCase = targetCaseKey ? getCaseByIdOrNumber(targetCaseKey) : null;
 
   const resolvedNotice = ensureLegalNotice(mergedNoticeData, {
     ...existingNotice,

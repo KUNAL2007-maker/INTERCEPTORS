@@ -24,80 +24,103 @@ export async function GET(req: Request) {
   const normRole = normalizeRole(user.role);
 
   const url = new URL(req.url);
-  const targetCaseParam = url.searchParams.get('id') || url.searchParams.get('case_number') || url.searchParams.get('case_id');
+
+  function sanitizeCaseForVictim(c: any) {
+    if (!c) return c;
+    const { notes, priority, classification, ...safe } = c;
+    return safe;
+  }
+
+  // Collect all requested case identifiers across singular, camelCase, and array formats
+  const requestedCaseKeys: string[] = [];
+  for (const [key, val] of url.searchParams.entries()) {
+    const normKey = key.replace(/\[\]$/, '').toLowerCase();
+    if (['id', 'case_number', 'case_id', 'casenumber', 'caseid'].includes(normKey) && val.trim()) {
+      requestedCaseKeys.push(val.trim());
+    }
+  }
 
   // ── 1. Single Case Query with Case-Level Access Control (IDOR Prevention) ──
-  if (targetCaseParam) {
-    const foundCase = getCaseByIdOrNumber(targetCaseParam);
-    if (!foundCase) {
-      return NextResponse.json({ error: `Case dossier '${targetCaseParam}' not found.` }, { status: 404 });
-    }
+  if (requestedCaseKeys.length > 0) {
+    let resolvedCase: any = null;
 
-    // Victim Isolation: Citizen complainant only accesses own submitted case
-    if (normRole === 'VICTIM') {
-      if (foundCase.victim_id !== user.id) {
-        recordAuditLog({
-          user_id: user.id,
-          user_name: user.name,
-          user_role: user.role,
-          action: 'CASE_ACCESS_ATTEMPT',
-          resource_type: 'CASE_DOSSIER',
-          resource_id: foundCase.case_number,
-          decision: 'DENIED',
-          reason: 'VICTIM Privacy Boundary: Cannot access foreign complainant cases.'
-        });
-        return NextResponse.json(
-          { error: 'Access Denied: Complainants can only access their own case files.' },
-          { status: 403 }
-        );
+    // Validate access against EVERY requested case identifier to prevent parameter pollution bypass
+    for (const targetCaseParam of requestedCaseKeys) {
+      const foundCase = getCaseByIdOrNumber(targetCaseParam);
+      if (!foundCase) {
+        return NextResponse.json({ error: `Case dossier '${targetCaseParam}' not found.` }, { status: 404 });
       }
-    }
 
-    // Investigating Officer Case-Level Access Control (IDOR barrier)
-    if (normRole === 'INVESTIGATING_OFFICER' || user.role === 'NORMAL_INVESTIGATOR') {
-      const isAssigned =
-        (foundCase.assigned_investigator_id && String(foundCase.assigned_investigator_id) === String(user.id)) ||
-        (foundCase.assigned_investigator_name && user.name && foundCase.assigned_investigator_name.toLowerCase().includes(user.name.toLowerCase()));
-      const isPendingUnitComplaint =
-        foundCase.status === 'PENDING_TRACING' &&
-        foundCase.jurisdiction_code === user.jurisdiction_code &&
-        !foundCase.assigned_investigator_id;
-
-      if (!isAssigned && !isPendingUnitComplaint) {
-        recordAuditLog({
-          user_id: user.id,
-          user_name: user.name,
-          user_role: user.role,
-          action: 'CASE_ACCESS_IDOR_VIOLATION',
-          resource_type: 'CASE_DOSSIER',
-          resource_id: foundCase.case_number,
-          decision: 'DENIED',
-          reason: `Case-Level Access Control: Officer ${user.name} is not assigned to case ${foundCase.case_number}.`
-        });
-        return NextResponse.json(
-          { error: `Forbidden: Investigating Officer is unauthorized to access unassigned case ${foundCase.case_number} (Case-Level Access Control).` },
-          { status: 403 }
-        );
+      // Victim Isolation: Citizen complainant only accesses own submitted case
+      if (normRole === 'VICTIM') {
+        if (foundCase.victim_id !== user.id) {
+          recordAuditLog({
+            user_id: user.id,
+            user_name: user.name,
+            user_role: user.role,
+            action: 'CASE_ACCESS_ATTEMPT',
+            resource_type: 'CASE_DOSSIER',
+            resource_id: foundCase.case_number,
+            decision: 'DENIED',
+            reason: 'VICTIM Privacy Boundary: Cannot access foreign complainant cases.'
+          });
+          return NextResponse.json(
+            { error: 'Access Denied: Complainants can only access their own case files.' },
+            { status: 403 }
+          );
+        }
       }
-    }
 
-    // Exchange Officer VASP Isolation
-    if (normRole === 'VASP_COMPLIANCE_OFFICER' || user.role === 'EXCHANGE_NODAL_OFFICER') {
-      if (foundCase.vasp_id !== user.vasp_id) {
-        recordAuditLog({
-          user_id: user.id,
-          user_name: user.name,
-          user_role: user.role,
-          action: 'CASE_ACCESS_VASP_ISOLATION',
-          resource_type: 'CASE_DOSSIER',
-          resource_id: foundCase.case_number,
-          decision: 'DENIED',
-          reason: 'Exchange officer cannot inspect police cases unrelated to their organization.'
-        });
-        return NextResponse.json(
-          { error: 'Access Denied: Exchange compliance officers can only access cases involving their exchange.' },
-          { status: 403 }
-        );
+      // Investigating Officer Case-Level Access Control (IDOR barrier)
+      if (normRole === 'INVESTIGATING_OFFICER' || user.role === 'NORMAL_INVESTIGATOR') {
+        const isAssigned =
+          (foundCase.assigned_investigator_id && String(foundCase.assigned_investigator_id) === String(user.id)) ||
+          (foundCase.assigned_investigator_name && user.name && foundCase.assigned_investigator_name.toLowerCase().includes(user.name.toLowerCase()));
+        const isPendingUnitComplaint =
+          foundCase.status === 'PENDING_TRACING' &&
+          foundCase.jurisdiction_code === user.jurisdiction_code &&
+          !foundCase.assigned_investigator_id;
+
+        if (!isAssigned && !isPendingUnitComplaint) {
+          recordAuditLog({
+            user_id: user.id,
+            user_name: user.name,
+            user_role: user.role,
+            action: 'CASE_ACCESS_IDOR_VIOLATION',
+            resource_type: 'CASE_DOSSIER',
+            resource_id: foundCase.case_number,
+            decision: 'DENIED',
+            reason: `Case-Level Access Control: Officer ${user.name} is not assigned to case ${foundCase.case_number}.`
+          });
+          return NextResponse.json(
+            { error: `Forbidden: Investigating Officer is unauthorized to access unassigned case ${foundCase.case_number} (Case-Level Access Control).` },
+            { status: 403 }
+          );
+        }
+      }
+
+      // Exchange Officer VASP Isolation
+      if (normRole === 'VASP_COMPLIANCE_OFFICER' || user.role === 'EXCHANGE_NODAL_OFFICER') {
+        if (foundCase.vasp_id !== user.vasp_id) {
+          recordAuditLog({
+            user_id: user.id,
+            user_name: user.name,
+            user_role: user.role,
+            action: 'CASE_ACCESS_VASP_ISOLATION',
+            resource_type: 'CASE_DOSSIER',
+            resource_id: foundCase.case_number,
+            decision: 'DENIED',
+            reason: 'Exchange officer cannot inspect police cases unrelated to their organization.'
+          });
+          return NextResponse.json(
+            { error: 'Access Denied: Exchange compliance officers can only access cases involving their exchange.' },
+            { status: 403 }
+          );
+        }
+      }
+
+      if (!resolvedCase) {
+        resolvedCase = foundCase;
       }
     }
 
@@ -109,9 +132,9 @@ export async function GET(req: Request) {
         user_role: user.role,
         action: 'ADMIN_MAINTENANCE_CASE_ACCESS',
         resource_type: 'CASE_DOSSIER',
-        resource_id: foundCase.case_number,
+        resource_id: resolvedCase.case_number,
         decision: 'GRANTED',
-        reason: `System Administrator inspected case ${foundCase.case_number} under maintenance protocol.`
+        reason: `System Administrator inspected case ${resolvedCase.case_number} under maintenance protocol.`
       });
     } else {
       recordAuditLog({
@@ -120,17 +143,19 @@ export async function GET(req: Request) {
         user_role: user.role,
         action: 'VIEW_CASE_DETAIL',
         resource_type: 'CASE_DOSSIER',
-        resource_id: foundCase.case_number,
+        resource_id: resolvedCase.case_number,
         decision: 'GRANTED',
-        reason: `Retrieved case dossier ${foundCase.case_number}.`
+        reason: `Retrieved case dossier ${resolvedCase.case_number}.`
       });
     }
 
-    return NextResponse.json({ success: true, case: foundCase });
+    const payloadCase = normRole === 'VICTIM' ? sanitizeCaseForVictim(resolvedCase) : resolvedCase;
+    return NextResponse.json({ success: true, case: payloadCase });
   }
 
   // ── 2. List Cases by User Scope ─────────────────────────────────────────
-  const cases = await getCasesForUser(user);
+  const rawCases = await getCasesForUser(user);
+  const cases = normRole === 'VICTIM' ? rawCases.map(sanitizeCaseForVictim) : rawCases;
 
   if (normRole === 'SYSTEM_ADMIN' || user.role === 'SUPER_ADMIN') {
     recordAuditLog({
@@ -300,7 +325,7 @@ export async function PATCH(req: Request) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const targetId = body.id || body.case_number;
+    const targetId = body.id || body.case_number || body.case_id || body.caseNumber || body.caseId;
     if (!targetId) {
       return NextResponse.json({ error: 'Missing case id or case_number' }, { status: 400 });
     }

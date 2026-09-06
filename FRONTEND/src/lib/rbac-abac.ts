@@ -348,6 +348,7 @@ export type SubjectAttributes = {
   clearance_level?: string;
   is_gazetted?: boolean;
   vasp_id?: number | null;
+  vasp_name?: string;
   email?: string;
 };
 

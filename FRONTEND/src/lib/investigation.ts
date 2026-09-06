@@ -22,13 +22,13 @@ import type {
   Severity,
   ChatAgent,
   ChatAgentPanel,
-} from "./domain";
+} from "./domain.ts";
 import {
   formatUSD,
   formatINR,
   shortWallet,
   CHAINS,
-} from "./domain";
+} from "./domain.ts";
 
 // ── Thresholds ──────────────────────────────────────────────────────────────
 // $10,000 is the classic reporting line launderers size crypto cash-outs
