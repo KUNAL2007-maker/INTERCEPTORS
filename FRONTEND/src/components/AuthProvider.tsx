@@ -3,6 +3,7 @@
 /**
  * Enterprise Session & RBAC/ABAC Identity Provider for SIH26183
  * Backed by PostgreSQL and our 7-Role Law Enforcement Access Control Engine.
+ * Supports Cryptographic JWT session validation and real PBKDF2 credential login.
  */
 
 import {
@@ -20,6 +21,7 @@ import {
   PERMISSIONS,
   type RoleName,
 } from "@/lib/rbac-abac";
+import { LoginModal } from "./LoginModal";
 
 export type AppUser = {
   id: number;
@@ -46,6 +48,9 @@ type AuthState = {
   canApproveFreeze: boolean;
   canRunGraph: boolean;
   canDraftNotice: boolean;
+  isLoginModalOpen: boolean;
+  openLoginModal: () => void;
+  closeLoginModal: () => void;
   switchRole: (roleOrUid: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string) => Promise<string | null>;
   signIn: (email: string, password: string) => Promise<string | null>;
@@ -59,6 +64,9 @@ const AuthCtx = createContext<AuthState>({
   canApproveFreeze: false,
   canRunGraph: true,
   canDraftNotice: true,
+  isLoginModalOpen: false,
+  openLoginModal: () => {},
+  closeLoginModal: () => {},
   switchRole: async () => {},
   signUp: async () => null,
   signIn: async () => null,
@@ -68,8 +76,12 @@ const AuthCtx = createContext<AuthState>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
-  // Load current identity from API / local fallback on mount
+  const openLoginModal = useCallback(() => setIsLoginModalOpen(true), []);
+  const closeLoginModal = useCallback(() => setIsLoginModalOpen(false), []);
+
+  // Load current identity from API / token cookie on mount
   useEffect(() => {
     let mounted = true;
     async function loadIdentity() {
@@ -122,7 +134,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     } catch {
-      // Local fallback
       const found =
         SYSTEM_PERSONAS.find((p) => p.role === roleOrUid) ||
         SYSTEM_PERSONAS.find((p) => p.uid === roleOrUid);
@@ -135,34 +146,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = useCallback(
-    async (email: string): Promise<string | null> => {
-      const target = SYSTEM_PERSONAS.find(
-        (p) => p.email.toLowerCase() === email.trim().toLowerCase()
-      );
-      if (target) {
-        await switchRole(target.role);
+    async (email: string, password: string): Promise<string | null> => {
+      try {
+        const res = await fetch("/api/auth", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "login", email: email.trim(), password })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          return data.error || "Authentication failed. Please verify credentials.";
+        }
+        if (data.user) {
+          setUser({
+            ...data.user,
+            fullName: data.user.name || data.user.fullName
+          });
+        }
         return null;
+      } catch (err: any) {
+        return err?.message || "Server network failure during authentication.";
       }
-      // If not in demo personas, sign in as investigator
-      const customUser: AppUser = {
-        id: 999,
-        uid: "custom-officer",
-        email: email.trim(),
-        name: email.split("@")[0],
-        fullName: email.split("@")[0],
-        role: "NORMAL_INVESTIGATOR",
-        role_id: 2,
-        workspace_id: 1,
-        jurisdiction_code: "MH-CYBER-01",
-        clearance_level: "RESTRICTED",
-        is_gazetted: false,
-        vasp_id: null,
-        offline: false
-      };
-      setUser(customUser);
-      return null;
     },
-    [switchRole]
+    []
   );
 
   const signUp = useCallback(
@@ -189,6 +195,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const signOut = useCallback(async () => {
+    try {
+      await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "logout" })
+      });
+    } catch {}
     setUser(null);
   }, []);
 
@@ -218,6 +231,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         canApproveFreeze,
         canRunGraph,
         canDraftNotice,
+        isLoginModalOpen,
+        openLoginModal,
+        closeLoginModal,
         switchRole,
         signUp,
         signIn,
@@ -225,6 +241,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }}
     >
       {children}
+      <LoginModal isOpen={isLoginModalOpen} onClose={closeLoginModal} />
     </AuthCtx.Provider>
   );
 }

@@ -1,6 +1,7 @@
 /**
  * PostgreSQL Database Persistence Layer with Dual-Mode Offline Fallback
  * Directly interfaces with schemas from DATABASE/db/schema.sql
+ * Implements Real Authentication, Password Verification (PBKDF2), and Immutable Audit Logging
  */
 
 import { Pool } from 'pg';
@@ -11,6 +12,7 @@ import {
   type AppUser,
   type SubjectAttributes
 } from './rbac-abac';
+import { hashPassword, verifyPassword } from './auth-crypto';
 
 export type StoredCase = {
   id: number;
@@ -45,11 +47,55 @@ export type StoredFreezeNotice = {
   notice: any;
 };
 
+export type StoredAuditLog = {
+  id: string;
+  timestamp: string;
+  user_id: number | string;
+  user_name: string;
+  user_role: string;
+  action: string;
+  resource_type: string;
+  resource_id?: string | number;
+  decision: 'GRANTED' | 'DENIED';
+  reason?: string;
+  statutory_code?: string;
+  ip_address?: string;
+};
+
+export type DatabaseUser = AppUser & {
+  password_hash: string;
+  salt: string;
+};
+
+// ----------------------------------------------------------------------------
+// Official Pre-Seeded User Credentials for 7 Government Personas
+// ----------------------------------------------------------------------------
+const SEED_CREDENTIALS: Record<string, string> = {
+  'admin@i4c.gov.in': 'Admin@123',
+  'senior.sharma@mhcyber.gov.in': 'Police@123',
+  'officer.patil@mhcyber.gov.in': 'Patil@123',
+  'sp.deshmukh@mhcyber.gov.in': 'Deshmukh@123',
+  'victim.verma@gmail.com': 'Victim@123',
+  'legal@binance.com': 'Binance@123',
+  'judge.rao@ecourts.gov.in': 'Judge@123'
+};
+
+const INITIAL_USERS: DatabaseUser[] = SYSTEM_PERSONAS.map((persona) => {
+  const pwd = SEED_CREDENTIALS[persona.email] || 'Secure@123';
+  const { hash, salt } = hashPassword(pwd, `salt_${persona.uid}_sih2026`);
+  return {
+    ...persona,
+    password_hash: hash,
+    salt
+  };
+});
+
 // ----------------------------------------------------------------------------
 // 1. In-Memory Resilient Data Store (Fallback if PostgreSQL is offline)
 // ----------------------------------------------------------------------------
 const memoryStore = {
-  currentUser: SYSTEM_PERSONAS[0], // Default: Officer Sharma (Senior Investigator)
+  users: INITIAL_USERS,
+  currentUser: SYSTEM_PERSONAS[0], // Default logged-in: Officer Sharma
   environment: {
     emergency_lockdown: false
   },
@@ -120,6 +166,7 @@ const memoryStore = {
     }
   ] as StoredCase[],
   notices: [] as StoredFreezeNotice[],
+  audit_logs: [] as StoredAuditLog[],
   traces: [] as any[]
 };
 
@@ -139,13 +186,31 @@ try {
     connectionTimeoutMillis: 1500
   });
 
-  // Test connection silently
+  // Test connection silently and create auxiliary tables if available
   pool.query('SELECT 1', (err) => {
     if (err) {
       pgAvailable = false;
     } else {
       pgAvailable = true;
       console.log('[CryptoTrace DB] Connected to live PostgreSQL database.');
+      if (pool) {
+        pool.query(`
+          CREATE TABLE IF NOT EXISTS audit_logs (
+            id SERIAL PRIMARY KEY,
+            user_id VARCHAR(50),
+            user_name VARCHAR(100),
+            user_role VARCHAR(50),
+            action VARCHAR(100) NOT NULL,
+            resource_type VARCHAR(50),
+            resource_id VARCHAR(100),
+            decision VARCHAR(20) NOT NULL,
+            reason TEXT,
+            statutory_code VARCHAR(100),
+            ip_address VARCHAR(50),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          )
+        `).catch(() => {});
+      }
     }
   });
 } catch {
@@ -157,19 +222,55 @@ export function isPostgresActive(): boolean {
 }
 
 // ----------------------------------------------------------------------------
-// 3. User / Persona Session Management
+// 3. User Authentication & Session Management
 // ----------------------------------------------------------------------------
+export function getUserByEmail(email: string): DatabaseUser | null {
+  const normalized = (email || '').trim().toLowerCase();
+  return memoryStore.users.find((u) => u.email.toLowerCase() === normalized) || null;
+}
+
+export function getUserById(id: number | string): AppUser | null {
+  return (
+    memoryStore.users.find(
+      (u) => String(u.id) === String(id) || u.uid === String(id) || u.email === String(id)
+    ) || null
+  );
+}
+
+export function authenticateUser(
+  email: string,
+  password: string
+): { success: boolean; user?: AppUser; error?: string } {
+  const dbUser = getUserByEmail(email);
+  if (!dbUser) {
+    return { success: false, error: 'Invalid email or password.' };
+  }
+  const isMatch = verifyPassword(password, dbUser.password_hash, dbUser.salt);
+  if (!isMatch) {
+    return { success: false, error: 'Invalid email or password.' };
+  }
+  const { password_hash, salt, ...safeUser } = dbUser;
+  memoryStore.currentUser = safeUser;
+  return { success: true, user: safeUser };
+}
+
 export function getCurrentUser(): AppUser {
   return memoryStore.currentUser;
 }
 
+export function setCurrentUser(user: AppUser) {
+  memoryStore.currentUser = user;
+}
+
 export function switchPersona(roleOrUid: string): AppUser {
   const target =
-    SYSTEM_PERSONAS.find((p) => p.role === roleOrUid) ||
-    SYSTEM_PERSONAS.find((p) => p.uid === roleOrUid);
+    memoryStore.users.find((p) => p.role === roleOrUid) ||
+    memoryStore.users.find((p) => p.uid === roleOrUid) ||
+    memoryStore.users.find((p) => String(p.id) === roleOrUid);
   if (target) {
-    memoryStore.currentUser = target;
-    return target;
+    const { password_hash, salt, ...safeUser } = target;
+    memoryStore.currentUser = safeUser;
+    return safeUser;
   }
   return memoryStore.currentUser;
 }
@@ -184,7 +285,50 @@ export function setEmergencyLockdown(active: boolean) {
 }
 
 // ----------------------------------------------------------------------------
-// 4. Case Management (PostgreSQL with Fallback)
+// 4. Immutable Audit Logging (BSA 2023 Sec 63 / 65B Admissibility)
+// ----------------------------------------------------------------------------
+export function recordAuditLog(
+  log: Omit<StoredAuditLog, 'id' | 'timestamp'>
+): StoredAuditLog {
+  const entry: StoredAuditLog = {
+    id: `AUDIT-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    timestamp: new Date().toISOString(),
+    ...log
+  };
+  memoryStore.audit_logs.unshift(entry);
+  if (memoryStore.audit_logs.length > 500) {
+    memoryStore.audit_logs.pop();
+  }
+
+  // Persist to PostgreSQL if connected
+  if (pgAvailable && pool) {
+    pool.query(
+      `INSERT INTO audit_logs (user_id, user_name, user_role, action, resource_type, resource_id, decision, reason, statutory_code, ip_address)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [
+        String(entry.user_id),
+        entry.user_name,
+        entry.user_role,
+        entry.action,
+        entry.resource_type,
+        String(entry.resource_id || ''),
+        entry.decision,
+        entry.reason || '',
+        entry.statutory_code || '',
+        entry.ip_address || ''
+      ]
+    ).catch(() => {});
+  }
+
+  return entry;
+}
+
+export function getAuditLogs(limit: number = 50): StoredAuditLog[] {
+  return memoryStore.audit_logs.slice(0, limit);
+}
+
+// ----------------------------------------------------------------------------
+// 5. Case Management (PostgreSQL with Fallback)
 // ----------------------------------------------------------------------------
 export async function getCasesForUser(user: SubjectAttributes): Promise<StoredCase[]> {
   if (pgAvailable && pool) {
@@ -247,7 +391,7 @@ export async function createCase(newCase: Partial<StoredCase>): Promise<StoredCa
 }
 
 // ----------------------------------------------------------------------------
-// 5. Section 94 BNSS Legal Freeze Notices (PostgreSQL with Fallback)
+// 6. Section 94 BNSS Legal Freeze Notices (Statutory Gate + Audit Log)
 // ----------------------------------------------------------------------------
 export async function getNoticesForUser(user: SubjectAttributes): Promise<StoredFreezeNotice[]> {
   if (user.role === 'EXCHANGE_NODAL_OFFICER') {
@@ -259,8 +403,8 @@ export async function getNoticesForUser(user: SubjectAttributes): Promise<Stored
 export async function saveFreezeNotice(
   noticeData: Partial<StoredFreezeNotice>,
   actingOfficer: AppUser
-): Promise<{ success: boolean; notice?: StoredFreezeNotice; error?: string }> {
-  // ABAC Guard: Section 94 BNSS check
+): Promise<{ success: boolean; notice?: StoredFreezeNotice; error?: string; statutory_code?: string }> {
+  // ABAC Guard: Section 94 BNSS statutory gazetted officer check
   const abacResult = evaluateABAC(
     actingOfficer,
     { status: 'TRACED', vasp_id: noticeData.vasp_id },
@@ -269,7 +413,22 @@ export async function saveFreezeNotice(
   );
 
   if (abacResult.decision === 'DENY') {
-    return { success: false, error: abacResult.reason };
+    recordAuditLog({
+      user_id: actingOfficer.id,
+      user_name: actingOfficer.name,
+      user_role: actingOfficer.role,
+      action: 'ISSUE_SECTION_94_BNSS',
+      resource_type: 'FREEZE_NOTICE',
+      resource_id: noticeData.id || noticeData.case_number,
+      decision: 'DENIED',
+      reason: abacResult.reason,
+      statutory_code: 'SEC_94_BNSS_GAZETTED_GATE'
+    });
+    return {
+      success: false,
+      error: abacResult.reason,
+      statutory_code: 'SEC_94_BNSS_GAZETTED_GATE'
+    };
   }
 
   const stored: StoredFreezeNotice = {
@@ -286,5 +445,17 @@ export async function saveFreezeNotice(
   };
 
   memoryStore.notices.unshift(stored);
+
+  recordAuditLog({
+    user_id: actingOfficer.id,
+    user_name: actingOfficer.name,
+    user_role: actingOfficer.role,
+    action: 'ISSUE_SECTION_94_BNSS',
+    resource_type: 'FREEZE_NOTICE',
+    resource_id: stored.id,
+    decision: 'GRANTED',
+    reason: 'Statutory Sec 94 BNSS freeze approved by Gazetted Officer.'
+  });
+
   return { success: true, notice: stored };
 }

@@ -122,6 +122,8 @@ export const CLEARANCE_HIERARCHY: Record<string, number> = {
   VASP_EXTERNAL: 0
 };
 
+export type ClearanceLevel = 'PUBLIC' | 'RESTRICTED' | 'CONFIDENTIAL' | 'TOP_SECRET' | 'VASP_EXTERNAL';
+
 export type SubjectAttributes = {
   id?: number | string;
   role: RoleName;
@@ -175,11 +177,12 @@ export function evaluateABAC(
 
   // POL-02: Judicial Zero-Write Restriction
   if (subject.role === 'AUDITOR') {
-    if (['write', 'update', 'delete', 'freeze_draft', 'freeze_approve', 'admin_override'].includes(action)) {
+    const act = (action || '').toLowerCase();
+    if (['write', 'create', 'update', 'delete', 'freeze_draft', 'freeze_approve', 'admin_override', 'file_complaint'].includes(act)) {
       return {
         decision: 'DENY',
         policyId: 'POL-02-JUDICIAL-READ-ONLY',
-        reason: 'Judicial / Auditor accounts possess absolute 0 write or execution permissions.'
+        reason: 'Judicial / Auditor accounts possess absolute 0 write or mutation permissions under BSA 2023 Sec 65B.'
       };
     }
   }
@@ -267,16 +270,16 @@ export function filterCasesByScope(user: SubjectAttributes, cases: any[]): any[]
   if (user.role === 'SUPER_ADMIN') return cases;
 
   return cases.filter(c => {
-    // 1. Data classification
-    const userClearance = CLEARANCE_HIERARCHY[user.clearance_level || 'PUBLIC'] || 1;
-    const reqClearance = CLEARANCE_HIERARCHY[c.classification || 'PUBLIC'] || 1;
-    if (userClearance < reqClearance) return false;
-
-    // 2. Victim Isolation
+    // 1. Victim Isolation (A citizen strictly accesses only cases matching their own victim ID)
     if (user.role === 'VICTIM') {
       const ownerId = c.reported_by ?? c.victim_id;
       return String(ownerId) === String(user.id);
     }
+
+    // 2. Data classification for police & intelligence units
+    const userClearance = CLEARANCE_HIERARCHY[user.clearance_level || 'PUBLIC'] || 1;
+    const reqClearance = CLEARANCE_HIERARCHY[c.classification || 'PUBLIC'] || 1;
+    if (userClearance < reqClearance) return false;
 
     // 3. Exchange Nodal Isolation
     if (user.role === 'EXCHANGE_NODAL_OFFICER') {

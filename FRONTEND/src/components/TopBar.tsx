@@ -3,7 +3,6 @@
 import { useTheme } from "./ThemeProvider";
 import { useTraceStore } from "@/lib/store";
 import { useAuth } from "./AuthProvider";
-import { SYSTEM_PERSONAS } from "@/lib/rbac-abac";
 import { PAGE_GUTTER } from "./ui/Page";
 import type { ViewKey } from "./AppShell";
 
@@ -29,7 +28,7 @@ export function TopBar({
 }) {
   const { theme, toggle } = useTheme();
   const { title, sub } = VIEW_TITLES[view];
-  const { user, switchRole } = useAuth();
+  const { user, openLoginModal, signOut } = useAuth();
   const { refreshing, trace, status, ingestNcrpComplaint } = useTraceStore();
 
   const armed = liveFeed && !!trace && status === "ready";
@@ -65,8 +64,8 @@ export function TopBar({
             <div className="text-[11px] uppercase tracking-widest truncate" style={{ color: "var(--muted)" }}>
               CryptoTrace Intelligence
             </div>
-            <span className="hidden sm:inline text-[10px] rounded px-1.5 py-0.5 bg-emerald-500/15 text-emerald-300 border border-emerald-500/25">
-              POSTGRESQL &bull; SEC 94 BNSS
+            <span className="hidden sm:inline text-[10px] rounded px-1.5 py-0.5 bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 font-mono">
+              JWT &bull; RBAC+ABAC &bull; SEC 94 BNSS
             </span>
           </div>
           <div className="mt-0.5 text-[15px] sm:text-[18px] font-semibold leading-tight truncate" style={{ color: "var(--text-strong)" }}>
@@ -75,7 +74,7 @@ export function TopBar({
           <div className="hidden sm:block text-[12px] truncate" style={{ color: "var(--muted-2)" }}>{sub}</div>
         </div>
 
-        {/* Right controls: Ingest 1930, Persona Switcher, Live feed & Theme */}
+        {/* Right controls: Ingest 1930, Real Auth Profile, Live feed & Theme */}
         <div className="ml-auto flex shrink-0 items-center flex-wrap gap-1.5 sm:gap-2.5">
           {/* Quick 1930 / NCRP Ingest Button */}
           <button
@@ -87,28 +86,70 @@ export function TopBar({
             <span>⚡ Ingest 1930/NCRP</span>
           </button>
 
-          {/* 7-Persona Switcher Dropdown */}
-          <div className="flex items-center gap-1.5 rounded-lg border px-2 py-1 bg-[var(--chip)]" style={{ borderColor: "var(--border)" }}>
-            <span className="text-[11px] font-medium hidden md:inline" style={{ color: "var(--muted)" }}>Role:</span>
-            <select
-              value={user?.role || "SENIOR_INVESTIGATOR"}
-              onChange={(e) => switchRole(e.target.value)}
-              className="bg-transparent text-[12px] font-medium focus:outline-none cursor-pointer"
-              style={{ color: "var(--text-strong)" }}
+          {/* Real Officer Profile Badge & Authentication Trigger */}
+          {user ? (
+            <div
+              className="flex items-center gap-2 rounded-lg border px-2.5 py-1"
+              style={{
+                background: "var(--chip)",
+                borderColor: "var(--border)"
+              }}
             >
-              {SYSTEM_PERSONAS.map((p) => (
-                <option key={p.role} value={p.role} className="bg-slate-900 text-slate-100">
-                  {p.name} ({p.role.replace(/_/g, " ")})
-                </option>
-              ))}
-            </select>
-          </div>
+              {/* Gazetted Status Light */}
+              <span
+                className={`h-2.5 w-2.5 rounded-full ${
+                  user.is_gazetted ? "bg-emerald-400" : "bg-amber-400"
+                }`}
+                title={user.is_gazetted ? "Gazetted Officer (Sec 94 BNSS Authorized)" : "Non-Gazetted Officer (Notice Blocked by ABAC)"}
+              />
 
-          {/* Jurisdiction & Clearance Badges */}
-          {user?.jurisdiction_code && (
-            <span className="hidden lg:inline-flex items-center text-[11px] font-mono px-2 py-1 rounded border bg-blue-500/10 text-blue-300 border-blue-500/25">
-              {user.jurisdiction_code}
-            </span>
+              <div className="flex flex-col text-left">
+                <div className="flex items-center gap-1.5 leading-none">
+                  <span className="text-[12px] font-bold" style={{ color: "var(--text-strong)" }}>
+                    {user.name || user.fullName}
+                  </span>
+                  <span
+                    className="text-[9px] font-mono px-1 py-0.2 rounded"
+                    style={{
+                      background: user.is_gazetted ? "#10b98122" : "#f59e0b22",
+                      color: user.is_gazetted ? "#10b981" : "#f59e0b",
+                      border: `1px solid ${user.is_gazetted ? "#10b98144" : "#f59e0b44"}`
+                    }}
+                  >
+                    {user.is_gazetted ? "GAZETTED" : "NON-GAZETTED"}
+                  </span>
+                </div>
+                <div className="text-[10px] text-muted leading-none mt-1">
+                  {user.role.replace(/_/g, " ")} {user.jurisdiction_code ? `· ${user.jurisdiction_code}` : ""}
+                </div>
+              </div>
+
+              {/* Switch Officer Button (Opens LoginModal) */}
+              <button
+                onClick={openLoginModal}
+                title="Switch Officer Identity or Sign In with Credentials"
+                className="ml-1 text-[11px] px-2 py-1 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 transition"
+              >
+                Switch
+              </button>
+
+              {/* Logout Button */}
+              <button
+                onClick={signOut}
+                title="Log Out Session"
+                className="text-[11px] px-1.5 py-1 rounded text-red-400 hover:bg-red-500/10 transition"
+              >
+                ✕
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={openLoginModal}
+              className="flex h-9 items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-3 text-[12px] font-semibold text-emerald-300 transition hover:bg-emerald-500/25"
+            >
+              <span>🔑</span>
+              <span>Officer Sign In</span>
+            </button>
           )}
 
           {/* Live feed toggle */}
