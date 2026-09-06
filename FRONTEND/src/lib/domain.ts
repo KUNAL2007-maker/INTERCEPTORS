@@ -204,55 +204,67 @@ export const SUGGESTED_QUERIES = [
 ];
 
 // ── Formatters ──────────────────────────────────────────────────────────────
+export function parseSafeNumber(n?: number | null | string | unknown): number {
+  if (typeof n === "number") return Number.isFinite(n) ? n : 0;
+  if (typeof n === "string") {
+    const trimmed = n.trim();
+    if (!trimmed) return 0;
+    const num = Number(trimmed);
+    return Number.isFinite(num) ? num : 0;
+  }
+  return 0;
+}
+
 export function formatUSD(n?: number | null | string): string {
-  const num = typeof n === "number" ? n : Number(n);
-  const val = isNaN(num) ? 0 : num;
+  const val = parseSafeNumber(n);
   const v = Math.abs(val);
-  if (v >= 1_000_000) return `$${(val / 1_000_000).toFixed(2)}M`;
-  if (v >= 1_000) return `$${(val / 1_000).toFixed(1)}K`;
-  return `$${val.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+  const sign = val < 0 ? "-" : "";
+  if (v >= 1_000_000) return `${sign}$${(v / 1_000_000).toFixed(2)}M`;
+  if (v >= 1_000) return `${sign}$${(v / 1_000).toFixed(1)}K`;
+  return `${sign}$${v.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
 }
 
 export function formatINR(n?: number | null | string): string {
-  const num = typeof n === "number" ? n : Number(n);
-  const val = isNaN(num) ? 0 : num;
+  const val = parseSafeNumber(n);
   const v = Math.abs(val);
-  if (v >= 10_000_000) return `₹${(val / 10_000_000).toFixed(2)} Cr`;
-  if (v >= 100_000) return `₹${(val / 100_000).toFixed(2)} L`;
-  return `₹${val.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+  const sign = val < 0 ? "-" : "";
+  if (v >= 10_000_000) return `${sign}₹${(v / 10_000_000).toFixed(2)} Cr`;
+  if (v >= 100_000) return `${sign}₹${(v / 100_000).toFixed(2)} L`;
+  return `${sign}₹${v.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 }
 
 export function formatToken(n?: number | null | string, sym: TokenSymbol | string = "USDT"): string {
-  const num = typeof n === "number" ? n : Number(n);
-  const val = isNaN(num) ? 0 : num;
+  const val = parseSafeNumber(n);
+  const token = (typeof sym === "string" && sym.trim() ? sym.trim() : "USDT") || "USDT";
   // BTC/ETH need more decimals than stablecoins to stay meaningful.
-  const dp = sym === "BTC" ? 6 : sym === "ETH" || sym === "SOL" ? 4 : 2;
-  const symStr = sym ? ` ${sym}` : "";
-  return `${val.toLocaleString("en-US", { maximumFractionDigits: dp })}${symStr}`;
+  const dp = token === "BTC" ? 6 : token === "ETH" || token === "SOL" ? 4 : 2;
+  return `${val.toLocaleString("en-US", { maximumFractionDigits: dp })} ${token}`;
 }
 
 export function formatNumber(n?: number | null | string, maxDigits = 2): string {
-  const num = typeof n === "number" ? n : Number(n);
-  const val = isNaN(num) ? 0 : num;
-  return val.toLocaleString("en-US", { maximumFractionDigits: maxDigits });
+  const val = parseSafeNumber(n);
+  const digits = typeof maxDigits === "number" && Number.isFinite(maxDigits) && maxDigits >= 0 ? maxDigits : 2;
+  return val.toLocaleString("en-US", { maximumFractionDigits: digits });
 }
 
 export function formatCompact(n?: number | null | string): string {
-  const num = typeof n === "number" ? n : Number(n);
-  const val = isNaN(num) ? 0 : num;
+  const val = parseSafeNumber(n);
   const v = Math.abs(val);
-  if (v >= 1_000_000_000) return `${(val / 1_000_000_000).toFixed(2)}B`;
-  if (v >= 1_000_000) return `${(val / 1_000_000).toFixed(2)}M`;
-  if (v >= 1_000) return `${(val / 1_000).toFixed(1)}K`;
-  return `${val.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+  const sign = val < 0 ? "-" : "";
+  if (v >= 1_000_000_000) return `${sign}${(v / 1_000_000_000).toFixed(2)}B`;
+  if (v >= 1_000_000) return `${sign}${(v / 1_000_000).toFixed(2)}M`;
+  if (v >= 1_000) return `${sign}${(v / 1_000).toFixed(1)}K`;
+  return `${sign}${v.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
 }
 
 // 0x1234…5678 for EVM/Tron, kept short enough for on-canvas labels. Replaces the
 // fiat shortAccountLabel — the layout engine's measure() calls this.
 export function shortWallet(addr?: string | null): string {
-  if (!addr) return "";
-  if (addr.length <= 13) return addr;
-  return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
+  if (!addr || typeof addr !== "string") return "";
+  const trimmed = addr.trim();
+  if (!trimmed) return "";
+  if (trimmed.length <= 13) return trimmed;
+  return `${trimmed.slice(0, 6)}…${trimmed.slice(-4)}`;
 }
 
 export function severityColor(s: Severity) {
@@ -331,8 +343,9 @@ export function chainColor(c: Chain): string {
 // Infer the chain from an address's shape. EVM chains (Ethereum/Polygon) share
 // the 0x… format, so a 0x address is reported as ETHEREUM by default — the
 // tracer can override once it sees which explorer actually answers.
-export function detectChain(address: string): Chain | null {
-  const a = (address ?? "").trim();
+export function detectChain(address?: string | null): Chain | null {
+  if (!address || typeof address !== "string") return null;
+  const a = address.trim();
   if (!a) return null;
   if (/^0x[0-9a-fA-F]{40}$/.test(a)) return "ETHEREUM";
   if (/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(a)) return "TRON";
@@ -417,8 +430,10 @@ export const VASPS: VaspEntry[] = [
   },
 ];
 
-export function vaspByName(name: string): VaspEntry | undefined {
-  return VASPS.find((v) => v.name.toLowerCase() === name.toLowerCase());
+export function vaspByName(name?: string | null): VaspEntry | undefined {
+  if (!name || typeof name !== "string") return undefined;
+  const target = name.toLowerCase().trim();
+  return VASPS.find((v) => v.name.toLowerCase() === target);
 }
 
 // ── Risk scoring ────────────────────────────────────────────────────────────
@@ -542,8 +557,9 @@ export type GraphCluster = {
 
 // Node size scales with counterparty count so hubs (mule collectors, exchange
 // hot wallets) visibly dominate. Shared with the renderer.
-export function nodeRadius(degree = 1): number {
-  return Math.min(26, 13 + Math.max(0, degree - 1) * 2.6);
+export function nodeRadius(degree?: number | null): number {
+  const d = typeof degree === "number" && Number.isFinite(degree) ? degree : 1;
+  return Math.min(26, 13 + Math.max(0, d - 1) * 2.6);
 }
 
 // Build a graph layout from a trace. Maps WalletNode → GraphNode and

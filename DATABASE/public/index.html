@@ -387,7 +387,7 @@
           </div>
           <div class="text-xs text-slate-600">
             <p><strong>Suspect Wallet:</strong> <code class="bg-white px-1.5 py-0.5 rounded border font-mono text-slate-800">${c.suspect_wallet_address}</code></p>
-            <p><strong>Fraud Type:</strong> ${c.crime_type} | <strong>Loss:</strong> ₹${parseFloat(c.loss_amount_inr).toLocaleString('en-IN')}</p>
+            <p><strong>Fraud Type:</strong> ${c.crime_type} | <strong>Loss:</strong> ₹${parseFloat(c.loss_amount_inr || 0).toLocaleString('en-IN')}</p>
           </div>
         </div>
       `).join('');

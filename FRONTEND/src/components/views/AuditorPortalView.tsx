@@ -139,7 +139,7 @@ C. ADMISSIBILITY ATTESTATION:
                     {logs.map((log) => (
                       <tr key={log.id} className="hover:bg-white/[0.02] transition">
                         <td className="py-2.5 px-2 font-mono text-[10px] text-muted whitespace-nowrap">
-                          {new Date(log.timestamp).toLocaleTimeString()}
+                          {log.timestamp ? new Date(log.timestamp).toLocaleTimeString() : "—"}
                         </td>
                         <td className="py-2.5 px-2 whitespace-nowrap">
                           <span className="font-semibold text-white block">{log.user_name}</span>
