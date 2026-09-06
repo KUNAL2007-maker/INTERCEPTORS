@@ -44,31 +44,34 @@ export function AppShell() {
 
   const ROLE_ALLOWED_VIEWS: Record<string, ViewKey[]> = {
     VICTIM: ["victim_portal"],
-    COURT_REVIEWER: ["audit_logs", "cases", "graph"],
+    COURT_REVIEWER: ["cases", "audit_logs", "graph"],
     VASP_COMPLIANCE_OFFICER: ["exchange_portal"],
-    NATIONAL_COORDINATION_ANALYST: ["national_coordination", "cases"],
+    NATIONAL_COORDINATION_ANALYST: ["national_coordination"],
     SYSTEM_ADMIN: ["system_admin", "audit_logs"],
     INVESTIGATING_OFFICER: ["dashboard", "graph", "chat", "notices"],
-    CYBERCRIME_SUPERVISOR: ["dashboard", "cases", "audit_logs"],
-    SENIOR_INVESTIGATOR: ["dashboard", "cases", "graph", "notices", "chat", "audit_logs"],
+    CYBERCRIME_SUPERVISOR: ["dashboard", "audit_logs", "cases"],
+    SENIOR_INVESTIGATOR: ["dashboard", "graph", "notices", "audit_logs", "cases"],
 
     // Legacy role aliases for backward compatibility
-    AUDITOR: ["audit_logs", "cases", "graph"],
+    AUDITOR: ["cases", "audit_logs", "graph"],
     EXCHANGE_NODAL_OFFICER: ["exchange_portal"],
     NORMAL_INVESTIGATOR: ["dashboard", "graph", "chat", "notices"],
-    WORKSPACE_ADMIN: ["dashboard", "cases", "audit_logs"],
+    WORKSPACE_ADMIN: ["dashboard", "audit_logs", "cases"],
     SUPER_ADMIN: ["system_admin", "audit_logs"]
   };
 
-  // Enforce role-differentiated view access and automatically switch to primary landing view
+  // Enforce role-differentiated view access and automatically switch to primary landing view on user/role switch
+  const prevUserRef = useRef<string | null>(null);
   useEffect(() => {
     if (!user) return;
-    const norm = normalizeRole(user.role);
-    const allowed = ROLE_ALLOWED_VIEWS[norm] || ROLE_ALLOWED_VIEWS[user.role] || ["dashboard"];
-    if (!allowed.includes(view)) {
+    const userKey = `${user.id}:${user.role}`;
+    if (prevUserRef.current !== userKey) {
+      prevUserRef.current = userKey;
+      const norm = normalizeRole(user.role);
+      const allowed = ROLE_ALLOWED_VIEWS[norm] || ROLE_ALLOWED_VIEWS[user.role] || ["dashboard"];
       setView(allowed[0]);
     }
-  }, [user?.role]);
+  }, [user?.id, user?.role]);
 
   const handleSetView = (targetView: ViewKey) => {
     if (!user) {

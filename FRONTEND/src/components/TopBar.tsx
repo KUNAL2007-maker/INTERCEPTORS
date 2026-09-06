@@ -34,10 +34,20 @@ export function TopBar({
   onOpenNav?: () => void;
 }) {
   const { theme, toggle } = useTheme();
-  const viewInfo = VIEW_TITLES[view] || { title: "CryptoTrace Intelligence", sub: "Cybercrime Investigation Platform" };
   const { user, openLoginModal, signOut } = useAuth();
   const { refreshing, trace, status } = useTraceStore();
   const normRole = user ? normalizeRole(user.role) : null;
+
+  let viewInfo = VIEW_TITLES[view] || { title: "CryptoTrace Intelligence", sub: "Cybercrime Investigation Platform" };
+  if (view === "cases" && (normRole === "COURT_REVIEWER" || user?.role === "AUDITOR")) {
+    viewInfo = { title: "Evidence Dossiers · Judicial Review", sub: "BSA 2023 Sec 63/65B read-only evidentiary dockets & SHA-256 integrity verification" };
+  } else if (view === "dashboard" && normRole === "CYBERCRIME_SUPERVISOR") {
+    viewInfo = { title: "Unit Triage & Allocation · SP Deshmukh", sub: "State cybercrime unit queue, IO assignments & statutory priority oversight" };
+  } else if (view === "dashboard" && normRole === "SENIOR_INVESTIGATOR") {
+    viewInfo = { title: "Gazetted Authority Hub · Section 94 BNSS", sub: "Traced cases review, money flow graph inspection & digital freeze orders" };
+  } else if (view === "dashboard" && normRole === "INVESTIGATING_OFFICER") {
+    viewInfo = { title: "Field Investigation & Tracing Console · SI Patil", sub: "Assigned cases queue, multi-hop BFS trace & Section 94 draft notices" };
+  }
 
   const armed = liveFeed && !!trace && status === "ready";
   const feedLabel = !liveFeed

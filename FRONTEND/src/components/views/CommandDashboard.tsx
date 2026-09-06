@@ -638,17 +638,30 @@ export function CommandDashboard({
                   )}
 
                   {c.status === "TRACED" && (
-                    <button
-                      onClick={() => {
-                        setActiveCase(c);
-                        void runTrace(c.suspect_wallet_address, c);
-                        onGoToGraph?.();
-                      }}
-                      className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/25 transition flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <span>🕸️</span>
-                      <span>View Money Flow Graph</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          setActiveCase(c);
+                          void runTrace(c.suspect_wallet_address, c);
+                          onGoToGraph?.();
+                        }}
+                        className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/25 transition flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <span>🕸️</span>
+                        <span>Money Flow Graph</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setActiveCase(c);
+                          void runTrace(c.suspect_wallet_address, c);
+                          onGoToNotices?.();
+                        }}
+                        className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/40 hover:bg-amber-500/25 transition flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <span>📝</span>
+                        <span>Prepare Draft Notice</span>
+                      </button>
+                    </div>
                   )}
 
                   {(c.status === "NOTICE_SERVED" || c.status === "FROZEN") && (

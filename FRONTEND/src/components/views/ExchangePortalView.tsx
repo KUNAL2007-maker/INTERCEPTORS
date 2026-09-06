@@ -115,7 +115,9 @@ export function ExchangePortalView() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card>
           <div className="text-[11px] uppercase tracking-wider text-muted font-medium mb-1">Inbound Requisitions</div>
-          <div className="text-2xl font-bold text-white">1 Active Notice</div>
+          <div className="text-2xl font-bold text-white">
+            {noticesList.length} Active Notice{noticesList.length === 1 ? "" : "s"}
+          </div>
           <div className="text-[11px] text-amber-400 mt-1">Sec 94 BNSS / 91 CrPC</div>
         </Card>
 

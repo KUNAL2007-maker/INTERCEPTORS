@@ -127,6 +127,10 @@ export function TraceStoreProvider({ children }: { children: ReactNode }) {
         const data = await res.json();
         if (data && Array.isArray(data.cases)) {
           setCases(data.cases);
+          setActiveCase((prev) => {
+            if (!prev) return data.cases.length > 0 ? data.cases[0] : null;
+            return data.cases.find((c: StoredCase) => c.case_number === prev.case_number) || (data.cases.length > 0 ? data.cases[0] : null);
+          });
           return data.cases;
         }
       }
@@ -134,9 +138,17 @@ export function TraceStoreProvider({ children }: { children: ReactNode }) {
     return [];
   }, []);
 
+  const clearTrace = useCallback(() => {
+    setTrace(null);
+    setStatus("idle");
+    setError(null);
+    setTraceNote(null);
+  }, []);
+
   // Sync with PostgreSQL / memory API on user change
   useEffect(() => {
     let mounted = true;
+    clearTrace();
     async function hydrate() {
       setHydrating(true);
       try {
@@ -145,29 +157,43 @@ export function TraceStoreProvider({ children }: { children: ReactNode }) {
           fetch("/api/notices").then((r) => (r.ok ? r.json() : null))
         ]);
 
-        if (mounted && casesRes && casesRes.cases && casesRes.cases.length > 0) {
-          setCases(casesRes.cases);
-          const firstCase = casesRes.cases[0];
-          setActiveCase(firstCase);
-          setCaseMetaState((prev) => ({
-            ...prev,
-            ncrp_ack_no: firstCase.case_number,
-            amount_lost_inr: Number(firstCase.loss_amount_inr) || prev.amount_lost_inr,
-            jurisdiction_ps: firstCase.jurisdiction_code || prev.jurisdiction_ps,
-            victim_name: firstCase.victim_name || prev.victim_name,
-            io_name: firstCase.assigned_investigator_name || prev.io_name,
-          }));
-        }
+        if (mounted) {
+          if (casesRes && Array.isArray(casesRes.cases)) {
+            setCases(casesRes.cases);
+            if (casesRes.cases.length > 0) {
+              const firstCase = casesRes.cases[0];
+              setActiveCase(firstCase);
+              setCaseMetaState((prev) => ({
+                ...prev,
+                ncrp_ack_no: firstCase.case_number,
+                amount_lost_inr: Number(firstCase.loss_amount_inr) || prev.amount_lost_inr,
+                jurisdiction_ps: firstCase.jurisdiction_code || prev.jurisdiction_ps,
+                victim_name: firstCase.victim_name || prev.victim_name,
+                io_name: firstCase.assigned_investigator_name || prev.io_name,
+              }));
+            } else {
+              setActiveCase(null);
+              setCaseMetaState({
+                ncrp_ack_no: "",
+                amount_lost_inr: 0,
+                jurisdiction_ps: user?.jurisdiction_code || "MH-CYBER-01",
+                victim_name: user?.name || "Rajesh Verma",
+                io_name: "SI Patil",
+              });
+            }
+          } else {
+            setCases([]);
+            setActiveCase(null);
+          }
 
-        const rawNotices = noticesRes
-          ? Array.isArray(noticesRes)
-            ? noticesRes
-            : Array.isArray(noticesRes.notices)
-            ? noticesRes.notices
-            : []
-          : [];
+          const rawNotices = noticesRes
+            ? Array.isArray(noticesRes)
+              ? noticesRes
+              : Array.isArray(noticesRes.notices)
+              ? noticesRes.notices
+              : []
+            : [];
 
-        if (mounted && rawNotices.length > 0) {
           setNotices(rawNotices.map((n: any) => normalizeStoredNotice(n)));
         }
       } catch {
@@ -181,7 +207,7 @@ export function TraceStoreProvider({ children }: { children: ReactNode }) {
     return () => {
       mounted = false;
     };
-  }, [user?.role, user?.jurisdiction_code]);
+  }, [user?.id, user?.role, user?.jurisdiction_code, clearTrace]);
 
   const runTrace = useCallback(async (seed: string, linkedCase?: StoredCase) => {
     const s = seed.trim();
@@ -290,12 +316,6 @@ export function TraceStoreProvider({ children }: { children: ReactNode }) {
     return runTrace("demo");
   }, [runTrace]);
 
-  const clearTrace = useCallback(() => {
-    setTrace(null);
-    setStatus("idle");
-    setError(null);
-    setTraceNote(null);
-  }, []);
 
   const setCaseMeta = useCallback((patch: Partial<CaseMeta>) => {
     setCaseMetaState((prev) => ({ ...prev, ...patch }));

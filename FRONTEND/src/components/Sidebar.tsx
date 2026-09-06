@@ -51,6 +51,18 @@ export function Sidebar({
     if (role === "COURT_REVIEWER" || rawRole === "AUDITOR") {
       return [
         {
+          key: "cases",
+          label: "Evidence Dossiers",
+          hint: "Read-only case files & hashes",
+          badge: "Read Only",
+          icon: (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          ),
+        },
+        {
           key: "audit_logs",
           label: "BSA Audit Trail & Cert",
           hint: "Sec 63/65B Logs & Cert",
@@ -58,18 +70,6 @@ export function Sidebar({
           icon: (
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path d="M12 3v18M3 8l9-5 9 5M6 13l-3 4h6l-3-4zM18 13l-3 4h6l-3-4z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          ),
-        },
-        {
-          key: "cases",
-          label: "Evidence Dossiers",
-          hint: "Read-only case files",
-          badge: "Read Only",
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           ),
         },
@@ -124,17 +124,6 @@ export function Sidebar({
               <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.4" />
             </svg>
           ),
-        },
-        {
-          key: "cases",
-          label: "Multi-State Dockets",
-          hint: "Cross-case indicators",
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          ),
         }
       ];
     }
@@ -174,23 +163,11 @@ export function Sidebar({
         {
           key: "dashboard",
           label: "Unit Triage & Allocation",
-          hint: "SP Deshmukh • Case Triage",
+          hint: "SP Deshmukh • Case Triage & IO Assignment",
           badge: "Supervisor",
           icon: (
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path d="M3 12h4l3-8 4 16 3-8h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          ),
-        },
-        {
-          key: "cases",
-          label: "State Unit Cases",
-          hint: "Assign IOs & set priority",
-          badge: "Queue",
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           ),
         },
@@ -213,23 +190,12 @@ export function Sidebar({
       return [
         {
           key: "dashboard",
-          label: "Gazetted Authority Hub",
-          hint: "ACP Sharma • Review & sign-off",
+          label: "Traced Cases & Sign-Off",
+          hint: "ACP Sharma • Review & Sign-Off",
           badge: "Gazetted",
           icon: (
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path d="M3 12h4l3-8 4 16 3-8h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          ),
-        },
-        {
-          key: "cases",
-          label: "Unit Case Dockets",
-          hint: "Case evidence dossiers",
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           ),
         },
@@ -257,19 +223,6 @@ export function Sidebar({
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path d="M7 3h8l4 4v14H7V3z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
               <path d="M15 3v5h4M9 12h6M9 16h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-            </svg>
-          ),
-        },
-        {
-          key: "chat",
-          label: "AI Investigator",
-          hint: "4 forensic agents",
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M4 6h16v10H8l-4 3V6z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-              <circle cx="9" cy="11" r="1" fill="currentColor" />
-              <circle cx="12" cy="11" r="1" fill="currentColor" />
-              <circle cx="15" cy="11" r="1" fill="currentColor" />
             </svg>
           ),
         },

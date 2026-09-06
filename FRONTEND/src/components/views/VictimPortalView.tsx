@@ -171,7 +171,7 @@ export function VictimPortalView() {
               className="px-3.5 py-2.5 rounded-xl text-xs font-semibold border border-cyan-500/40 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-200 transition flex items-center gap-1.5 cursor-pointer shadow-sm"
             >
               <span>✨</span>
-              <span>Load Demo Case</span>
+              <span>Autofill Demo Case (0x71C7...)</span>
             </button>
             <button
               onClick={() => setShowFileModal(true)}
@@ -508,7 +508,7 @@ export function VictimPortalView() {
               className="px-5 py-2.5 rounded-xl text-xs font-bold text-cyan-200 border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 transition flex items-center gap-1.5 shadow-sm"
             >
               <span>✨</span>
-              <span>1-Click Load Demo Case (0x71C7...)</span>
+              <span>Autofill Demo Case (0x71C7...)</span>
             </button>
           </div>
         </div>
