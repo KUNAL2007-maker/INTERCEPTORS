@@ -404,31 +404,35 @@ export async function saveFreezeNotice(
   noticeData: Partial<StoredFreezeNotice>,
   actingOfficer: AppUser
 ): Promise<{ success: boolean; notice?: StoredFreezeNotice; error?: string; statutory_code?: string }> {
-  // ABAC Guard: Section 94 BNSS statutory gazetted officer check
-  const abacResult = evaluateABAC(
-    actingOfficer,
-    { status: 'TRACED', vasp_id: noticeData.vasp_id },
-    'freeze_approve',
-    memoryStore.environment
-  );
+  const isDraft = noticeData.status === 'Draft';
 
-  if (abacResult.decision === 'DENY') {
-    recordAuditLog({
-      user_id: actingOfficer.id,
-      user_name: actingOfficer.name,
-      user_role: actingOfficer.role,
-      action: 'ISSUE_SECTION_94_BNSS',
-      resource_type: 'FREEZE_NOTICE',
-      resource_id: noticeData.id || noticeData.case_number,
-      decision: 'DENIED',
-      reason: abacResult.reason,
-      statutory_code: 'SEC_94_BNSS_GAZETTED_GATE'
-    });
-    return {
-      success: false,
-      error: abacResult.reason,
-      statutory_code: 'SEC_94_BNSS_GAZETTED_GATE'
-    };
+  // If attempting to issue or approve a freeze order, enforce Section 94 BNSS statutory gazetted officer check
+  if (!isDraft) {
+    const abacResult = evaluateABAC(
+      actingOfficer,
+      { status: 'TRACED', vasp_id: noticeData.vasp_id },
+      'freeze_approve',
+      memoryStore.environment
+    );
+
+    if (abacResult.decision === 'DENY') {
+      recordAuditLog({
+        user_id: actingOfficer.id,
+        user_name: actingOfficer.name,
+        user_role: actingOfficer.role,
+        action: 'ISSUE_SECTION_94_BNSS',
+        resource_type: 'FREEZE_NOTICE',
+        resource_id: noticeData.id || noticeData.case_number,
+        decision: 'DENIED',
+        reason: abacResult.reason,
+        statutory_code: 'SEC_94_BNSS_GAZETTED_GATE'
+      });
+      return {
+        success: false,
+        error: abacResult.reason,
+        statutory_code: 'SEC_94_BNSS_GAZETTED_GATE'
+      };
+    }
   }
 
   const stored: StoredFreezeNotice = {
@@ -437,9 +441,9 @@ export async function saveFreezeNotice(
     case_number: noticeData.case_number,
     target_vasp: noticeData.target_vasp || 'Binance International',
     vasp_id: noticeData.vasp_id || 1,
-    status: noticeData.status || 'Issued',
+    status: isDraft ? 'Draft' : (noticeData.status || 'Issued'),
     drafted_by_name: noticeData.drafted_by_name || actingOfficer.name,
-    approved_by_name: actingOfficer.name,
+    approved_by_name: isDraft ? undefined : actingOfficer.name,
     created_at: Date.now(),
     notice: noticeData.notice
   };
@@ -450,11 +454,13 @@ export async function saveFreezeNotice(
     user_id: actingOfficer.id,
     user_name: actingOfficer.name,
     user_role: actingOfficer.role,
-    action: 'ISSUE_SECTION_94_BNSS',
+    action: isDraft ? 'DRAFT_SECTION_94_BNSS' : 'ISSUE_SECTION_94_BNSS',
     resource_type: 'FREEZE_NOTICE',
     resource_id: stored.id,
     decision: 'GRANTED',
-    reason: 'Statutory Sec 94 BNSS freeze approved by Gazetted Officer.'
+    reason: isDraft
+      ? 'Section 94 BNSS requisition draft registered by field investigator.'
+      : 'Statutory Sec 94 BNSS freeze approved and digitally signed by Gazetted Officer.'
   });
 
   return { success: true, notice: stored };

@@ -222,21 +222,21 @@ export function Sidebar({
   const roleBadge = useMemo(() => {
     switch (role) {
       case "VICTIM":
-        return { label: "CITIZEN FRAUD PORTAL", bg: "bg-cyan-500/15 text-cyan-300 border-cyan-500/30" };
+        return { label: "CITIZEN COMPLAINANT · NCRP 1930", bg: "bg-cyan-500/10 text-cyan-300 border-cyan-500/25" };
       case "AUDITOR":
-        return { label: "JUDICIAL EVIDENCE AUDITOR", bg: "bg-yellow-500/15 text-yellow-300 border-yellow-500/30" };
+        return { label: "JUDICIAL EVIDENCE AUDITOR · BSA 65B", bg: "bg-yellow-500/10 text-yellow-300 border-yellow-500/25" };
       case "EXCHANGE_NODAL_OFFICER":
-        return { label: "VASP COMPLIANCE DESK", bg: "bg-amber-500/15 text-amber-300 border-amber-500/30" };
+        return { label: "BINANCE COMPLIANCE DESK · VASP", bg: "bg-amber-500/10 text-amber-300 border-amber-500/25" };
       case "NORMAL_INVESTIGATOR":
-        return { label: "INVESTIGATOR (NON-GAZETTED)", bg: "bg-amber-500/15 text-amber-300 border-amber-500/30" };
+        return { label: "FIELD INVESTIGATOR (SUB-INSPECTOR)", bg: "bg-amber-500/10 text-amber-300 border-amber-500/25" };
       case "SENIOR_INVESTIGATOR":
-        return { label: "SENIOR INVESTIGATOR (ACP GAZETTED)", bg: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" };
+        return { label: "ACP SHARMA (GAZETTED · SEC 94 BNSS)", bg: "bg-emerald-500/10 text-emerald-300 border-emerald-500/25" };
       case "SUPER_ADMIN":
-        return { label: "I4C NATIONAL CENTRAL HUB", bg: "bg-red-500/15 text-red-300 border-red-500/30" };
+        return { label: "CENTRAL NODAL OFFICER · I4C PAN-INDIA", bg: "bg-rose-500/10 text-rose-300 border-rose-500/25" };
       case "WORKSPACE_ADMIN":
-        return { label: "STATE UNIT LEAD (SP)", bg: "bg-purple-500/15 text-purple-300 border-purple-500/30" };
+        return { label: "SP DESHMUKH (STATE UNIT LEAD)", bg: "bg-purple-500/10 text-purple-300 border-purple-500/25" };
       default:
-        return { label: "LAW ENFORCEMENT", bg: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" };
+        return { label: "LAW ENFORCEMENT", bg: "bg-emerald-500/10 text-emerald-300 border-emerald-500/25" };
     }
   }, [role]);
 
@@ -333,12 +333,28 @@ function OfficerChip() {
   const { user, signOut } = useAuth();
   if (!user) return null;
 
+  const roleLabel =
+    user.role === "VICTIM"
+      ? "Citizen Complainant"
+      : user.role === "AUDITOR"
+      ? "Judicial Evidence Auditor"
+      : user.role === "EXCHANGE_NODAL_OFFICER"
+      ? "Binance Compliance Lead"
+      : user.is_gazetted
+      ? "Gazetted Police Officer"
+      : "Field Investigator";
+
   return (
-    <div className="flex items-center gap-2.5 p-2 rounded-xl bg-[var(--chip)] border" style={{ borderColor: "var(--border)" }}>
+    <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[var(--chip)] border" style={{ borderColor: "var(--border)" }}>
       <div
-        className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs"
+        className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center font-bold text-xs shadow-sm"
         style={{
-          background: user.is_gazetted ? "linear-gradient(135deg, #10b981, #059669)" : "linear-gradient(135deg, #f59e0b, #d97706)",
+          background:
+            user.role === "VICTIM"
+              ? "linear-gradient(135deg, #06b6d4, #0891b2)"
+              : user.is_gazetted
+              ? "linear-gradient(135deg, #10b981, #059669)"
+              : "linear-gradient(135deg, #f59e0b, #d97706)",
           color: "#000"
         }}
       >
@@ -346,12 +362,12 @@ function OfficerChip() {
       </div>
       <div className="min-w-0 flex-1">
         <div className="text-[12px] font-semibold text-white truncate">{user.name || user.fullName}</div>
-        <div className="text-[10px] text-muted truncate">{user.email}</div>
+        <div className="text-[10px] text-muted truncate">{roleLabel}</div>
       </div>
       <button
         onClick={() => signOut()}
         title="Sign Out"
-        className="p-1 rounded text-muted hover:text-white transition text-xs"
+        className="p-1 rounded-md text-muted hover:text-red-400 hover:bg-red-500/10 transition text-xs"
       >
         ✕
       </button>

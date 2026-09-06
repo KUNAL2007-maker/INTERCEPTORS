@@ -4,9 +4,15 @@ import { extractUserClaims } from '@/lib/auth-crypto';
 
 export async function GET(req: Request) {
   const claims = extractUserClaims(req);
-  const user = (claims ? getUserById(claims.id) : null) || getCurrentUser();
+  if (!claims) {
+    return NextResponse.json(
+      { error: 'Unauthorized: Authentication required to inspect judicial audit logs.' },
+      { status: 401 }
+    );
+  }
+  const user = getUserById(claims.id) || (claims as any);
 
-  // Audit logs are accessible by Auditor, Super Admin, and Workspace Admin
+  // Audit logs are accessible by Auditor, Super Admin, Workspace Admin, and Senior Investigator
   const allowedRoles = ['AUDITOR', 'SUPER_ADMIN', 'WORKSPACE_ADMIN', 'SENIOR_INVESTIGATOR'];
   if (!allowedRoles.includes(user.role)) {
     return NextResponse.json(

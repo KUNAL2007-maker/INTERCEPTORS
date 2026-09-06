@@ -102,6 +102,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Fallback to local default persona
       }
       if (mounted) {
+        try {
+          const initRes = await fetch("/api/auth", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "switch_persona", roleOrUid: "senior-sharma" })
+          });
+          if (initRes.ok) {
+            const initData = await initRes.json();
+            if (initData.user) {
+              setUser({
+                ...initData.user,
+                fullName: initData.user.name || initData.user.fullName
+              });
+              setLoading(false);
+              return;
+            }
+          }
+        } catch {}
         const defaultPersona = SYSTEM_PERSONAS[0];
         setUser({
           ...defaultPersona,

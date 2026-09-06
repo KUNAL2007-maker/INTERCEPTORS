@@ -63,84 +63,86 @@ export function TopBar({
         </button>
 
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <div className="text-[11px] uppercase tracking-widest truncate" style={{ color: "var(--muted)" }}>
-              CryptoTrace Intelligence
-            </div>
-            <span className="hidden sm:inline text-[10px] rounded px-1.5 py-0.5 bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 font-mono">
-              JWT &bull; RBAC+ABAC &bull; SEC 94 BNSS
-            </span>
+          <div className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: "var(--muted)" }}>
+            CryptoTrace Intelligence · I4C NCRP
           </div>
           <div className="mt-0.5 text-[15px] sm:text-[18px] font-semibold leading-tight truncate" style={{ color: "var(--text-strong)" }}>
             {title}
           </div>
-          <div className="hidden sm:block text-[12px] truncate" style={{ color: "var(--muted-2)" }}>{sub}</div>
+          <div className="hidden sm:block text-[11.5px] truncate" style={{ color: "var(--muted-2)" }}>{sub}</div>
         </div>
 
-        {/* Right controls: Ingest 1930, Real Auth Profile, Live feed & Theme */}
-        <div className="ml-auto flex shrink-0 items-center flex-wrap gap-1.5 sm:gap-2.5">
-          {/* Quick 1930 / NCRP Ingest Button */}
-          <button
-            onClick={() => ingestNcrpComplaint()}
-            title="Simulate Real-Time Ingestion from NCRP / 1930 Helpline"
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-indigo-500/40 bg-indigo-500/15 px-2.5 sm:px-3 text-[12px] font-medium text-indigo-200 transition hover:bg-indigo-500/25 shadow-glow"
-          >
-            <span className="h-2 w-2 rounded-full bg-indigo-400 animate-ping" />
-            <span>⚡ Ingest 1930/NCRP</span>
-          </button>
-
-          {/* Real Officer Profile Badge & Authentication Trigger */}
+        {/* Right controls: User Persona, Live feed & Theme */}
+        <div className="ml-auto flex shrink-0 items-center flex-wrap gap-2 sm:gap-3">
+          {/* User Profile Badge & Persona Switcher */}
           {user ? (
             <div
-              className="flex items-center gap-2 rounded-lg border px-2.5 py-1"
+              className="flex items-center gap-2.5 rounded-xl border px-3 py-1.5 shadow-sm"
               style={{
                 background: "var(--chip)",
                 borderColor: "var(--border)"
               }}
             >
-              {/* Gazetted Status Light */}
+              {/* Gazetted / Role Status Indicator */}
               <span
-                className={`h-2.5 w-2.5 rounded-full ${
-                  user.is_gazetted ? "bg-emerald-400" : "bg-amber-400"
+                className={`h-2.5 w-2.5 rounded-full shrink-0 ${
+                  user.role === 'VICTIM'
+                    ? "bg-cyan-400"
+                    : user.role === 'AUDITOR'
+                    ? "bg-yellow-400"
+                    : user.role === 'EXCHANGE_NODAL_OFFICER'
+                    ? "bg-amber-400"
+                    : user.is_gazetted
+                    ? "bg-emerald-400 shadow-glow"
+                    : "bg-amber-400"
                 }`}
-                title={user.is_gazetted ? "Gazetted Officer (Sec 94 BNSS Authorized)" : "Non-Gazetted Officer (Notice Blocked by ABAC)"}
+                title={user.is_gazetted ? "Gazetted Officer (Sec 94 BNSS Authorized)" : user.role}
               />
 
-              <div className="flex flex-col text-left">
-                <div className="flex items-center gap-1.5 leading-none">
-                  <span className="text-[12px] font-bold" style={{ color: "var(--text-strong)" }}>
+              <div className="flex flex-col text-left min-w-0">
+                <div className="flex items-center gap-2 leading-tight">
+                  <span className="text-[12.5px] font-semibold truncate" style={{ color: "var(--text-strong)" }}>
                     {user.name || user.fullName}
                   </span>
                   <span
-                    className="text-[9px] font-mono px-1 py-0.2 rounded"
+                    className="text-[9px] font-mono px-1.5 py-0.5 rounded font-medium"
                     style={{
-                      background: user.is_gazetted ? "#10b98122" : "#f59e0b22",
-                      color: user.is_gazetted ? "#10b981" : "#f59e0b",
-                      border: `1px solid ${user.is_gazetted ? "#10b98144" : "#f59e0b44"}`
+                      background: user.role === 'VICTIM' ? "#06b6d422" : user.is_gazetted ? "#10b98122" : "#f59e0b22",
+                      color: user.role === 'VICTIM' ? "#06b6d4" : user.is_gazetted ? "#10b981" : "#f59e0b",
+                      border: `1px solid ${user.role === 'VICTIM' ? "#06b6d444" : user.is_gazetted ? "#10b98144" : "#f59e0b44"}`
                     }}
                   >
-                    {user.is_gazetted ? "GAZETTED" : "NON-GAZETTED"}
+                    {user.role === 'VICTIM'
+                      ? 'CITIZEN'
+                      : user.role === 'AUDITOR'
+                      ? 'JUDICIAL'
+                      : user.role === 'EXCHANGE_NODAL_OFFICER'
+                      ? 'VASP DESK'
+                      : user.is_gazetted
+                      ? 'GAZETTED'
+                      : 'NON-GAZETTED'}
                   </span>
                 </div>
-                <div className="text-[10px] text-muted leading-none mt-1">
+                <div className="text-[10px] text-muted leading-tight mt-0.5 truncate">
                   {user.role.replace(/_/g, " ")} {user.jurisdiction_code ? `· ${user.jurisdiction_code}` : ""}
                 </div>
               </div>
 
-              {/* Switch Officer Button (Opens LoginModal) */}
+              {/* Switch Role Button */}
               <button
                 onClick={openLoginModal}
-                title="Switch Officer Identity or Sign In with Credentials"
-                className="ml-1 text-[11px] px-2 py-1 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 transition"
+                title="Switch Evaluation Role or Sign In"
+                className="ml-1 text-[11px] font-medium px-2 py-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 transition flex items-center gap-1"
               >
-                Switch
+                <span>⇄</span>
+                <span>Switch</span>
               </button>
 
               {/* Logout Button */}
               <button
                 onClick={signOut}
-                title="Log Out Session"
-                className="text-[11px] px-1.5 py-1 rounded text-red-400 hover:bg-red-500/10 transition"
+                title="Sign Out Session"
+                className="text-[11px] p-1 rounded-md text-muted hover:text-red-400 hover:bg-red-500/10 transition"
               >
                 ✕
               </button>
@@ -148,10 +150,10 @@ export function TopBar({
           ) : (
             <button
               onClick={openLoginModal}
-              className="flex h-9 items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-3 text-[12px] font-semibold text-emerald-300 transition hover:bg-emerald-500/25"
+              className="flex h-9 items-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/15 px-3 text-[12px] font-semibold text-emerald-300 transition hover:bg-emerald-500/25"
             >
               <span>🔑</span>
-              <span>Officer Sign In</span>
+              <span>Sign In</span>
             </button>
           )}
 

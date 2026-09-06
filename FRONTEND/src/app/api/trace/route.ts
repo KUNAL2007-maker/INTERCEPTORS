@@ -8,6 +8,8 @@ import {
 } from "@/lib/blockchain";
 import { priceQuotaSnapshot } from "@/lib/prices";
 import { detectChain, type CaseMeta, type Chain } from "@/lib/domain";
+import { extractUserClaims } from "@/lib/auth-crypto";
+import { getUserById } from "@/lib/db";
 
 /** Chains a probe can poll. Whitelisted so a client can't send anything else. */
 const SUPPORTED_PROBE_CHAINS: Chain[] = ["ETHEREUM", "POLYGON", "TRON", "BITCOIN"];
@@ -35,6 +37,27 @@ export const maxDuration = 60;
 // left open on a desk. A poll only needs to answer "has anything moved?".
 export async function POST(req: Request) {
   try {
+    const claims = extractUserClaims(req);
+    if (!claims) {
+      return NextResponse.json(
+        { error: "Unauthorized: Authentication required to run blockchain trace analysis." },
+        { status: 401 }
+      );
+    }
+    const user = getUserById(claims.id) || (claims as any);
+    if (user.role === "VICTIM") {
+      return NextResponse.json(
+        { error: "Access Denied: Citizen complainant accounts cannot execute arbitrary blockchain trace analysis." },
+        { status: 403 }
+      );
+    }
+    if (user.role === "EXCHANGE_NODAL_OFFICER") {
+      return NextResponse.json(
+        { error: "Access Denied: Exchange compliance desk accounts cannot execute law enforcement forensic tracing." },
+        { status: 403 }
+      );
+    }
+
     const body = await req.json().catch(() => ({}));
     const rawSeed = typeof body?.seed === "string" ? body.seed.trim() : "";
     const demo = body?.demo === true;

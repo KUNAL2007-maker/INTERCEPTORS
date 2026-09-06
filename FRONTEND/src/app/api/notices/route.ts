@@ -5,7 +5,22 @@ import { hasPermission } from '@/lib/rbac-abac';
 
 export async function GET(req: Request) {
   const claims = extractUserClaims(req);
-  const user = (claims ? getUserById(claims.id) : null) || getCurrentUser();
+  if (!claims) {
+    return NextResponse.json(
+      { error: 'Unauthorized: Authentication required.' },
+      { status: 401 }
+    );
+  }
+  const user = getUserById(claims.id) || (claims as any);
+
+  // VICTIM cannot view police legal notices
+  if (user.role === 'VICTIM') {
+    return NextResponse.json(
+      { error: 'Access Denied: Citizen complainants are not authorized to inspect law enforcement legal notices.' },
+      { status: 403 }
+    );
+  }
+
   const notices = await getNoticesForUser(user);
   return NextResponse.json({
     officer: {
@@ -22,7 +37,13 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const claims = extractUserClaims(req);
-    const user = (claims ? getUserById(claims.id) : null) || getCurrentUser();
+    if (!claims) {
+      return NextResponse.json(
+        { error: 'Unauthorized: Authentication required.' },
+        { status: 401 }
+      );
+    }
+    const user = getUserById(claims.id) || (claims as any);
 
     // ── 1. RBAC Gate: Must be an Investigator or Super Admin ─────────────
     const isInvestigatorOrAdmin = ['SENIOR_INVESTIGATOR', 'WORKSPACE_ADMIN', 'SUPER_ADMIN', 'NORMAL_INVESTIGATOR'].includes(user.role);
@@ -45,8 +66,11 @@ export async function POST(req: Request) {
       );
     }
 
+    const body = await req.json().catch(() => ({}));
+    const isDraft = body.status === 'Draft' || body.action === 'draft';
+
     // ── 2. ABAC Statutory Gate: Section 94 BNSS Gazetted Officer Mandate ───
-    if (!user.is_gazetted) {
+    if (!isDraft && !user.is_gazetted) {
       const denialReason = `ABAC Policy Violation: Under Section 94 of Bharatiya Nagarik Suraksha Sanhita (BNSS 2023) / Section 91 CrPC, statutory cryptocurrency freeze and evidence preservation orders require Gazetted Police Officer authorization (ACP, DSP, or higher). ${user.name} (${user.role}) is non-gazetted and legally unauthorized to sign.`;
 
       recordAuditLog({
@@ -70,7 +94,6 @@ export async function POST(req: Request) {
       );
     }
 
-    const body = await req.json().catch(() => ({}));
     const result = await saveFreezeNotice(body, user);
 
     if (!result.success) {

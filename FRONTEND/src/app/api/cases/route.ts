@@ -12,7 +12,13 @@ import { evaluateABAC } from '@/lib/rbac-abac';
 
 export async function GET(req: Request) {
   const claims = extractUserClaims(req);
-  const user = (claims ? getUserById(claims.id) : null) || getCurrentUser();
+  if (!claims) {
+    return NextResponse.json(
+      { error: 'Unauthorized: Authentication required to access case dossiers.' },
+      { status: 401 }
+    );
+  }
+  const user = getUserById(claims.id) || (claims as any);
 
   const cases = await getCasesForUser(user);
 
@@ -41,7 +47,13 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const claims = extractUserClaims(req);
-    const user = (claims ? getUserById(claims.id) : null) || getCurrentUser();
+    if (!claims) {
+      return NextResponse.json(
+        { error: 'Unauthorized: Authentication required to create or register cases.' },
+        { status: 401 }
+      );
+    }
+    const user = getUserById(claims.id) || (claims as any);
 
     // ABAC Guard: Judicial and Auditor read-only rule
     const abacCheck = evaluateABAC(user, null, 'CREATE', getEnvironment());
@@ -58,6 +70,13 @@ export async function POST(req: Request) {
 
       return NextResponse.json(
         { error: abacCheck.reason },
+        { status: 403 }
+      );
+    }
+
+    if (user.role === 'EXCHANGE_NODAL_OFFICER') {
+      return NextResponse.json(
+        { error: 'Access Denied: Exchange compliance officers cannot create police investigation cases.' },
         { status: 403 }
       );
     }

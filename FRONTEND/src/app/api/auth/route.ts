@@ -20,12 +20,9 @@ export async function GET(req: Request) {
     activeUser = claims as any;
   }
 
-  // If no cookie/token present, fall back to current memory store user (or null)
-  const user = activeUser || getCurrentUser();
-
   return NextResponse.json({
     authenticated: !!activeUser,
-    user,
+    user: activeUser || null,
     environment: getEnvironment(),
     personas: SYSTEM_PERSONAS
   });
