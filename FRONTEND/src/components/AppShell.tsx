@@ -15,6 +15,9 @@ import { VictimPortalView } from "./views/VictimPortalView";
 import { AuditorPortalView } from "./views/AuditorPortalView";
 import { ExchangePortalView } from "./views/ExchangePortalView";
 import { CasesView } from "./views/CasesView";
+import { NationalCoordinationView } from "./views/NationalCoordinationView";
+import { SystemAdminView } from "./views/SystemAdminView";
+import { normalizeRole } from "@/lib/rbac-abac";
 
 export type ViewKey =
   | "dashboard"
@@ -26,7 +29,9 @@ export type ViewKey =
   | "notices"
   | "victim_portal"
   | "audit_logs"
-  | "exchange_portal";
+  | "exchange_portal"
+  | "national_coordination"
+  | "system_admin";
 
 const LIVE_POLL_MS = 60_000;
 
@@ -39,18 +44,27 @@ export function AppShell() {
 
   const ROLE_ALLOWED_VIEWS: Record<string, ViewKey[]> = {
     VICTIM: ["victim_portal"],
+    COURT_REVIEWER: ["audit_logs", "dashboard", "cases", "graph"],
+    VASP_COMPLIANCE_OFFICER: ["exchange_portal", "notices"],
+    NATIONAL_COORDINATION_ANALYST: ["national_coordination", "dashboard", "cases", "graph", "audit_logs"],
+    SYSTEM_ADMIN: ["system_admin", "audit_logs", "dashboard", "cases"],
+    INVESTIGATING_OFFICER: ["dashboard", "cases", "trace", "graph", "transfers", "notices", "chat"],
+    CYBERCRIME_SUPERVISOR: ["dashboard", "cases", "trace", "graph", "transfers", "notices", "audit_logs"],
+    SENIOR_INVESTIGATOR: ["dashboard", "cases", "trace", "graph", "transfers", "notices", "chat", "audit_logs"],
+
+    // Legacy role aliases for backward compatibility
     AUDITOR: ["audit_logs", "dashboard", "cases", "graph"],
     EXCHANGE_NODAL_OFFICER: ["exchange_portal", "notices"],
     NORMAL_INVESTIGATOR: ["dashboard", "cases", "trace", "graph", "transfers", "notices", "chat"],
-    SENIOR_INVESTIGATOR: ["dashboard", "cases", "trace", "graph", "transfers", "notices", "chat", "audit_logs"],
     WORKSPACE_ADMIN: ["dashboard", "cases", "trace", "graph", "transfers", "notices", "chat", "audit_logs"],
-    SUPER_ADMIN: ["dashboard", "cases", "trace", "graph", "transfers", "notices", "chat", "audit_logs"],
+    SUPER_ADMIN: ["system_admin", "dashboard", "cases", "trace", "graph", "transfers", "notices", "chat", "audit_logs"]
   };
 
   // Enforce role-differentiated view access and automatically switch to primary landing view
   useEffect(() => {
     if (!user) return;
-    const allowed = ROLE_ALLOWED_VIEWS[user.role] || ["dashboard"];
+    const norm = normalizeRole(user.role);
+    const allowed = ROLE_ALLOWED_VIEWS[norm] || ROLE_ALLOWED_VIEWS[user.role] || ["dashboard"];
     if (!allowed.includes(view)) {
       setView(allowed[0]);
     }
@@ -61,7 +75,8 @@ export function AppShell() {
       setView(targetView);
       return;
     }
-    const allowed = ROLE_ALLOWED_VIEWS[user.role] || ["dashboard"];
+    const norm = normalizeRole(user.role);
+    const allowed = ROLE_ALLOWED_VIEWS[norm] || ROLE_ALLOWED_VIEWS[user.role] || ["dashboard"];
     if (allowed.includes(targetView)) {
       setView(targetView);
     } else {
@@ -117,34 +132,36 @@ export function AppShell() {
           {view === "victim_portal" && <VictimPortalView />}
           {view === "audit_logs" && <AuditorPortalView />}
           {view === "exchange_portal" && <ExchangePortalView />}
+          {view === "national_coordination" && <NationalCoordinationView />}
+          {view === "system_admin" && <SystemAdminView />}
           {view === "cases" && (
             <CasesView
-              onGoToTrace={() => setView("trace")}
-              onGoToGraph={() => setView("graph")}
-              onGoToNotices={() => setView("notices")}
+              onGoToTrace={() => handleSetView("trace")}
+              onGoToGraph={() => handleSetView("graph")}
+              onGoToNotices={() => handleSetView("notices")}
             />
           )}
           {view === "dashboard" && (
             <CommandDashboard
               liveFeed={liveFeed}
-              onGoToTrace={() => setView("trace")}
-              onGoToCases={() => setView("cases")}
+              onGoToTrace={() => handleSetView("trace")}
+              onGoToCases={() => handleSetView("cases")}
             />
           )}
-          {view === "transfers" && <TransfersView onGoToTrace={() => setView("trace")} />}
+          {view === "transfers" && <TransfersView onGoToTrace={() => handleSetView("trace")} />}
           {view === "graph" && (
             <GraphView
               focusAccounts={graphFocus}
               onClearFocus={() => setGraphFocus([])}
-              onOpenNotices={() => setView("notices")}
-              onGoToTrace={() => setView("trace")}
+              onOpenNotices={() => handleSetView("notices")}
+              onGoToTrace={() => handleSetView("trace")}
             />
           )}
           {view === "trace" && (
             <TraceWalletView
-              onDone={() => setView("dashboard")}
-              onGoToGraph={() => setView("graph")}
-              onGoToNotices={() => setView("notices")}
+              onDone={() => handleSetView("dashboard")}
+              onGoToGraph={() => handleSetView("graph")}
+              onGoToNotices={() => handleSetView("notices")}
             />
           )}
           {chatMounted && (
@@ -152,12 +169,12 @@ export function AppShell() {
               <InvestigatorChat
                 onOpenGraph={(accounts) => {
                   setGraphFocus(accounts);
-                  setView("graph");
+                  handleSetView("graph");
                 }}
               />
             </div>
           )}
-          {view === "notices" && <LegalNoticesView onGoToTrace={() => setView("trace")} />}
+          {view === "notices" && <LegalNoticesView onGoToTrace={() => handleSetView("trace")} />}
         </main>
       </div>
     </div>

@@ -12,6 +12,7 @@ import {
   shortWallet,
   formatINR,
 } from "@/lib/domain";
+import { normalizeRole } from "@/lib/rbac-abac";
 
 type FilterStatus = "ALL" | "PENDING_TRACING" | "TRACED" | "NOTICE_SERVED" | "FROZEN";
 
@@ -39,13 +40,48 @@ export function CasesView({
   const [newVictim, setNewVictim] = useState("Rajesh Verma");
   const [ingesting, setIngesting] = useState(false);
 
+  const normRole = user ? normalizeRole(user.role) : null;
+  const isSupervisor = normRole === "CYBERCRIME_SUPERVISOR" || user?.role === "WORKSPACE_ADMIN";
+  const isCourtReviewer = normRole === "COURT_REVIEWER" || user?.role === "AUDITOR";
+  const isInvestigatingOfficer = normRole === "INVESTIGATING_OFFICER" || user?.role === "NORMAL_INVESTIGATOR";
+
   // Authority check: All investigating officers, gazetted officers, and administrators can initiate traces
   const canExecuteTrace =
+    normRole === "INVESTIGATING_OFFICER" ||
+    normRole === "CYBERCRIME_SUPERVISOR" ||
+    normRole === "SENIOR_INVESTIGATOR" ||
+    normRole === "NATIONAL_COORDINATION_ANALYST" ||
     user?.role === "NORMAL_INVESTIGATOR" ||
     user?.role === "SENIOR_INVESTIGATOR" ||
     user?.role === "SUPER_ADMIN" ||
     user?.role === "WORKSPACE_ADMIN" ||
     Boolean(user?.is_gazetted);
+
+  const handleAssignIO = async (caseNumber: string, ioId: number, ioName: string) => {
+    try {
+      const res = await fetch('/api/cases', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ case_number: caseNumber, assigned_investigator_id: ioId, assigned_investigator_name: ioName })
+      });
+      if (res.ok) {
+        await loadCases();
+      }
+    } catch {}
+  };
+
+  const handleChangePriority = async (caseNumber: string, priority: string) => {
+    try {
+      const res = await fetch('/api/cases', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ case_number: caseNumber, priority })
+      });
+      if (res.ok) {
+        await loadCases();
+      }
+    } catch {}
+  };
 
   useEffect(() => {
     void loadCases();
@@ -156,13 +192,20 @@ export function CasesView({
             </div>
           </div>
 
-          <button
-            onClick={() => setShowIngestModal(true)}
-            className="px-4 py-2.5 rounded-xl text-xs font-bold text-black transition hover:opacity-90 shadow-glow"
-            style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}
-          >
-            + Ingest 1930 Phone Complaint
-          </button>
+          {!isCourtReviewer ? (
+            <button
+              onClick={() => setShowIngestModal(true)}
+              className="px-4 py-2.5 rounded-xl text-xs font-bold text-black transition hover:opacity-90 shadow-glow"
+              style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}
+            >
+              + Ingest 1930 Phone Complaint
+            </button>
+          ) : (
+            <div className="px-3.5 py-2 rounded-xl bg-slate-500/20 text-slate-300 border border-slate-500/30 text-xs font-bold flex items-center gap-2 shadow-sm">
+              <span className="text-amber-400 font-mono text-sm">⚖️</span>
+              <span>READ ONLY EVIDENCE REVIEW MODE</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -322,9 +365,38 @@ export function CasesView({
 
               {/* Action Buttons */}
               <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t" style={{ borderColor: "var(--border)" }}>
-                <div className="text-[11px] text-muted flex items-center gap-1.5">
+                <div className="text-[11px] text-muted flex flex-wrap items-center gap-2">
                   <span>IO:</span>
-                  <strong className="text-white">{c.assigned_investigator_name || user?.name}</strong>
+                  {isSupervisor ? (
+                    <select
+                      value={c.assigned_investigator_id || 3}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        handleAssignIO(c.case_number, val, val === 3 ? "SI Patil" : val === 12 ? "Inspector Mehra" : "SI Kulkarni");
+                      }}
+                      className="rounded border px-2 py-0.5 text-xs bg-[var(--chip)] text-white focus:outline-none"
+                      style={{ borderColor: "var(--border)" }}
+                    >
+                      <option value={3}>SI Patil (id: 3)</option>
+                      <option value={12}>Inspector Mehra (id: 12)</option>
+                      <option value={14}>SI Kulkarni (id: 14)</option>
+                    </select>
+                  ) : (
+                    <strong className="text-white">{c.assigned_investigator_name || user?.name || "SI Patil"}</strong>
+                  )}
+                  {isSupervisor && (
+                    <select
+                      value={c.priority || "HIGH"}
+                      onChange={(e) => handleChangePriority(c.case_number, e.target.value)}
+                      className="rounded border px-1.5 py-0.5 text-[10px] font-bold bg-[var(--chip)] text-amber-400 focus:outline-none"
+                      style={{ borderColor: "var(--border)" }}
+                    >
+                      <option value="LOW">LOW</option>
+                      <option value="MEDIUM">MEDIUM</option>
+                      <option value="HIGH">HIGH</option>
+                      <option value="CRITICAL">CRITICAL</option>
+                    </select>
+                  )}
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">

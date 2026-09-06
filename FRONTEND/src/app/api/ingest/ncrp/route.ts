@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createCase, getUserById, recordAuditLog } from '@/lib/db';
 import { extractUserClaims } from '@/lib/auth-crypto';
+import { normalizeRole } from '@/lib/rbac-abac';
 
 export async function POST(req: Request) {
   try {
@@ -12,17 +13,25 @@ export async function POST(req: Request) {
       );
     }
     const user = getUserById(claims.id) || (claims as any);
+    const normRole = normalizeRole(user.role);
 
-    if (user.role === 'AUDITOR') {
+    if (normRole === 'COURT_REVIEWER' || user.role === 'AUDITOR') {
       return NextResponse.json(
-        { error: 'Access Denied: Judicial Auditor accounts possess zero write/mutation permissions under BSA 2023 Sec 65B.' },
+        { error: 'Access Denied: Judicial Auditor / Court Reviewer accounts possess zero write/mutation permissions under BSA 2023 Sec 65B.' },
         { status: 403 }
       );
     }
 
-    if (user.role === 'EXCHANGE_NODAL_OFFICER') {
+    if (normRole === 'VASP_COMPLIANCE_OFFICER' || user.role === 'EXCHANGE_NODAL_OFFICER') {
       return NextResponse.json(
         { error: 'Access Denied: Exchange compliance officers cannot ingest law enforcement complaint files.' },
+        { status: 403 }
+      );
+    }
+
+    if (normRole === 'SYSTEM_ADMIN' && user.role !== 'SUPER_ADMIN') {
+      return NextResponse.json(
+        { error: 'Access Denied: System Administrators are separated from investigative intake authority.' },
         { status: 403 }
       );
     }
@@ -35,13 +44,14 @@ export async function POST(req: Request) {
     const complaintId = body.complaint_id || `NCRP-${Date.now().toString().slice(-5)}`;
 
     // Privacy isolation: If complainant is a citizen, lock complaint strictly to their own victim ID
-    const assignedVictimId = user.role === 'VICTIM' ? user.id : (body.victim_id || user.id);
+    const isVictim = normRole === 'VICTIM';
+    const assignedVictimId = isVictim ? user.id : (body.victim_id || user.id);
 
     const newCase = await createCase({
       case_number: complaintId,
       victim_id: assignedVictimId,
-      victim_name: user.role === 'VICTIM' ? user.name : (body.victim_name || 'Rajesh Verma'),
-      victim_email: user.role === 'VICTIM' ? user.email : (body.victim_email || 'victim.verma@gmail.com'),
+      victim_name: isVictim ? user.name : (body.victim_name || 'Rajesh Verma'),
+      victim_email: isVictim ? user.email : (body.victim_email || 'victim.verma@example.demo'),
       workspace_id: user.workspace_id || 1,
       jurisdiction_code: user.jurisdiction_code || 'MH-CYBER-01',
       suspect_wallet_address: suspectWallet,
@@ -52,8 +62,11 @@ export async function POST(req: Request) {
       incident_date: body.incident_date || new Date().toISOString().split('T')[0],
       target_vasp: body.target_vasp || 'Binance International',
       vasp_id: body.vasp_id || 1,
-      classification: user.role === 'VICTIM' ? 'RESTRICTED' : 'CONFIDENTIAL',
+      classification: isVictim ? 'RESTRICTED' : 'CONFIDENTIAL',
       status: 'PENDING_TRACING',
+      priority: 'HIGH',
+      assigned_investigator_id: 3,
+      assigned_investigator_name: 'SI Patil',
       tx_hashes: body.tx_hash ? [body.tx_hash] : (body.tx_hashes || []),
       notes: body.notes || body.incident_description || ''
     });

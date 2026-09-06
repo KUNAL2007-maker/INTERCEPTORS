@@ -21,7 +21,8 @@ import {
   waitFor,
 } from "@/lib/quota";
 import { extractUserClaims } from "@/lib/auth-crypto";
-import { getUserById } from "@/lib/db";
+import { getUserById, recordAuditLog } from "@/lib/db";
+import { normalizeRole } from "@/lib/rbac-abac";
 
 // A four-agent forensic panel legitimately takes longer than Vercel's 10-second
 // default — more still if the token budget is short and the request waits for it
@@ -335,9 +336,23 @@ export async function POST(req: Request) {
       );
     }
     const user = getUserById(claims.id) || (claims as any);
-    if (user.role === "VICTIM" || user.role === "EXCHANGE_NODAL_OFFICER") {
+    const normRole = normalizeRole(user.role);
+    if (
+      ["VICTIM", "VASP_COMPLIANCE_OFFICER", "COURT_REVIEWER", "SYSTEM_ADMIN"].includes(normRole) ||
+      user.role === "EXCHANGE_NODAL_OFFICER" ||
+      user.role === "AUDITOR"
+    ) {
+      recordAuditLog({
+        user_id: user.id,
+        user_name: user.name,
+        user_role: user.role,
+        action: "AI_COPILOT_ACCESS",
+        resource_type: "FORENSIC_AI_PANEL",
+        decision: "DENIED",
+        reason: `Role '${user.role}' is not authorized to access law enforcement forensic AI tools.`
+      });
       return NextResponse.json(
-        { error: "Access Denied: Citizen complainants and exchange officers cannot access police forensic AI tools." },
+        { error: "Access Denied: You are not authorized to access police forensic AI tools." },
         { status: 403 }
       );
     }

@@ -100,7 +100,7 @@ async function runE2EFlow() {
   console.log('\n[STEP 2] Investigating Officer Queue: Receiving Complaint');
   const officerAuth = await login('officer.patil@mhcyber.gov.in', 'Patil@123');
   assert(officerAuth.status === 200 && officerAuth.token, 'Sub-Inspector Patil successfully authenticated');
-  assert(officerAuth.user.role === 'NORMAL_INVESTIGATOR', 'Officer role is NORMAL_INVESTIGATOR');
+  assert(officerAuth.user.role === 'INVESTIGATING_OFFICER' || officerAuth.user.role === 'NORMAL_INVESTIGATOR', 'Officer role is INVESTIGATING_OFFICER');
 
   const officerCasesRes = await api('/api/cases', { token: officerAuth.token });
   assert(officerCasesRes.status === 200, 'Investigating officer retrieved regional complaint queue');
@@ -192,7 +192,7 @@ async function runE2EFlow() {
   console.log('\n[STEP 5] Exchange Compliance: Acknowledging Freeze & Escrow Lock');
   const exchangeAuth = await login('legal@binance.com', 'Binance@123');
   assert(exchangeAuth.status === 200 && exchangeAuth.token, 'Binance Compliance Officer authenticated');
-  assert(exchangeAuth.user.role === 'EXCHANGE_NODAL_OFFICER', 'Role is EXCHANGE_NODAL_OFFICER');
+  assert(exchangeAuth.user.role === 'VASP_COMPLIANCE_OFFICER' || exchangeAuth.user.role === 'EXCHANGE_NODAL_OFFICER', 'Role is VASP_COMPLIANCE_OFFICER');
 
   const exchangeNotices = await api('/api/notices', { token: exchangeAuth.token });
   assert(exchangeNotices.status === 200, 'Exchange retrieved inbound statutory directives');
@@ -227,7 +227,7 @@ async function runE2EFlow() {
   console.log('\n[STEP 7] Super Admin National Oversight');
   const adminAuth = await login('admin@i4c.gov.in', 'Admin@123');
   assert(adminAuth.status === 200 && adminAuth.token, 'I4C Super Admin authenticated');
-  assert(adminAuth.user.role === 'SUPER_ADMIN', 'Role is SUPER_ADMIN');
+  assert(adminAuth.user.role === 'SYSTEM_ADMIN' || adminAuth.user.role === 'SUPER_ADMIN', 'Role is SYSTEM_ADMIN');
 
   const adminCasesRes = await api('/api/cases', { token: adminAuth.token });
   assert(adminCasesRes.status === 200, 'Super Admin retrieved national case database');

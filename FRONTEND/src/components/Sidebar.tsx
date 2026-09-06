@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { useAuth } from "./AuthProvider";
 import type { ViewKey } from "./AppShell";
-import type { RoleName } from "@/lib/rbac-abac";
+import { normalizeRole, type RoleName } from "@/lib/rbac-abac";
 
 type NavItem = {
   key: ViewKey;
@@ -25,7 +25,8 @@ export function Sidebar({
   onClose?: () => void;
 }) {
   const { user } = useAuth();
-  const role = user?.role;
+  const rawRole = user?.role;
+  const role = user ? normalizeRole(user.role) : null;
 
   const navItems = useMemo<NavItem[]>(() => {
     // 1. Citizen Fraud Victim Navigation
@@ -34,7 +35,7 @@ export function Sidebar({
         {
           key: "victim_portal",
           label: "My Complaints",
-          hint: "Recovery tracker",
+          hint: "Recovery & status tracker",
           badge: "Citizen",
           icon: (
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -46,8 +47,8 @@ export function Sidebar({
       ];
     }
 
-    // 2. High Court Judicial Auditor Navigation
-    if (role === "AUDITOR") {
+    // 2. High Court Judicial Auditor / Court Reviewer Navigation (Strictly Read-Only)
+    if (role === "COURT_REVIEWER" || rawRole === "AUDITOR") {
       return [
         {
           key: "audit_logs",
@@ -62,8 +63,9 @@ export function Sidebar({
         },
         {
           key: "dashboard",
-          label: "Evidence Dossiers",
+          label: "Evidence Review",
           hint: "Read-only cases",
+          badge: "Read Only",
           icon: (
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path d="M3 12h4l3-8 4 16 3-8h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -73,7 +75,8 @@ export function Sidebar({
         {
           key: "cases",
           label: "Case Dossiers",
-          hint: "NCRP intake review",
+          hint: "Evidence metadata",
+          badge: "Read Only",
           icon: (
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -84,7 +87,7 @@ export function Sidebar({
         {
           key: "graph",
           label: "Money Flow Review",
-          hint: "Forensic canvas",
+          hint: "Forensic canvas (Read Only)",
           icon: (
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <circle cx="5" cy="6" r="2" stroke="currentColor" strokeWidth="1.6" />
@@ -99,14 +102,14 @@ export function Sidebar({
       ];
     }
 
-    // 3. Exchange Nodal Officer (Binance) Navigation
-    if (role === "EXCHANGE_NODAL_OFFICER") {
+    // 3. VASP Compliance Officer Navigation
+    if (role === "VASP_COMPLIANCE_OFFICER" || rawRole === "EXCHANGE_NODAL_OFFICER") {
       return [
         {
           key: "exchange_portal",
           label: "Inbound Sec 94 BNSS",
           hint: "Freezes & KYC orders",
-          badge: "Exchange",
+          badge: "VASP Desk",
           icon: (
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path d="M3 21h18M5 21V7l7-4 7 4v14M9 10v4M15 10v4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -116,7 +119,7 @@ export function Sidebar({
         {
           key: "notices",
           label: "Compliance Dossiers",
-          hint: "Legal orders",
+          hint: "Exchange directives",
           icon: (
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path d="M7 3h8l4 4v14H7V3z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
@@ -127,12 +130,127 @@ export function Sidebar({
       ];
     }
 
-    // 4. Investigators & Super Admin Navigation
+    // 4. National Coordination Analyst Navigation
+    if (role === "NATIONAL_COORDINATION_ANALYST") {
+      return [
+        {
+          key: "national_coordination",
+          label: "National Intel Hub",
+          hint: "Cross-jurisdiction links",
+          badge: "I4C Hub",
+          icon: (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" />
+              <path d="M12 3v18M3 12h18" stroke="currentColor" strokeWidth="1.4" />
+              <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.4" />
+            </svg>
+          ),
+        },
+        {
+          key: "dashboard",
+          label: "Command Dashboard",
+          hint: "National fraud signals",
+          icon: (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M3 12h4l3-8 4 16 3-8h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          ),
+        },
+        {
+          key: "cases",
+          label: "Multi-State Dockets",
+          hint: "Cross-case indicators",
+          icon: (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          ),
+        },
+        {
+          key: "graph",
+          label: "Wallet Flow Graph",
+          hint: "Multi-hop clusters",
+          icon: (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <circle cx="5" cy="6" r="2" stroke="currentColor" strokeWidth="1.6" />
+              <circle cx="19" cy="6" r="2" stroke="currentColor" strokeWidth="1.6" />
+              <circle cx="12" cy="13" r="2" stroke="currentColor" strokeWidth="1.6" />
+              <circle cx="6" cy="19" r="2" stroke="currentColor" strokeWidth="1.6" />
+              <circle cx="18" cy="19" r="2" stroke="currentColor" strokeWidth="1.6" />
+              <path d="M6.5 7.5L11 12M17.5 7.5L13 12M11 14L7 18M13 14l4 4" stroke="currentColor" strokeWidth="1.4" />
+            </svg>
+          ),
+        },
+        {
+          key: "audit_logs",
+          label: "Audit Records",
+          hint: "Oversight log trail",
+          icon: (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M12 3v18M3 8l9-5 9 5M6 13l-3 4h6l-3-4zM18 13l-3 4h6l-3-4z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          ),
+        }
+      ];
+    }
+
+    // 5. System Administrator Navigation
+    if (role === "SYSTEM_ADMIN" || rawRole === "SUPER_ADMIN") {
+      return [
+        {
+          key: "system_admin",
+          label: "System Admin",
+          hint: "Users & platform health",
+          badge: "Admin",
+          icon: (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.6" />
+              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" strokeWidth="1.6" />
+            </svg>
+          ),
+        },
+        {
+          key: "audit_logs",
+          label: "Security Audit Logs",
+          hint: "Platform access logs",
+          badge: "Security",
+          icon: (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M12 3v18M3 8l9-5 9 5M6 13l-3 4h6l-3-4zM18 13l-3 4h6l-3-4z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          ),
+        },
+        {
+          key: "dashboard",
+          label: "System Overview",
+          hint: "Platform dashboard",
+          icon: (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M3 12h4l3-8 4 16 3-8h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          ),
+        },
+        {
+          key: "cases",
+          label: "Case Dockets (Audited)",
+          hint: "Audited maintenance",
+          icon: (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          ),
+        }
+      ];
+    }
+
+    // 6. Investigating Officer, Supervisor, and Senior Investigator Navigation
     const items: NavItem[] = [
       {
         key: "dashboard",
         label: "Command Dashboard",
-        hint: "Overview & signals",
+        hint: role === "CYBERCRIME_SUPERVISOR" ? "Unit overview & triage" : "Signals & decisions",
         icon: (
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
             <path d="M3 12h4l3-8 4 16 3-8h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -141,9 +259,9 @@ export function Sidebar({
       },
       {
         key: "cases",
-        label: "Complaints & Cases",
-        hint: "NCRP 1930 inbox",
-        badge: "NCRP",
+        label: role === "CYBERCRIME_SUPERVISOR" ? "Unit Cases & Triage" : "Assigned Cases",
+        hint: role === "CYBERCRIME_SUPERVISOR" ? "Assign & prioritize IOs" : "NCRP 1930 dockets",
+        badge: role === "CYBERCRIME_SUPERVISOR" ? "Supervisor" : "Assigned",
         icon: (
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
             <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -154,7 +272,7 @@ export function Sidebar({
       {
         key: "trace",
         label: "Trace Wallet",
-        hint: "Seed a case",
+        hint: "Multi-hop on-chain BFS",
         icon: (
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
             <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.6" />
@@ -165,7 +283,7 @@ export function Sidebar({
       {
         key: "graph",
         label: "Wallet Flow Graph",
-        hint: "Network canvas",
+        hint: "Network topology canvas",
         icon: (
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
             <circle cx="5" cy="6" r="2" stroke="currentColor" strokeWidth="1.6" />
@@ -180,7 +298,7 @@ export function Sidebar({
       {
         key: "transfers",
         label: "Transfers",
-        hint: "Browse & filter",
+        hint: "Browse & filter hops",
         icon: (
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
             <path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
@@ -190,8 +308,14 @@ export function Sidebar({
       {
         key: "notices",
         label: "Legal Notices",
-        hint: role === "NORMAL_INVESTIGATOR" ? "Draft Only (Non-Gazetted)" : "Sec 94 BNSS",
-        badge: role === "NORMAL_INVESTIGATOR" ? "Draft" : undefined,
+        hint:
+          role === "INVESTIGATING_OFFICER" || rawRole === "NORMAL_INVESTIGATOR"
+            ? "Draft Only (Non-Gazetted)"
+            : "Sec 94 BNSS Orders",
+        badge:
+          role === "INVESTIGATING_OFFICER" || rawRole === "NORMAL_INVESTIGATOR"
+            ? "Draft"
+            : "Sec 94 BNSS",
         icon: (
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
             <path d="M7 3h8l4 4v14H7V3z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
@@ -202,7 +326,7 @@ export function Sidebar({
       {
         key: "chat",
         label: "AI Investigator",
-        hint: "I4C multi-agent",
+        hint: "4 forensic agents",
         icon: (
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
             <path d="M4 6h16v10H8l-4 3V6z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
@@ -214,12 +338,13 @@ export function Sidebar({
       },
     ];
 
-    if (role === "SUPER_ADMIN") {
+    // Supervisors and Senior Investigators also see audit logs
+    if (role === "SENIOR_INVESTIGATOR" || role === "CYBERCRIME_SUPERVISOR") {
       items.push({
         key: "audit_logs",
-        label: "National Audit Logs",
-        hint: "Central oversight",
-        badge: "I4C",
+        label: "Unit Audit Trail",
+        hint: "BSA 2023 Sec 63/65B",
+        badge: "Supervisory",
         icon: (
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
             <path d="M12 3v18M3 8l9-5 9 5M6 13l-3 4h6l-3-4zM18 13l-3 4h6l-3-4z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -229,27 +354,29 @@ export function Sidebar({
     }
 
     return items;
-  }, [role]);
+  }, [role, rawRole]);
 
-  // Role Pill Config
+  // Role Pill Configuration
   const roleBadge = useMemo(() => {
     switch (role) {
       case "VICTIM":
         return { label: "CITIZEN COMPLAINANT · NCRP 1930", bg: "bg-cyan-500/10 text-cyan-300 border-cyan-500/25" };
-      case "AUDITOR":
-        return { label: "JUDICIAL EVIDENCE AUDITOR · BSA 65B", bg: "bg-yellow-500/10 text-yellow-300 border-yellow-500/25" };
-      case "EXCHANGE_NODAL_OFFICER":
-        return { label: "BINANCE COMPLIANCE DESK · VASP", bg: "bg-amber-500/10 text-amber-300 border-amber-500/25" };
-      case "NORMAL_INVESTIGATOR":
-        return { label: "FIELD INVESTIGATOR (SUB-INSPECTOR)", bg: "bg-amber-500/10 text-amber-300 border-amber-500/25" };
+      case "COURT_REVIEWER":
+        return { label: "JUDICIAL EVIDENCE REVIEWER (READ ONLY)", bg: "bg-slate-500/10 text-slate-300 border-slate-500/25" };
+      case "VASP_COMPLIANCE_OFFICER":
+        return { label: "VASP COMPLIANCE DESK · EXTERNAL", bg: "bg-amber-500/10 text-amber-300 border-amber-500/25" };
+      case "INVESTIGATING_OFFICER":
+        return { label: "SI PATIL (FIELD INVESTIGATOR)", bg: "bg-amber-500/10 text-amber-300 border-amber-500/25" };
+      case "CYBERCRIME_SUPERVISOR":
+        return { label: "SP DESHMUKH (UNIT SUPERVISOR)", bg: "bg-purple-500/10 text-purple-300 border-purple-500/25" };
       case "SENIOR_INVESTIGATOR":
         return { label: "ACP SHARMA (GAZETTED · SEC 94 BNSS)", bg: "bg-emerald-500/10 text-emerald-300 border-emerald-500/25" };
-      case "SUPER_ADMIN":
-        return { label: "CENTRAL NODAL OFFICER · I4C PAN-INDIA", bg: "bg-rose-500/10 text-rose-300 border-rose-500/25" };
-      case "WORKSPACE_ADMIN":
-        return { label: "SP DESHMUKH (STATE UNIT LEAD)", bg: "bg-purple-500/10 text-purple-300 border-purple-500/25" };
+      case "NATIONAL_COORDINATION_ANALYST":
+        return { label: "NATIONAL COORDINATION ANALYST", bg: "bg-sky-500/10 text-sky-300 border-sky-500/25" };
+      case "SYSTEM_ADMIN":
+        return { label: "SYSTEM ADMINISTRATOR · INFRASTRUCTURE", bg: "bg-rose-500/10 text-rose-300 border-rose-500/25" };
       default:
-        return { label: "LAW ENFORCEMENT", bg: "bg-emerald-500/10 text-emerald-300 border-emerald-500/25" };
+        return { label: "LAW ENFORCEMENT PROTOTYPE", bg: "bg-emerald-500/10 text-emerald-300 border-emerald-500/25" };
     }
   }, [role]);
 
@@ -258,48 +385,46 @@ export function Sidebar({
       id="app-nav"
       aria-label="Main navigation"
       className={`fixed inset-y-0 left-0 z-50 flex h-[100dvh] w-[272px] shrink-0 flex-col border-r transition-transform duration-300 lg:static lg:z-auto lg:h-full lg:w-64 lg:translate-x-0 lg:transition-none 2xl:w-72 ${
-        open ? "translate-x-0 shadow-2xl" : "-translate-x-full"
+        open ? "translate-x-0" : "-translate-x-full"
       }`}
-      style={{ borderColor: "var(--border)", background: "var(--panel)" }}
+      style={{
+        background: "var(--panel)",
+        borderColor: "var(--border)",
+      }}
     >
-      <div className="px-5 pt-5 pb-3 flex items-center gap-3">
-        <div className="relative w-9 h-9 shrink-0 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-700 grid place-items-center shadow-glow">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z" stroke="#052e1a" strokeWidth="1.6" strokeLinejoin="round" fill="rgba(255,255,255,0.15)" />
-            <path d="M9 12l2 2 4-4" stroke="#052e1a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </div>
-        <div className="min-w-0">
-          <div className="text-[15px] font-semibold tracking-wide truncate" style={{ color: "var(--text-strong)" }}>
-            CryptoTrace <span className="text-emerald-400">Intelligence</span>
+      {/* Brand & Badge Header */}
+      <div className="flex h-16 shrink-0 items-center justify-between border-b px-4" style={{ borderColor: "var(--border)" }}>
+        <div className="flex items-center gap-2.5">
+          <div className="grid h-8 w-8 place-items-center rounded-lg bg-sky-500/10 text-sky-400 font-bold text-sm border border-sky-500/20 shadow-sm">
+            CT
           </div>
-          <div className="text-[10px] uppercase tracking-widest truncate" style={{ color: "var(--muted)" }}>
-            NCRP · I4C Forensic Platform
+          <div>
+            <div className="text-xs font-bold tracking-tight" style={{ color: "var(--text-strong)" }}>
+              CryptoTrace
+            </div>
+            <div className="text-[10px] text-muted">I4C / NCRP Platform</div>
           </div>
         </div>
-        <button
-          onClick={onClose}
-          aria-label="Close navigation"
-          className="ml-auto grid h-8 w-8 shrink-0 place-items-center rounded-md border transition hover:bg-[var(--hover)] lg:hidden"
-          style={{ borderColor: "var(--border)", color: "var(--muted)" }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-          </svg>
-        </button>
+        {onClose && (
+          <button
+            onClick={onClose}
+            aria-label="Close navigation"
+            className="grid h-8 w-8 place-items-center rounded-lg text-muted hover:bg-[var(--hover)] lg:hidden"
+          >
+            ✕
+          </button>
+        )}
       </div>
 
-      {/* Active Persona Banner in Sidebar */}
-      <div className="px-4 pb-3">
-        <div className={`text-[9px] font-mono px-2 py-1 rounded border tracking-wider font-semibold truncate ${roleBadge.bg}`}>
+      {/* Role Pill */}
+      <div className="px-3 pt-3">
+        <div className={`rounded-lg border px-2.5 py-1 text-[9.5px] font-mono font-bold tracking-wider uppercase text-center ${roleBadge.bg}`}>
           {roleBadge.label}
         </div>
       </div>
 
-      <div className="h-px shrink-0" style={{ background: "var(--border)" }} />
-
-      {/* Role-Specific Navigation Menu */}
-      <nav className="p-3 flex flex-col gap-1 overflow-y-auto">
+      {/* Navigation Links */}
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-3 scroll-stable">
         {navItems.map((item) => {
           const active = view === item.key;
           return (
@@ -307,35 +432,43 @@ export function Sidebar({
               key={item.key}
               onClick={() => {
                 onChange(item.key);
-                onClose?.();
+                if (onClose) onClose();
               }}
-              className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition ${
+              className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs font-medium transition ${
                 active
-                  ? "bg-emerald-500/10 text-emerald-300 font-medium shadow-sm"
-                  : "text-[var(--text-muted)] hover:bg-[var(--hover)] hover:text-[var(--text-strong)]"
+                  ? "bg-sky-500/15 text-sky-400 border border-sky-500/30 shadow-sm"
+                  : "text-muted hover:bg-[var(--hover)] hover:text-white"
               }`}
             >
-              <span className={`shrink-0 ${active ? "text-emerald-400" : "text-slate-400 group-hover:text-slate-200"}`}>
-                {item.icon}
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-1">
-                  <span className="text-[13px] truncate">{item.label}</span>
-                  {item.badge && (
-                    <span className="text-[9px] font-mono px-1 rounded bg-slate-800 text-slate-400 border border-slate-700">
-                      {item.badge}
-                    </span>
-                  )}
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className={`shrink-0 ${active ? "text-sky-400" : "text-muted"}`}>
+                  {item.icon}
+                </span>
+                <div className="min-w-0">
+                  <div className={`truncate leading-tight ${active ? "font-bold text-white" : ""}`}>
+                    {item.label}
+                  </div>
+                  <div className="text-[10px] text-muted-2 truncate leading-tight mt-0.5">
+                    {item.hint}
+                  </div>
                 </div>
-                <div className="text-[10.5px] text-muted truncate">{item.hint}</div>
               </div>
+              {item.badge && (
+                <span className={`ml-2 shrink-0 rounded px-1.5 py-0.5 text-[9px] font-mono font-bold ${
+                  item.badge === "Read Only"
+                    ? "bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                    : "bg-[var(--chip)] text-muted"
+                }`}>
+                  {item.badge}
+                </span>
+              )}
             </button>
           );
         })}
       </nav>
 
-      {/* Officer / User Profile Footer */}
-      <div className="mt-auto p-3 border-t" style={{ borderColor: "var(--border)" }}>
+      {/* Footer Officer Chip */}
+      <div className="border-t p-3" style={{ borderColor: "var(--border)" }}>
         <OfficerChip />
       </div>
     </aside>
@@ -345,17 +478,24 @@ export function Sidebar({
 function OfficerChip() {
   const { user, signOut } = useAuth();
   if (!user) return null;
+  const normRole = normalizeRole(user.role);
 
   const roleLabel =
-    user.role === "VICTIM"
+    normRole === "VICTIM"
       ? "Citizen Complainant"
-      : user.role === "AUDITOR"
-      ? "Judicial Evidence Auditor"
-      : user.role === "EXCHANGE_NODAL_OFFICER"
-      ? "Binance Compliance Lead"
+      : normRole === "COURT_REVIEWER"
+      ? "Judicial Reviewer (Read Only)"
+      : normRole === "VASP_COMPLIANCE_OFFICER"
+      ? "VASP Compliance Desk"
+      : normRole === "NATIONAL_COORDINATION_ANALYST"
+      ? "National Coordination Analyst"
+      : normRole === "SYSTEM_ADMIN"
+      ? "System Administrator"
+      : normRole === "CYBERCRIME_SUPERVISOR"
+      ? "Cybercrime Supervisor"
       : user.is_gazetted
-      ? "Gazetted Police Officer"
-      : "Field Investigator";
+      ? "Gazetted Senior Police Officer"
+      : "Field Investigating Officer";
 
   return (
     <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[var(--chip)] border" style={{ borderColor: "var(--border)" }}>
@@ -363,12 +503,18 @@ function OfficerChip() {
         className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center font-bold text-xs shadow-sm"
         style={{
           background:
-            user.role === "VICTIM"
+            normRole === "VICTIM"
               ? "linear-gradient(135deg, #06b6d4, #0891b2)"
+              : normRole === "COURT_REVIEWER"
+              ? "linear-gradient(135deg, #64748b, #475569)"
+              : normRole === "NATIONAL_COORDINATION_ANALYST"
+              ? "linear-gradient(135deg, #38bdf8, #0284c7)"
+              : normRole === "SYSTEM_ADMIN"
+              ? "linear-gradient(135deg, #f43f5e, #e11d48)"
               : user.is_gazetted
               ? "linear-gradient(135deg, #10b981, #059669)"
               : "linear-gradient(135deg, #f59e0b, #d97706)",
-          color: "#000"
+          color: "#fff"
         }}
       >
         {user.name ? user.name.slice(0, 2).toUpperCase() : "IO"}

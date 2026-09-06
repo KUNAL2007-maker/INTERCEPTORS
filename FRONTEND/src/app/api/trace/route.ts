@@ -9,7 +9,8 @@ import {
 import { priceQuotaSnapshot } from "@/lib/prices";
 import { detectChain, type CaseMeta, type Chain } from "@/lib/domain";
 import { extractUserClaims } from "@/lib/auth-crypto";
-import { getUserById } from "@/lib/db";
+import { getUserById, recordAuditLog } from "@/lib/db";
+import { normalizeRole } from "@/lib/rbac-abac";
 
 /** Chains a probe can poll. Whitelisted so a client can't send anything else. */
 const SUPPORTED_PROBE_CHAINS: Chain[] = ["ETHEREUM", "POLYGON", "TRON", "BITCOIN"];
@@ -45,15 +46,68 @@ export async function POST(req: Request) {
       );
     }
     const user = getUserById(claims.id) || (claims as any);
-    if (user.role === "VICTIM") {
+    const normRole = normalizeRole(user.role);
+
+    if (normRole === "VICTIM") {
+      recordAuditLog({
+        user_id: user.id,
+        user_name: user.name,
+        user_role: user.role,
+        action: "EXECUTE_TRACE",
+        resource_type: "BLOCKCHAIN_GRAPH",
+        decision: "DENIED",
+        reason: "Access Denied: Citizen complainant accounts cannot execute blockchain trace analysis."
+      });
       return NextResponse.json(
         { error: "Access Denied: Citizen complainant accounts cannot execute arbitrary blockchain trace analysis." },
         { status: 403 }
       );
     }
-    if (user.role === "EXCHANGE_NODAL_OFFICER") {
+
+    if (normRole === "VASP_COMPLIANCE_OFFICER" || user.role === "EXCHANGE_NODAL_OFFICER") {
+      recordAuditLog({
+        user_id: user.id,
+        user_name: user.name,
+        user_role: user.role,
+        action: "EXECUTE_TRACE",
+        resource_type: "BLOCKCHAIN_GRAPH",
+        decision: "DENIED",
+        reason: "Access Denied: VASP compliance desk accounts cannot execute law enforcement forensic tracing."
+      });
       return NextResponse.json(
         { error: "Access Denied: Exchange compliance desk accounts cannot execute law enforcement forensic tracing." },
+        { status: 403 }
+      );
+    }
+
+    if (normRole === "COURT_REVIEWER" || user.role === "AUDITOR") {
+      recordAuditLog({
+        user_id: user.id,
+        user_name: user.name,
+        user_role: user.role,
+        action: "EXECUTE_TRACE",
+        resource_type: "BLOCKCHAIN_GRAPH",
+        decision: "DENIED",
+        reason: "Access Denied: Court Reviewers possess read-only evidentiary review access and cannot execute traces."
+      });
+      return NextResponse.json(
+        { error: "Access Denied: Court Reviewer accounts possess strictly read-only evidentiary review access and cannot execute traces." },
+        { status: 403 }
+      );
+    }
+
+    if (normRole === "SYSTEM_ADMIN" && user.role !== "SUPER_ADMIN") {
+      recordAuditLog({
+        user_id: user.id,
+        user_name: user.name,
+        user_role: user.role,
+        action: "EXECUTE_TRACE",
+        resource_type: "BLOCKCHAIN_GRAPH",
+        decision: "DENIED",
+        reason: "Access Denied: System Administrators are separated from investigative authority."
+      });
+      return NextResponse.json(
+        { error: "Access Denied: System Administrators are separated from investigative authority." },
         { status: 403 }
       );
     }

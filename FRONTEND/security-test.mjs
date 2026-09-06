@@ -353,6 +353,136 @@ async function runSecurityTests() {
   });
   assert(patilLockdown.status === 403, `Sub-Inspector Patil blocked from triggering emergency lockdown: HTTP ${patilLockdown.status} (Expected: 403)`);
 
+  // ──────────────────────────────────────────────────────────────────────────
+  // TEST GROUP 8: ALL 8 PROTOTYPE DEMO ACCOUNTS LOGIN VERIFICATION
+  // ──────────────────────────────────────────────────────────────────────────
+  console.log('\n\x1b[36m[GROUP 8] Testing All 8 Prototype LEA Accounts Authentication (@example.demo):\x1b[0m');
+
+  const demoAccounts = [
+    { email: 'investigator@example.demo', pass: 'Patil@123', role: 'INVESTIGATING_OFFICER' },
+    { email: 'supervisor@example.demo', pass: 'Deshmukh@123', role: 'CYBERCRIME_SUPERVISOR' },
+    { email: 'senior@example.demo', pass: 'Police@123', role: 'SENIOR_INVESTIGATOR' },
+    { email: 'compliance@example.demo', pass: 'Compliance@123', role: 'VASP_COMPLIANCE_OFFICER' },
+    { email: 'court@example.demo', pass: 'Judge@123', role: 'COURT_REVIEWER' },
+    { email: 'national@example.demo', pass: 'National@123', role: 'NATIONAL_COORDINATION_ANALYST' },
+    { email: 'victim.verma@example.demo', pass: 'Victim@123', role: 'VICTIM' },
+    { email: 'admin@example.demo', pass: 'Admin@123', role: 'SYSTEM_ADMIN' }
+  ];
+
+  const authTokens = {};
+  for (const acc of demoAccounts) {
+    const res = await login(acc.email, acc.pass);
+    assert(
+      res.status === 200 && res.token && res.user?.role === acc.role,
+      `Authenticated ${acc.email} (${acc.role}): HTTP ${res.status}`
+    );
+    authTokens[acc.role] = res.token;
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // TEST GROUP 9: CASE-LEVEL ACCESS CONTROL & IDOR PREVENTION
+  // ──────────────────────────────────────────────────────────────────────────
+  console.log('\n\x1b[36m[GROUP 9] Testing Case-Level Access Control & IDOR Prevention:\x1b[0m');
+
+  // SI Patil accesses assigned case CRIME-165445 (MUST BE PERMITTED: 200)
+  const ioAssignedCase = await api('/api/cases?case_number=CRIME-165445', {
+    method: 'GET',
+    token: authTokens['INVESTIGATING_OFFICER']
+  });
+  assert(
+    ioAssignedCase.status === 200 && ioAssignedCase.body?.case?.case_number === 'CRIME-165445',
+    `IO access to assigned case CRIME-165445 permitted: HTTP ${ioAssignedCase.status}`
+  );
+
+  // SI Patil attempts to access unassigned foreign case CRIME-999999 (MUST BE DENIED: 403 Forbidden)
+  const ioUnassignedCase = await api('/api/cases?case_number=CRIME-999999', {
+    method: 'GET',
+    token: authTokens['INVESTIGATING_OFFICER']
+  });
+  assert(
+    ioUnassignedCase.status === 403,
+    `IO access to unassigned case CRIME-999999 blocked by Case-Level Access Control: HTTP ${ioUnassignedCase.status} (Expected: 403)`
+  );
+
+  // Victim attempts to access unassigned foreign case CRIME-999999 (MUST BE DENIED: 403 Forbidden)
+  const victimForeignCase = await api('/api/cases?case_number=CRIME-999999', {
+    method: 'GET',
+    token: authTokens['VICTIM']
+  });
+  assert(
+    victimForeignCase.status === 403,
+    `Victim access to foreign case CRIME-999999 blocked by Victim Isolation: HTTP ${victimForeignCase.status} (Expected: 403)`
+  );
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // TEST GROUP 10: NATIONAL COORDINATION ANALYST PRIVILEGE BARRIERS
+  // ──────────────────────────────────────────────────────────────────────────
+  console.log('\n\x1b[36m[GROUP 10] Testing National Coordination Analyst Boundaries (national@example.demo):\x1b[0m');
+
+  // Can National Analyst view cross-jurisdiction cases? (MUST BE PERMITTED: 200)
+  const nationalCases = await api('/api/cases', {
+    method: 'GET',
+    token: authTokens['NATIONAL_COORDINATION_ANALYST']
+  });
+  assert(
+    nationalCases.status === 200 && nationalCases.body?.cases?.length > 0,
+    `National Analyst retrieved cross-jurisdictional dockets (${nationalCases.body?.cases?.length || 0} cases): HTTP ${nationalCases.status}`
+  );
+
+  // Can National Analyst mutate state cases? (MUST BE DENIED: 403)
+  const nationalMutate = await api('/api/cases', {
+    method: 'PATCH',
+    token: authTokens['NATIONAL_COORDINATION_ANALYST'],
+    body: JSON.stringify({ case_number: 'CRIME-165445', status: 'CLOSED' })
+  });
+  assert(
+    nationalMutate.status === 403,
+    `National Analyst blocked from mutating state case status: HTTP ${nationalMutate.status} (Expected: 403)`
+  );
+
+  // Can National Analyst issue legal freeze notices? (MUST BE DENIED: 403)
+  const nationalNotice = await api('/api/notices', {
+    method: 'POST',
+    token: authTokens['NATIONAL_COORDINATION_ANALYST'],
+    body: JSON.stringify({ target_vasp: 'Binance International', status: 'Issued' })
+  });
+  assert(
+    nationalNotice.status === 403,
+    `National Analyst blocked from issuing statutory notices: HTTP ${nationalNotice.status} (Expected: 403)`
+  );
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // TEST GROUP 11: CYBERCRIME SUPERVISOR TRIAGE & SYSTEM ADMIN SEPARATION
+  // ──────────────────────────────────────────────────────────────────────────
+  console.log('\n\x1b[36m[GROUP 11] Testing Supervisor Triage & System Admin Separation:\x1b[0m');
+
+  // Supervisor reassigns IO and sets priority on unit case (MUST BE PERMITTED: 200)
+  const supervisorReassign = await api('/api/cases', {
+    method: 'PATCH',
+    token: authTokens['CYBERCRIME_SUPERVISOR'],
+    body: JSON.stringify({
+      case_number: 'CRIME-165445',
+      assigned_investigator_id: 3,
+      assigned_investigator_name: 'SI Patil',
+      priority: 'CRITICAL'
+    })
+  });
+  assert(
+    supervisorReassign.status === 200 && supervisorReassign.body?.case?.priority === 'CRITICAL',
+    `Supervisor successfully updated IO assignment & priority: HTTP ${supervisorReassign.status}`
+  );
+
+  // System Admin attempting to directly register police case without investigative role (MUST BE DENIED: 403)
+  const adminCaseCreate = await api('/api/cases', {
+    method: 'POST',
+    token: authTokens['SYSTEM_ADMIN'],
+    body: JSON.stringify({ suspect_wallet_address: '0x123', crime_type: 'Admin Case' })
+  });
+  assert(
+    adminCaseCreate.status === 403,
+    `System Admin blocked from directly creating police cases (Separation of Powers): HTTP ${adminCaseCreate.status} (Expected: 403)`
+  );
+
   console.log('\n================================================================');
   console.log(`  FINAL VERIFICATION RESULTS: ${passed} PASSED, ${failed} FAILED`);
   console.log('================================================================\n');

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getNoticesForUser, saveFreezeNotice, getCurrentUser, getUserById, recordAuditLog } from '@/lib/db';
 import { extractUserClaims } from '@/lib/auth-crypto';
-import { hasPermission } from '@/lib/rbac-abac';
+import { normalizeRole } from '@/lib/rbac-abac';
 
 export async function GET(req: Request) {
   const claims = extractUserClaims(req);
@@ -12,9 +12,10 @@ export async function GET(req: Request) {
     );
   }
   const user = getUserById(claims.id) || (claims as any);
+  const normRole = normalizeRole(user.role);
 
   // VICTIM cannot view police legal notices
-  if (user.role === 'VICTIM') {
+  if (normRole === 'VICTIM') {
     return NextResponse.json(
       { error: 'Access Denied: Citizen complainants are not authorized to inspect law enforcement legal notices.' },
       { status: 403 }
@@ -44,13 +45,29 @@ export async function POST(req: Request) {
       );
     }
     const user = getUserById(claims.id) || (claims as any);
+    const normRole = normalizeRole(user.role);
 
     const body = await req.json().catch(() => ({}));
     const isDraft = body.status === 'Draft' || body.action === 'draft';
     const isAck = body.status === 'Acknowledged' || body.action === 'acknowledge';
 
-    // ── 1. RBAC Gate: Investigators/Admins can draft/issue; Exchange Officers can only acknowledge ──
-    if (user.role === 'EXCHANGE_NODAL_OFFICER') {
+    // ── 1. Judicial Zero-Write & Victim Protection ──
+    if (normRole === 'COURT_REVIEWER' || user.role === 'AUDITOR') {
+      return NextResponse.json(
+        { error: 'Access Denied: Court Reviewer accounts possess zero write/mutation permissions under BSA 2023 Sec 65B.' },
+        { status: 403 }
+      );
+    }
+
+    if (normRole === 'VICTIM') {
+      return NextResponse.json(
+        { error: 'Access Denied: Citizen complainants cannot draft or issue police legal notices.' },
+        { status: 403 }
+      );
+    }
+
+    // ── 2. RBAC Gate: Investigators/Supervisors can draft/issue; Exchange Officers can only acknowledge ──
+    if (normRole === 'VASP_COMPLIANCE_OFFICER' || user.role === 'EXCHANGE_NODAL_OFFICER') {
       if (!isAck) {
         return NextResponse.json(
           {
@@ -60,8 +77,23 @@ export async function POST(req: Request) {
         );
       }
     } else {
-      const isInvestigatorOrAdmin = ['SENIOR_INVESTIGATOR', 'WORKSPACE_ADMIN', 'SUPER_ADMIN', 'NORMAL_INVESTIGATOR'].includes(user.role);
-      if (!isInvestigatorOrAdmin) {
+      const isAuthorizedPoliceRole = [
+        'INVESTIGATING_OFFICER',
+        'CYBERCRIME_SUPERVISOR',
+        'SENIOR_INVESTIGATOR',
+        'NORMAL_INVESTIGATOR',
+        'WORKSPACE_ADMIN',
+        'SUPER_ADMIN'
+      ].includes(normRole) || [
+        'INVESTIGATING_OFFICER',
+        'CYBERCRIME_SUPERVISOR',
+        'SENIOR_INVESTIGATOR',
+        'NORMAL_INVESTIGATOR',
+        'WORKSPACE_ADMIN',
+        'SUPER_ADMIN'
+      ].includes(user.role);
+
+      if (!isAuthorizedPoliceRole) {
         recordAuditLog({
           user_id: user.id,
           user_name: user.name,
@@ -81,7 +113,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // ── 2. ABAC Statutory Gate: Section 94 BNSS Gazetted Officer Mandate ───
+    // ── 3. ABAC Statutory Gate: Section 94 BNSS Gazetted Officer Mandate ───
     if (!isDraft && !isAck && !user.is_gazetted) {
       const denialReason = `ABAC Policy Violation: Under Section 94 of Bharatiya Nagarik Suraksha Sanhita (BNSS 2023) / Section 91 CrPC, statutory cryptocurrency freeze and evidence preservation orders require Gazetted Police Officer authorization (ACP, DSP, or higher). ${user.name} (${user.role}) is non-gazetted and legally unauthorized to sign.`;
 

@@ -13,7 +13,7 @@
 // This is the crypto pivot of FinGuard's investigation.ts. The shapes and the
 // "never show an error" philosophy are kept; the domain is wallets and chains.
 
-import {
+import type {
   TraceResult,
   WalletTransfer,
   WalletNode,
@@ -22,6 +22,8 @@ import {
   Severity,
   ChatAgent,
   ChatAgentPanel,
+} from "./domain";
+import {
   formatUSD,
   formatINR,
   shortWallet,

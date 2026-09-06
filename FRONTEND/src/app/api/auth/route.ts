@@ -7,9 +7,14 @@ import {
   setEmergencyLockdown,
   authenticateUser,
   getUserById,
-  recordAuditLog
+  recordAuditLog,
+  getSystemUsers,
+  createSystemUser,
+  updateUserStatus,
+  updateUserRole,
+  resetUserPassword
 } from '@/lib/db';
-import { SYSTEM_PERSONAS, hasPermission } from '@/lib/rbac-abac';
+import { SYSTEM_PERSONAS, hasPermission, normalizeRole, type RoleName } from '@/lib/rbac-abac';
 import { signJWT, extractUserClaims } from '@/lib/auth-crypto';
 
 export async function GET(req: Request) {
@@ -80,13 +85,12 @@ export async function POST(req: Request) {
         token
       });
 
-      // Set secure HTTP-only session cookie
       response.cookies.set('auth_token', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/',
-        maxAge: 60 * 60 * 24 // 24 hours
+        maxAge: 60 * 60 * 24
       });
 
       return response;
@@ -121,7 +125,7 @@ export async function POST(req: Request) {
       return response;
     }
 
-    // ── 3. Emergency Lockdown Toggle (Super Admin Only) ─────────────────
+    // ── 3. Emergency Lockdown Toggle (System Admin Only) ────────────────
     if (action === 'toggle_lockdown') {
       const claims = extractUserClaims(req);
       if (!claims) {
@@ -131,8 +135,9 @@ export async function POST(req: Request) {
         );
       }
       const user = getUserById(claims.id) || (claims as any);
+      const normRole = normalizeRole(user?.role);
 
-      if (!user || user.role !== 'SUPER_ADMIN') {
+      if (normRole !== 'SYSTEM_ADMIN' && user?.role !== 'SUPER_ADMIN') {
         recordAuditLog({
           user_id: user?.id || 0,
           user_name: user?.name || 'Anonymous',
@@ -140,59 +145,170 @@ export async function POST(req: Request) {
           action: 'EMERGENCY_LOCKDOWN_TRIGGER',
           resource_type: 'SYSTEM_ENVIRONMENT',
           decision: 'DENIED',
-          reason: 'Only I4C Super Admin can trigger platform emergency lockdown.'
+          reason: 'Only System Administrator can trigger platform emergency lockdown.'
         });
 
         return NextResponse.json(
-          { error: 'Unauthorized: Only I4C Central Super Admin can trigger emergency lockdown.' },
+          { error: 'Unauthorized: Only System Administrator can trigger emergency lockdown.' },
           { status: 403 }
         );
       }
 
-      const env = setEmergencyLockdown(Boolean(body.active));
+      const nextActive = typeof body.active === 'boolean' ? body.active : !getEnvironment().emergency_lockdown;
+      setEmergencyLockdown(nextActive);
 
       recordAuditLog({
         user_id: user.id,
         user_name: user.name,
         user_role: user.role,
-        action: 'EMERGENCY_LOCKDOWN_TRIGGER',
+        action: 'EMERGENCY_LOCKDOWN_TOGGLE',
         resource_type: 'SYSTEM_ENVIRONMENT',
         decision: 'GRANTED',
-        reason: `Lockdown state set to: ${Boolean(body.active)}`
+        reason: `National Emergency Lockdown turned ${nextActive ? 'ON' : 'OFF'} by Administrator.`
       });
 
-      return NextResponse.json({ success: true, environment: env });
+      return NextResponse.json({
+        success: true,
+        environment: getEnvironment()
+      });
     }
 
-    // ── 4. Quick Persona Switcher (For Evaluation & Demo Tests) ─────────
-    if (action === 'switch_persona') {
-      const user = switchPersona(body.roleOrUid);
-      const token = signJWT(user);
+    // ── 4. System Administrator: User Management ────────────────────────
+    if (['create_user', 'toggle_user_status', 'assign_role', 'reset_password', 'get_users', 'system_health'].includes(action)) {
+      const claims = extractUserClaims(req);
+      if (!claims) {
+        return NextResponse.json(
+          { error: 'Unauthorized: Administrative authentication required.' },
+          { status: 401 }
+        );
+      }
+      const user = getUserById(claims.id) || (claims as any);
+      const normRole = normalizeRole(user?.role);
 
-      recordAuditLog({
-        user_id: user.id,
-        user_name: user.name,
-        user_role: user.role,
-        action: 'EVALUATION_ROLE_SWITCH',
-        resource_type: 'AUTH_SESSION',
-        decision: 'GRANTED',
-        reason: `Switched identity to ${user.name} for evaluation.`
-      });
+      if (normRole !== 'SYSTEM_ADMIN' && user?.role !== 'SUPER_ADMIN') {
+        recordAuditLog({
+          user_id: user?.id || 0,
+          user_name: user?.name || 'Anonymous',
+          user_role: user?.role || 'UNKNOWN',
+          action: `ADMIN_${action.toUpperCase()}`,
+          resource_type: 'SYSTEM_USER_MANAGEMENT',
+          decision: 'DENIED',
+          reason: 'Privileged user management requires SYSTEM_ADMIN authorization.'
+        });
 
-      const response = NextResponse.json({ success: true, user, token });
+        return NextResponse.json(
+          { error: 'Forbidden: Only System Administrator can manage users and configuration.' },
+          { status: 403 }
+        );
+      }
 
-      response.cookies.set('auth_token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 60 * 24
-      });
+      if (action === 'get_users') {
+        return NextResponse.json({ success: true, users: getSystemUsers() });
+      }
 
-      return response;
+      if (action === 'create_user') {
+        const { name, email, role, password, workspace_id, jurisdiction_code, clearance_level, is_gazetted } = body;
+        if (!name || !email || !role) {
+          return NextResponse.json({ error: 'Name, email, and role are required.' }, { status: 400 });
+        }
+        const created = createSystemUser({
+          name,
+          email,
+          role,
+          password,
+          workspace_id,
+          jurisdiction_code,
+          clearance_level,
+          is_gazetted
+        });
+
+        recordAuditLog({
+          user_id: user.id,
+          user_name: user.name,
+          user_role: user.role,
+          action: 'ADMIN_CREATE_USER',
+          resource_type: 'SYSTEM_USER',
+          resource_id: created.id,
+          decision: 'GRANTED',
+          reason: `Created user ${created.name} (${created.email}) with role ${created.role}.`
+        });
+
+        return NextResponse.json({ success: true, user: created });
+      }
+
+      if (action === 'toggle_user_status') {
+        const { user_id, is_active } = body;
+        const ok = updateUserStatus(user_id, is_active);
+        if (!ok) return NextResponse.json({ error: 'User not found.' }, { status: 404 });
+
+        recordAuditLog({
+          user_id: user.id,
+          user_name: user.name,
+          user_role: user.role,
+          action: 'ADMIN_TOGGLE_USER_STATUS',
+          resource_type: 'SYSTEM_USER',
+          resource_id: user_id,
+          decision: 'GRANTED',
+          reason: `Changed user ${user_id} active status to ${is_active}.`
+        });
+
+        return NextResponse.json({ success: true, user_id, is_active });
+      }
+
+      if (action === 'assign_role') {
+        const { user_id, new_role } = body;
+        const ok = updateUserRole(user_id, new_role as RoleName);
+        if (!ok) return NextResponse.json({ error: 'User not found.' }, { status: 404 });
+
+        recordAuditLog({
+          user_id: user.id,
+          user_name: user.name,
+          user_role: user.role,
+          action: 'ADMIN_ASSIGN_ROLE',
+          resource_type: 'SYSTEM_USER',
+          resource_id: user_id,
+          decision: 'GRANTED',
+          reason: `Assigned role ${new_role} to user ${user_id}.`
+        });
+
+        return NextResponse.json({ success: true, user_id, new_role });
+      }
+
+      if (action === 'reset_password') {
+        const { user_id, new_password } = body;
+        const ok = resetUserPassword(user_id, new_password);
+        if (!ok) return NextResponse.json({ error: 'User not found.' }, { status: 404 });
+
+        recordAuditLog({
+          user_id: user.id,
+          user_name: user.name,
+          user_role: user.role,
+          action: 'ADMIN_RESET_PASSWORD',
+          resource_type: 'SYSTEM_USER',
+          resource_id: user_id,
+          decision: 'GRANTED',
+          reason: `Reset password for user ${user_id}.`
+        });
+
+        return NextResponse.json({ success: true, user_id, message: 'Password reset successfully.' });
+      }
+
+      if (action === 'system_health') {
+        return NextResponse.json({
+          success: true,
+          health: {
+            status: 'HEALTHY',
+            uptimeSeconds: Math.floor(process.uptime()),
+            memoryUsage: process.memoryUsage(),
+            environment: getEnvironment(),
+            activeUsers: getSystemUsers().length,
+            nodeVersion: process.version
+          }
+        });
+      }
     }
 
-    return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
+    return NextResponse.json({ error: 'Unrecognized action.' }, { status: 400 });
   } catch (err: any) {
     return NextResponse.json({ error: err?.message || 'Authentication error' }, { status: 500 });
   }
