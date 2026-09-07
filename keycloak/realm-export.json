@@ -1,0 +1,593 @@
+{
+  "id": "sih-lea",
+  "realm": "sih-lea",
+  "displayName": "National Crypto Crime Intelligence & Forensics Hub (Govt. of India)",
+  "displayNameHtml": "<div class=\"kc-logo-text\"><span>SIH 2026</span> Law Enforcement Portal</div>",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "registrationEmailAsUsername": false,
+  "rememberMe": true,
+  "verifyEmail": false,
+  "resetPasswordAllowed": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "accessTokenLifespan": 86400,
+  "ssoSessionIdleTimeout": 86400,
+  "ssoSessionMaxLifespan": 86400,
+  "roles": {
+    "realm": [
+      {
+        "name": "VICTIM",
+        "description": "Citizen complainant with strictly isolated own-case visibility"
+      },
+      {
+        "name": "CYBERCRIME_SUPERVISOR",
+        "description": "Cybercrime Unit Supervisor with case triage, assignment, and unit oversight"
+      },
+      {
+        "name": "INVESTIGATING_OFFICER",
+        "description": "Field Investigating Officer with case-level tracing, evidence, and draft notices"
+      },
+      {
+        "name": "SENIOR_INVESTIGATOR",
+        "description": "Gazetted Senior Police Officer (ACP/DSP/SP) with Section 94 BNSS statutory freeze approval authority"
+      },
+      {
+        "name": "VASP_COMPLIANCE_OFFICER",
+        "description": "Exchange Nodal Officer with isolated VASP notice review, acknowledgement, and escrow lock"
+      },
+      {
+        "name": "COURT_REVIEWER",
+        "description": "Judicial Officer / Court Reviewer with absolute read-only evidentiary audit access under BSA Section 65B"
+      },
+      {
+        "name": "NATIONAL_COORDINATION_ANALYST",
+        "description": "Pan-India I4C Intelligence Analyst with cross-jurisdiction clustering and alerts"
+      },
+      {
+        "name": "SYSTEM_ADMIN",
+        "description": "System Infrastructure Administrator with user management, system health, and emergency lockdown controls"
+      },
+      {
+        "name": "NORMAL_INVESTIGATOR",
+        "description": "Legacy alias for INVESTIGATING_OFFICER"
+      },
+      {
+        "name": "WORKSPACE_ADMIN",
+        "description": "Legacy alias for CYBERCRIME_SUPERVISOR"
+      },
+      {
+        "name": "SUPER_ADMIN",
+        "description": "Legacy alias for SYSTEM_ADMIN"
+      },
+      {
+        "name": "EXCHANGE_NODAL_OFFICER",
+        "description": "Legacy alias for VASP_COMPLIANCE_OFFICER"
+      },
+      {
+        "name": "AUDITOR",
+        "description": "Legacy alias for COURT_REVIEWER"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "cryptotrace-frontend",
+      "name": "CryptoTrace LEA Intelligence Frontend",
+      "description": "Next.js 14 Frontend Client for SIH 2026 Crypto Crime Attribution Platform",
+      "rootUrl": "http://localhost:3000",
+      "baseUrl": "http://localhost:3000",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "protocol": "openid-connect",
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://127.0.0.1:3000/*",
+        "http://localhost:5000/*",
+        "http://127.0.0.1:5000/*"
+      ],
+      "webOrigins": [
+        "*",
+        "+"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "+",
+        "access.token.lifespan": "86400"
+      },
+      "protocolMappers": [
+        {
+          "name": "jurisdiction_code",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "jurisdiction_code",
+            "claim.name": "jurisdiction_code",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "is_gazetted",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "is_gazetted",
+            "claim.name": "is_gazetted",
+            "jsonType.label": "boolean",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "clearance_level",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "clearance_level",
+            "claim.name": "clearance_level",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "vasp_id",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "vasp_id",
+            "claim.name": "vasp_id",
+            "jsonType.label": "int",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "vasp_name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "vasp_name",
+            "claim.name": "vasp_name",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "badge",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "badge",
+            "claim.name": "badge",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "rank",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "rank",
+            "claim.name": "rank",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "workspace_id",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "workspace_id",
+            "claim.name": "workspace_id",
+            "jsonType.label": "int",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "client roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "victim.verma@example.demo",
+      "email": "victim.verma@example.demo",
+      "firstName": "Rajesh",
+      "lastName": "Verma",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Victim@123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["VICTIM"],
+      "attributes": {
+        "jurisdiction_code": [""],
+        "is_gazetted": ["false"],
+        "clearance_level": ["PUBLIC"],
+        "badge": ["CITIZEN-01"],
+        "rank": ["Citizen Complainant"]
+      }
+    },
+    {
+      "username": "victim.verma",
+      "email": "victim.verma@gmail.com",
+      "firstName": "Rajesh",
+      "lastName": "Verma",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Victim@123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["VICTIM"],
+      "attributes": {
+        "jurisdiction_code": [""],
+        "is_gazetted": ["false"],
+        "clearance_level": ["PUBLIC"],
+        "badge": ["CITIZEN-01"],
+        "rank": ["Citizen Complainant"]
+      }
+    },
+    {
+      "username": "supervisor@example.demo",
+      "email": "supervisor@example.demo",
+      "firstName": "SP",
+      "lastName": "Deshmukh",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Deshmukh@123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["CYBERCRIME_SUPERVISOR", "WORKSPACE_ADMIN"],
+      "attributes": {
+        "jurisdiction_code": ["MH-CYBER-01"],
+        "is_gazetted": ["true"],
+        "clearance_level": ["CONFIDENTIAL"],
+        "badge": ["MH-POLICE-001"],
+        "workspace_id": ["1"],
+        "rank": ["Cybercrime Unit Supervisor"]
+      }
+    },
+    {
+      "username": "sp.deshmukh",
+      "email": "sp.deshmukh@mhcyber.gov.in",
+      "firstName": "SP",
+      "lastName": "Deshmukh",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Deshmukh@123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["CYBERCRIME_SUPERVISOR", "WORKSPACE_ADMIN"],
+      "attributes": {
+        "jurisdiction_code": ["MH-CYBER-01"],
+        "is_gazetted": ["true"],
+        "clearance_level": ["CONFIDENTIAL"],
+        "badge": ["MH-POLICE-001"],
+        "workspace_id": ["1"],
+        "rank": ["Cybercrime Unit Supervisor"]
+      }
+    },
+    {
+      "username": "investigator@example.demo",
+      "email": "investigator@example.demo",
+      "firstName": "SI",
+      "lastName": "Patil",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Patil@123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["INVESTIGATING_OFFICER", "NORMAL_INVESTIGATOR"],
+      "attributes": {
+        "jurisdiction_code": ["MH-CYBER-01"],
+        "is_gazetted": ["false"],
+        "clearance_level": ["RESTRICTED"],
+        "badge": ["MH-POLICE-102"],
+        "workspace_id": ["1"],
+        "rank": ["Sub-Inspector / Investigating Officer"]
+      }
+    },
+    {
+      "username": "officer.patil",
+      "email": "officer.patil@mhcyber.gov.in",
+      "firstName": "SI",
+      "lastName": "Patil",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Patil@123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["INVESTIGATING_OFFICER", "NORMAL_INVESTIGATOR"],
+      "attributes": {
+        "jurisdiction_code": ["MH-CYBER-01"],
+        "is_gazetted": ["false"],
+        "clearance_level": ["RESTRICTED"],
+        "badge": ["MH-POLICE-102"],
+        "workspace_id": ["1"],
+        "rank": ["Sub-Inspector / Investigating Officer"]
+      }
+    },
+    {
+      "username": "senior@example.demo",
+      "email": "senior@example.demo",
+      "firstName": "ACP",
+      "lastName": "Sharma",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Police@123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["SENIOR_INVESTIGATOR"],
+      "attributes": {
+        "jurisdiction_code": ["MH-CYBER-01"],
+        "is_gazetted": ["true"],
+        "clearance_level": ["CONFIDENTIAL"],
+        "badge": ["MH-POLICE-884"],
+        "workspace_id": ["1"],
+        "rank": ["Assistant Commissioner of Police (ACP)"]
+      }
+    },
+    {
+      "username": "senior.sharma",
+      "email": "senior.sharma@mhcyber.gov.in",
+      "firstName": "ACP",
+      "lastName": "Sharma",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Police@123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["SENIOR_INVESTIGATOR"],
+      "attributes": {
+        "jurisdiction_code": ["MH-CYBER-01"],
+        "is_gazetted": ["true"],
+        "clearance_level": ["CONFIDENTIAL"],
+        "badge": ["MH-POLICE-884"],
+        "workspace_id": ["1"],
+        "rank": ["Assistant Commissioner of Police (ACP)"]
+      }
+    },
+    {
+      "username": "compliance@example.demo",
+      "email": "compliance@example.demo",
+      "firstName": "Exchange",
+      "lastName": "Compliance Desk",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Compliance@123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["VASP_COMPLIANCE_OFFICER", "EXCHANGE_NODAL_OFFICER"],
+      "attributes": {
+        "jurisdiction_code": [""],
+        "is_gazetted": ["false"],
+        "clearance_level": ["VASP_EXTERNAL"],
+        "badge": ["VASP-BINANCE-01"],
+        "vasp_id": ["1"],
+        "vasp_name": ["Binance International"],
+        "rank": ["VASP Compliance Officer"]
+      }
+    },
+    {
+      "username": "legal.binance",
+      "email": "legal@binance.com",
+      "firstName": "Binance",
+      "lastName": "Compliance Desk",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Binance@123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["VASP_COMPLIANCE_OFFICER", "EXCHANGE_NODAL_OFFICER"],
+      "attributes": {
+        "jurisdiction_code": [""],
+        "is_gazetted": ["false"],
+        "clearance_level": ["VASP_EXTERNAL"],
+        "badge": ["VASP-BINANCE-01"],
+        "vasp_id": ["1"],
+        "vasp_name": ["Binance International"],
+        "rank": ["VASP Compliance Officer"]
+      }
+    },
+    {
+      "username": "court@example.demo",
+      "email": "court@example.demo",
+      "firstName": "Justice",
+      "lastName": "Rao",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Judge@123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["COURT_REVIEWER", "AUDITOR"],
+      "attributes": {
+        "jurisdiction_code": ["IN-JUDICIAL-00"],
+        "is_gazetted": ["true"],
+        "clearance_level": ["CONFIDENTIAL"],
+        "badge": ["JUD-MH-2026"],
+        "rank": ["Judicial Evidentiary Reviewer"]
+      }
+    },
+    {
+      "username": "judge.rao",
+      "email": "judge.rao@ecourts.gov.in",
+      "firstName": "Justice",
+      "lastName": "Rao",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Judge@123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["COURT_REVIEWER", "AUDITOR"],
+      "attributes": {
+        "jurisdiction_code": ["IN-JUDICIAL-00"],
+        "is_gazetted": ["true"],
+        "clearance_level": ["CONFIDENTIAL"],
+        "badge": ["JUD-MH-2026"],
+        "rank": ["Judicial Evidentiary Reviewer"]
+      }
+    },
+    {
+      "username": "national@example.demo",
+      "email": "national@example.demo",
+      "firstName": "National",
+      "lastName": "Analyst",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "National@123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["NATIONAL_COORDINATION_ANALYST"],
+      "attributes": {
+        "jurisdiction_code": ["IN-I4C-00"],
+        "is_gazetted": ["false"],
+        "clearance_level": ["SECRET"],
+        "badge": ["NAT-COORD-01"],
+        "workspace_id": ["3"],
+        "rank": ["National Coordination Analyst"]
+      }
+    },
+    {
+      "username": "admin@example.demo",
+      "email": "admin@example.demo",
+      "firstName": "System",
+      "lastName": "Administrator",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Admin@123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["SYSTEM_ADMIN", "SUPER_ADMIN"],
+      "attributes": {
+        "jurisdiction_code": ["IN-I4C-00"],
+        "is_gazetted": ["true"],
+        "clearance_level": ["TOP_SECRET"],
+        "badge": ["SUPER-ADMIN-01"],
+        "workspace_id": ["3"],
+        "rank": ["Application Infrastructure Lead"]
+      }
+    },
+    {
+      "username": "central.admin",
+      "email": "admin@i4c.gov.in",
+      "firstName": "Central",
+      "lastName": "Nodal Officer",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Admin@123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["SYSTEM_ADMIN", "SUPER_ADMIN"],
+      "attributes": {
+        "jurisdiction_code": ["IN-I4C-00"],
+        "is_gazetted": ["true"],
+        "clearance_level": ["TOP_SECRET"],
+        "badge": ["SUPER-ADMIN-01"],
+        "workspace_id": ["3"],
+        "rank": ["Central Nodal Administrator"]
+      }
+    }
+  ]
+}

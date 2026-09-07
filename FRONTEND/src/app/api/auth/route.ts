@@ -16,6 +16,7 @@ import {
 } from '@/lib/db';
 import { SYSTEM_PERSONAS, hasPermission, normalizeRole, type RoleName } from '@/lib/rbac-abac';
 import { signJWT, extractUserClaims } from '@/lib/auth-crypto';
+import { checkKeycloakHealth, loginKeycloakDirect } from '@/lib/keycloak';
 
 export async function GET(req: Request) {
   const claims = extractUserClaims(req);
@@ -25,11 +26,14 @@ export async function GET(req: Request) {
     activeUser = claims as any;
   }
 
+  const keycloakHealth = await checkKeycloakHealth();
+
   return NextResponse.json({
     authenticated: !!activeUser,
     user: activeUser || null,
     environment: getEnvironment(),
-    personas: SYSTEM_PERSONAS
+    personas: SYSTEM_PERSONAS,
+    keycloak: keycloakHealth
   });
 }
 
@@ -48,6 +52,41 @@ export async function POST(req: Request) {
         );
       }
 
+      // Check Keycloak 24 IAM if container is running
+      const kcHealth = await checkKeycloakHealth();
+      if (kcHealth.online) {
+        const kcResult = await loginKeycloakDirect(email, password);
+        if (kcResult.success && kcResult.user && kcResult.token) {
+          recordAuditLog({
+            user_id: kcResult.user.id,
+            user_name: kcResult.user.name,
+            user_role: kcResult.user.role,
+            action: 'KEYCLOAK_LOGIN_SUCCESS',
+            resource_type: 'AUTH_SESSION',
+            decision: 'GRANTED',
+            reason: 'Successfully authenticated with Keycloak OIDC direct access grant.'
+          });
+
+          const response = NextResponse.json({
+            success: true,
+            user: kcResult.user,
+            token: kcResult.token,
+            idp: 'KEYCLOAK'
+          });
+
+          response.cookies.set('auth_token', kcResult.token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/',
+            maxAge: kcResult.expiresIn || 60 * 60 * 24
+          });
+
+          return response;
+        }
+      }
+
+      // Local Cryptographic Engine Fallback (Native PBKDF2 + HMAC-SHA256)
       const authResult = authenticateUser(email, password);
       if (!authResult.success || !authResult.user) {
         recordAuditLog({
@@ -82,7 +121,8 @@ export async function POST(req: Request) {
       const response = NextResponse.json({
         success: true,
         user,
-        token
+        token,
+        idp: 'LOCAL_CRYPTO'
       });
 
       response.cookies.set('auth_token', token, {
@@ -294,6 +334,7 @@ export async function POST(req: Request) {
       }
 
       if (action === 'system_health') {
+        const kcHealth = await checkKeycloakHealth();
         return NextResponse.json({
           success: true,
           health: {
@@ -302,7 +343,8 @@ export async function POST(req: Request) {
             memoryUsage: process.memoryUsage(),
             environment: getEnvironment(),
             activeUsers: getSystemUsers().length,
-            nodeVersion: process.version
+            nodeVersion: process.version,
+            keycloak: kcHealth
           }
         });
       }
