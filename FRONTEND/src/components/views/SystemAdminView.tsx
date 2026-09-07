@@ -227,6 +227,69 @@ export function SystemAdminView() {
         </div>
       </div>
 
+      {/* Keycloak 24 Enterprise Identity Provider Card */}
+      <div
+        className="rounded-xl border p-4 mb-6"
+        style={{
+          background: health?.keycloak?.online ? "rgba(16, 185, 129, 0.05)" : "rgba(245, 158, 11, 0.05)",
+          borderColor: health?.keycloak?.online ? "rgba(16, 185, 129, 0.25)" : "rgba(245, 158, 11, 0.25)"
+        }}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-3 mb-3" style={{ borderColor: "var(--border)" }}>
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-3 w-3">
+              {health?.keycloak?.online && (
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              )}
+              <span className={`relative inline-flex rounded-full h-3 w-3 ${health?.keycloak?.online ? "bg-emerald-500" : "bg-amber-500"}`}></span>
+            </span>
+            <span className="text-xs font-bold font-mono" style={{ color: health?.keycloak?.online ? "#10b981" : "#f59e0b" }}>
+              KEYCLOAK 24 ENTERPRISE IDENTITY PROVIDER (IAM)
+            </span>
+            <span className="text-[10px] px-2 py-0.5 rounded bg-sky-500/15 text-sky-400 font-mono font-semibold">
+              OpenID Connect / RS256
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <a
+              href="http://localhost:8080/admin/master/console/#/sih-lea/sessions"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-2.5 py-1 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold hover:bg-emerald-600/30 transition flex items-center gap-1"
+            >
+              Keycloak Sessions Console ↗
+            </a>
+            <a
+              href="http://localhost:8080/realms/sih-lea/.well-known/openid-configuration"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-2.5 py-1 rounded-lg bg-[var(--chip)] text-muted text-xs font-mono hover:text-white transition"
+            >
+              OIDC Discovery ↗
+            </a>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
+          <div>
+            <div className="text-[10px] text-muted uppercase">IAM Status</div>
+            <div className="font-bold mt-0.5 text-emerald-400">{health?.keycloak?.online ? "ONLINE (Connected)" : "OFFLINE (Fallback)"}</div>
+          </div>
+          <div>
+            <div className="text-[10px] text-muted uppercase">Target Realm</div>
+            <div className="font-bold mt-0.5 text-sky-400">sih-lea</div>
+          </div>
+          <div>
+            <div className="text-[10px] text-muted uppercase">Registered Client</div>
+            <div className="font-bold mt-0.5 text-amber-400">cryptotrace-frontend</div>
+          </div>
+          <div>
+            <div className="text-[10px] text-muted uppercase">Cryptographic Token</div>
+            <div className="font-bold mt-0.5 text-purple-400">RS256 (JWKS Rotated)</div>
+          </div>
+        </div>
+      </div>
+
       {/* User Management Section */}
       <div className="rounded-xl border p-5 space-y-4" style={{ background: "var(--panel)", borderColor: "var(--border)" }}>
         <div className="flex flex-wrap items-center justify-between gap-3">

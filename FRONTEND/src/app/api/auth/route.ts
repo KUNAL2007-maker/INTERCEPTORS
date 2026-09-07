@@ -16,7 +16,12 @@ import {
 } from '@/lib/db';
 import { SYSTEM_PERSONAS, hasPermission, normalizeRole, type RoleName } from '@/lib/rbac-abac';
 import { signJWT, extractUserClaims } from '@/lib/auth-crypto';
-import { checkKeycloakHealth, loginKeycloakDirect } from '@/lib/keycloak';
+import {
+  checkKeycloakHealth,
+  loginKeycloakDirect,
+  logoutKeycloakSession,
+  PERSONA_KEYCLOAK_CREDENTIALS
+} from '@/lib/keycloak';
 
 export async function GET(req: Request) {
   const claims = await extractUserClaims(req);
@@ -26,14 +31,25 @@ export async function GET(req: Request) {
     activeUser = claims as any;
   }
 
+  const idp = claims?.idp || (claims?.iss?.includes('keycloak') ? 'KEYCLOAK' : (claims ? 'LOCAL_CRYPTO' : null));
+  if (activeUser) {
+    (activeUser as any).idp = idp;
+  }
+
   const keycloakHealth = await checkKeycloakHealth();
 
   return NextResponse.json({
     authenticated: !!activeUser,
     user: activeUser || null,
+    idp,
     environment: getEnvironment(),
     personas: SYSTEM_PERSONAS,
-    keycloak: keycloakHealth
+    keycloak: {
+      ...keycloakHealth,
+      realm: 'sih-lea',
+      clientId: 'cryptotrace-frontend',
+      adminSessionsUrl: 'http://localhost:8080/admin/master/console/#/sih-lea/sessions'
+    }
   });
 }
 
@@ -81,6 +97,16 @@ export async function POST(req: Request) {
             path: '/',
             maxAge: kcResult.expiresIn || 60 * 60 * 24
           });
+
+          if (kcResult.refreshToken) {
+            response.cookies.set('kc_refresh_token', kcResult.refreshToken, {
+              httpOnly: true,
+              secure: process.env.NODE_ENV === 'production',
+              sameSite: 'lax',
+              path: '/',
+              maxAge: 60 * 60 * 24
+            });
+          }
 
           return response;
         }
@@ -151,6 +177,13 @@ export async function POST(req: Request) {
         });
       }
 
+      // Terminate Keycloak session if refresh token cookie is present
+      const cookieHeader = req.headers.get('cookie') || '';
+      const refreshMatch = cookieHeader.match(/kc_refresh_token=([^;]+)/);
+      if (refreshMatch) {
+        await logoutKeycloakSession(decodeURIComponent(refreshMatch[1]));
+      }
+
       const response = NextResponse.json({
         success: true,
         message: 'Logged out successfully.'
@@ -162,12 +195,71 @@ export async function POST(req: Request) {
         maxAge: 0
       });
 
+      response.cookies.set('kc_refresh_token', '', {
+        httpOnly: true,
+        path: '/',
+        maxAge: 0
+      });
+
       return response;
     }
 
     // ── 3. Quick Persona Switcher (For Evaluation & Demo Tests) ─────────
     if (action === 'switch_persona') {
-      const user = switchPersona(body.roleOrUid);
+      const targetIdentifier = body.roleOrUid || 'senior-sharma';
+      const user = switchPersona(targetIdentifier);
+
+      // When Keycloak is active, issue real Keycloak RS256 token and register Keycloak session
+      const kcHealth = await checkKeycloakHealth();
+      if (kcHealth.online) {
+        const creds =
+          PERSONA_KEYCLOAK_CREDENTIALS[targetIdentifier] ||
+          (user ? PERSONA_KEYCLOAK_CREDENTIALS[user.email] || PERSONA_KEYCLOAK_CREDENTIALS[user.role] : null);
+
+        if (creds) {
+          const kcResult = await loginKeycloakDirect(creds.email, creds.pass);
+          if (kcResult.success && kcResult.user && kcResult.token) {
+            recordAuditLog({
+              user_id: kcResult.user.id,
+              user_name: kcResult.user.name,
+              user_role: kcResult.user.role,
+              action: 'KEYCLOAK_ROLE_SWITCH',
+              resource_type: 'AUTH_SESSION',
+              decision: 'GRANTED',
+              reason: `Switched identity to ${kcResult.user.name} (${kcResult.user.role}) via Keycloak OIDC session.`
+            });
+
+            const response = NextResponse.json({
+              success: true,
+              user: kcResult.user,
+              token: kcResult.token,
+              idp: 'KEYCLOAK'
+            });
+
+            response.cookies.set('auth_token', kcResult.token, {
+              httpOnly: true,
+              secure: process.env.NODE_ENV === 'production',
+              sameSite: 'lax',
+              path: '/',
+              maxAge: kcResult.expiresIn || 60 * 60 * 24
+            });
+
+            if (kcResult.refreshToken) {
+              response.cookies.set('kc_refresh_token', kcResult.refreshToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax',
+                path: '/',
+                maxAge: 60 * 60 * 24
+              });
+            }
+
+            return response;
+          }
+        }
+      }
+
+      // Local Cryptographic Engine Fallback (Native PBKDF2 + HMAC-SHA256)
       const token = signJWT(user);
 
       recordAuditLog({
@@ -177,7 +269,7 @@ export async function POST(req: Request) {
         action: 'EVALUATION_ROLE_SWITCH',
         resource_type: 'AUTH_SESSION',
         decision: 'GRANTED',
-        reason: `Switched identity to ${user.name} (${user.role}) for evaluation.`
+        reason: `Switched identity to ${user.name} (${user.role}) via local fallback.`
       });
 
       const response = NextResponse.json({ success: true, user, token, idp: 'LOCAL_CRYPTO' });

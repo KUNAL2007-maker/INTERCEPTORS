@@ -39,10 +39,13 @@ export type AppUser = {
   vasp_name?: string;
   badge?: string;
   offline: boolean;
+  idp?: 'KEYCLOAK' | 'LOCAL_CRYPTO';
 };
 
 type AuthState = {
   user: AppUser | null;
+  idp: 'KEYCLOAK' | 'LOCAL_CRYPTO' | null;
+  keycloakInfo: any;
   loading: boolean;
   persistent: boolean;
   canApproveFreeze: boolean;
@@ -59,6 +62,8 @@ type AuthState = {
 
 const AuthCtx = createContext<AuthState>({
   user: null,
+  idp: null,
+  keycloakInfo: null,
   loading: true,
   persistent: true,
   canApproveFreeze: false,
@@ -75,6 +80,8 @@ const AuthCtx = createContext<AuthState>({
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
+  const [idp, setIdp] = useState<'KEYCLOAK' | 'LOCAL_CRYPTO' | null>(null);
+  const [keycloakInfo, setKeycloakInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
@@ -89,9 +96,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const res = await fetch("/api/auth");
         if (res.ok) {
           const data = await res.json();
+          if (data.keycloak) setKeycloakInfo(data.keycloak);
+          if (data.idp) setIdp(data.idp);
           if (mounted && data.user) {
             setUser({
               ...data.user,
+              idp: data.idp || data.user.idp || 'KEYCLOAK',
               fullName: data.user.name || data.user.fullName || "Officer Sharma"
             });
             setLoading(false);
@@ -110,9 +120,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           });
           if (initRes.ok) {
             const initData = await initRes.json();
+            if (initData.idp) setIdp(initData.idp);
             if (initData.user) {
               setUser({
                 ...initData.user,
+                idp: initData.idp || 'KEYCLOAK',
                 fullName: initData.user.name || initData.user.fullName
               });
               setLoading(false);
@@ -123,6 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const defaultPersona = SYSTEM_PERSONAS[0];
         setUser({
           ...defaultPersona,
+          idp: 'LOCAL_CRYPTO',
           fullName: defaultPersona.name
         });
         setLoading(false);
@@ -144,9 +157,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       if (res.ok) {
         const data = await res.json();
+        if (data.idp) setIdp(data.idp);
         if (data.user) {
           setUser({
             ...data.user,
+            idp: data.idp || 'KEYCLOAK',
             fullName: data.user.name || data.user.fullName
           });
         }
@@ -156,7 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         SYSTEM_PERSONAS.find((p) => p.role === roleOrUid) ||
         SYSTEM_PERSONAS.find((p) => p.uid === roleOrUid);
       if (found) {
-        setUser({ ...found, fullName: found.name });
+        setUser({ ...found, idp: 'LOCAL_CRYPTO', fullName: found.name });
       }
     } finally {
       setLoading(false);
@@ -175,9 +190,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!res.ok || !data.success) {
           return data.error || "Authentication failed. Please verify credentials.";
         }
+        if (data.idp) setIdp(data.idp);
         if (data.user) {
           setUser({
             ...data.user,
+            idp: data.idp || 'KEYCLOAK',
             fullName: data.user.name || data.user.fullName
           });
         }
@@ -221,6 +238,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     } catch {}
     setUser(null);
+    setIdp(null);
   }, []);
 
   const canApproveFreeze = useMemo(() => {
@@ -244,6 +262,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthCtx.Provider
       value={{
         user,
+        idp,
+        keycloakInfo,
         loading,
         persistent: true,
         canApproveFreeze,

@@ -418,3 +418,65 @@ export async function loginKeycloakDirect(
     };
   }
 }
+
+/**
+ * Pre-configured credentials for all 8 statutory LEA personas in Keycloak
+ */
+export const PERSONA_KEYCLOAK_CREDENTIALS: Record<string, { email: string; pass: string }> = {
+  'central-nodal-admin': { email: 'admin@example.demo', pass: 'Admin@123' },
+  'senior-sharma': { email: 'senior@example.demo', pass: 'Police@123' },
+  'patil-sub-inspector': { email: 'investigator@example.demo', pass: 'Patil@123' },
+  'sp-deshmukh': { email: 'supervisor@example.demo', pass: 'Deshmukh@123' },
+  'victim-verma': { email: 'victim.verma@example.demo', pass: 'Victim@123' },
+  'binance-compliance': { email: 'compliance@example.demo', pass: 'Compliance@123' },
+  'justice-rao': { email: 'court@example.demo', pass: 'Judge@123' },
+  'national-analyst': { email: 'national@example.demo', pass: 'National@123' },
+  // By email
+  'admin@example.demo': { email: 'admin@example.demo', pass: 'Admin@123' },
+  'senior@example.demo': { email: 'senior@example.demo', pass: 'Police@123' },
+  'investigator@example.demo': { email: 'investigator@example.demo', pass: 'Patil@123' },
+  'supervisor@example.demo': { email: 'supervisor@example.demo', pass: 'Deshmukh@123' },
+  'victim.verma@example.demo': { email: 'victim.verma@example.demo', pass: 'Victim@123' },
+  'compliance@example.demo': { email: 'compliance@example.demo', pass: 'Compliance@123' },
+  'court@example.demo': { email: 'court@example.demo', pass: 'Judge@123' },
+  'national@example.demo': { email: 'national@example.demo', pass: 'National@123' },
+  // By role
+  'SYSTEM_ADMIN': { email: 'admin@example.demo', pass: 'Admin@123' },
+  'SENIOR_INVESTIGATOR': { email: 'senior@example.demo', pass: 'Police@123' },
+  'INVESTIGATING_OFFICER': { email: 'investigator@example.demo', pass: 'Patil@123' },
+  'CYBERCRIME_SUPERVISOR': { email: 'supervisor@example.demo', pass: 'Deshmukh@123' },
+  'VICTIM': { email: 'victim.verma@example.demo', pass: 'Victim@123' },
+  'VASP_COMPLIANCE_OFFICER': { email: 'compliance@example.demo', pass: 'Compliance@123' },
+  'COURT_REVIEWER': { email: 'court@example.demo', pass: 'Judge@123' },
+  'NATIONAL_COORDINATION_ANALYST': { email: 'national@example.demo', pass: 'National@123' }
+};
+
+/**
+ * Terminate user session in Keycloak via OIDC logout
+ */
+export async function logoutKeycloakSession(refreshToken?: string): Promise<boolean> {
+  if (!refreshToken) return false;
+  const logoutUrl = `${KEYCLOAK_CONFIG.baseUrl}/realms/${KEYCLOAK_CONFIG.realm}/protocol/openid-connect/logout`;
+  try {
+    const params = new URLSearchParams();
+    params.append('client_id', KEYCLOAK_CONFIG.clientId);
+    if (KEYCLOAK_CONFIG.clientSecret) {
+      params.append('client_secret', KEYCLOAK_CONFIG.clientSecret);
+    }
+    params.append('refresh_token', refreshToken);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+    const res = await fetch(logoutUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
