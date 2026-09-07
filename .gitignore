@@ -19,6 +19,10 @@ build/
 .cache/
 *.tsbuildinfo
 
+# Explicitly track DATABASE folder and SQL assets
+!DATABASE/
+!DATABASE/**
+
 # Agent internals & logs
 .agents/
 
