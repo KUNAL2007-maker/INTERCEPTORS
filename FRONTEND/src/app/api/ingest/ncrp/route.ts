@@ -5,7 +5,7 @@ import { normalizeRole } from '@/lib/rbac-abac';
 
 export async function POST(req: Request) {
   try {
-    const claims = extractUserClaims(req);
+    const claims = await extractUserClaims(req);
     if (!claims) {
       return NextResponse.json(
         { error: 'Unauthorized: Authentication required to ingest complaints into NCRP gateway.' },

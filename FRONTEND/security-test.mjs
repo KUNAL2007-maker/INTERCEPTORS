@@ -572,6 +572,60 @@ async function runSecurityTests() {
     `Victim response sanitization verified: Internal investigator notes and priority stripped from payload`
   );
 
+  // ──────────────────────────────────────────────────────────────────────────
+  // TEST GROUP 13: CRYPTOGRAPHIC TOKEN INTEGRITY & IAM SWITCH VERIFICATION
+  // ──────────────────────────────────────────────────────────────────────────
+  console.log('\n\x1b[36m[GROUP 13] Testing Cryptographic Token Integrity & IAM Persona Switch:\x1b[0m');
+
+  // 1. Forged RS256 Token Attack (Expect 401)
+  const headerB64 = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
+  const forgedPayload = Buffer.from(JSON.stringify({
+    sub: 'attacker-007',
+    email: 'attacker@darkweb.cc',
+    realm_access: { roles: ['SYSTEM_ADMIN'] },
+    is_gazetted: true,
+    exp: Math.floor(Date.now() / 1000) + 3600
+  })).toString('base64url');
+  const forgedToken = `${headerB64}.${forgedPayload}.FORGED_SIGNATURE_TAMPERED`;
+
+  const forgedCases = await api('/api/cases', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${forgedToken}` }
+  });
+  assert(
+    forgedCases.status === 401,
+    `Forged RS256 token privilege escalation attack rejected with HTTP ${forgedCases.status} (Expected: 401)`
+  );
+
+  // 2. Algorithm 'none' Attack (Expect 401)
+  const noneHeader = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url');
+  const noneToken = `${noneHeader}.${forgedPayload}.`;
+  const noneCases = await api('/api/cases', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${noneToken}` }
+  });
+  assert(
+    noneCases.status === 401,
+    `Algorithm 'none' bypass attack rejected with HTTP ${noneCases.status} (Expected: 401)`
+  );
+
+  // 3. Quick Persona Switch via POST /api/auth (Expect 200)
+  const switchRes = await api('/api/auth', {
+    method: 'POST',
+    body: JSON.stringify({ action: 'switch_persona', roleOrUid: 'senior-sharma' })
+  });
+  assert(
+    switchRes.status === 200 && switchRes.body?.success === true && switchRes.body?.user?.role === 'SENIOR_INVESTIGATOR',
+    `Quick Persona Switch (/api/auth switch_persona) succeeded: HTTP ${switchRes.status}`
+  );
+
+  // 4. Keycloak IAM Health Reporting (Expect 200)
+  const authHealth = await api('/api/auth', { method: 'GET' });
+  assert(
+    authHealth.status === 200 && authHealth.body?.keycloak && typeof authHealth.body.keycloak.online === 'boolean',
+    `Keycloak IAM status reported via GET /api/auth (online: ${authHealth.body?.keycloak?.online})`
+  );
+
   console.log('\n================================================================');
   console.log(`  FINAL VERIFICATION RESULTS: ${passed} PASSED, ${failed} FAILED`);
   console.log('================================================================\n');

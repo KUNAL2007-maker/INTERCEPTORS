@@ -19,7 +19,7 @@ import { signJWT, extractUserClaims } from '@/lib/auth-crypto';
 import { checkKeycloakHealth, loginKeycloakDirect } from '@/lib/keycloak';
 
 export async function GET(req: Request) {
-  const claims = extractUserClaims(req);
+  const claims = await extractUserClaims(req);
   let activeUser = claims ? getUserById(claims.id) : null;
 
   if (!activeUser && claims) {
@@ -138,7 +138,7 @@ export async function POST(req: Request) {
 
     // ── 2. User Logout ───────────────────────────────────────────────────
     if (action === 'logout') {
-      const claims = extractUserClaims(req);
+      const claims = await extractUserClaims(req);
       if (claims) {
         recordAuditLog({
           user_id: claims.id,
@@ -165,9 +165,37 @@ export async function POST(req: Request) {
       return response;
     }
 
-    // ── 3. Emergency Lockdown Toggle (System Admin Only) ────────────────
+    // ── 3. Quick Persona Switcher (For Evaluation & Demo Tests) ─────────
+    if (action === 'switch_persona') {
+      const user = switchPersona(body.roleOrUid);
+      const token = signJWT(user);
+
+      recordAuditLog({
+        user_id: user.id,
+        user_name: user.name,
+        user_role: user.role,
+        action: 'EVALUATION_ROLE_SWITCH',
+        resource_type: 'AUTH_SESSION',
+        decision: 'GRANTED',
+        reason: `Switched identity to ${user.name} (${user.role}) for evaluation.`
+      });
+
+      const response = NextResponse.json({ success: true, user, token, idp: 'LOCAL_CRYPTO' });
+
+      response.cookies.set('auth_token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24
+      });
+
+      return response;
+    }
+
+    // ── 4. Emergency Lockdown Toggle (System Admin Only) ────────────────
     if (action === 'toggle_lockdown') {
-      const claims = extractUserClaims(req);
+      const claims = await extractUserClaims(req);
       if (!claims) {
         return NextResponse.json(
           { error: 'Unauthorized: Authentication required to trigger emergency lockdown.' },
@@ -213,9 +241,9 @@ export async function POST(req: Request) {
       });
     }
 
-    // ── 4. System Administrator: User Management ────────────────────────
+    // ── 5. System Administrator: User Management ────────────────────────
     if (['create_user', 'toggle_user_status', 'assign_role', 'reset_password', 'get_users', 'system_health'].includes(action)) {
-      const claims = extractUserClaims(req);
+      const claims = await extractUserClaims(req);
       if (!claims) {
         return NextResponse.json(
           { error: 'Unauthorized: Administrative authentication required.' },

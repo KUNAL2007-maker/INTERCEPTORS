@@ -13,7 +13,11 @@ import {
   normalizeRole,
   SYSTEM_PERSONAS
 } from './rbac-abac';
-import { resolveRoleFromKeycloak } from './keycloak';
+import {
+  resolveRoleFromKeycloak,
+  fetchKeycloakJWKS,
+  verifyKeycloakSignatureSync
+} from './keycloak';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'sih-2026-i4c-cryptotrace-jwt-hmac-sha256-secret-key-9988';
 const TOKEN_EXPIRY_SECONDS = 60 * 60 * 24; // 24 hours
@@ -109,6 +113,46 @@ export function signJWT(user: AppUser): string {
   return `${data}.${signature}`;
 }
 
+function parseVerifiedKeycloakPayload(payload: any, now: number): JWTPayload {
+  const email = payload.email || payload.preferred_username || '';
+  const realmRoles: string[] = payload.realm_access?.roles || [];
+  const clientRoles: string[] = payload.resource_access?.['cryptotrace-frontend']?.roles || [];
+  const allRoles = [...realmRoles, ...clientRoles];
+  const role = resolveRoleFromKeycloak(allRoles);
+
+  const persona = SYSTEM_PERSONAS.find(
+    (p) =>
+      p.email.toLowerCase() === email.toLowerCase() ||
+      (p.alias_emails && p.alias_emails.some((ae) => ae.toLowerCase() === email.toLowerCase())) ||
+      p.role === role ||
+      p.uid === payload.sub
+  );
+
+  const isGazetted =
+    payload.is_gazetted !== undefined
+      ? payload.is_gazetted === true || payload.is_gazetted === 'true'
+      : persona?.is_gazetted ?? false;
+
+  return {
+    id: persona?.id || (payload.user_id ? Number(payload.user_id) : 100),
+    uid: payload.sub || persona?.uid || 'keycloak-user',
+    email: email || persona?.email || 'officer@sih.gov.in',
+    role,
+    name:
+      payload.name ||
+      [payload.given_name, payload.family_name].filter(Boolean).join(' ') ||
+      persona?.name ||
+      'Keycloak Officer',
+    jurisdiction_code: payload.jurisdiction_code ?? persona?.jurisdiction_code ?? null,
+    clearance_level: payload.clearance_level || persona?.clearance_level || 'PUBLIC',
+    is_gazetted: isGazetted,
+    vasp_id: payload.vasp_id ? Number(payload.vasp_id) : persona?.vasp_id ?? null,
+    iat: payload.iat || now,
+    exp: payload.exp || now + TOKEN_EXPIRY_SECONDS,
+    idp: 'KEYCLOAK'
+  };
+}
+
 export function verifyJWT(token: string): JWTPayload | null {
   try {
     const parts = token.split('.');
@@ -125,62 +169,97 @@ export function verifyJWT(token: string): JWTPayload | null {
 
     // ── Keycloak RS256 Token Handling ─────────────────────────────────────
     if (header.alg === 'RS256') {
-      const email = payload.email || payload.preferred_username || '';
-      const realmRoles: string[] = payload.realm_access?.roles || [];
-      const clientRoles: string[] = payload.resource_access?.['cryptotrace-frontend']?.roles || [];
-      const allRoles = [...realmRoles, ...clientRoles];
-      const role = resolveRoleFromKeycloak(allRoles);
-
-      const persona = SYSTEM_PERSONAS.find(
-        (p) =>
-          p.email.toLowerCase() === email.toLowerCase() ||
-          (p.alias_emails && p.alias_emails.some((ae) => ae.toLowerCase() === email.toLowerCase())) ||
-          p.role === role ||
-          p.uid === payload.sub
+      const verified = verifyKeycloakSignatureSync(
+        encodedHeader,
+        encodedPayload,
+        signature,
+        header.kid
       );
-
-      const isGazetted =
-        payload.is_gazetted !== undefined
-          ? payload.is_gazetted === true || payload.is_gazetted === 'true'
-          : persona?.is_gazetted ?? false;
-
-      return {
-        id: persona?.id || (payload.user_id ? Number(payload.user_id) : 100),
-        uid: payload.sub || persona?.uid || 'keycloak-user',
-        email: email || persona?.email || 'officer@sih.gov.in',
-        role,
-        name:
-          payload.name ||
-          [payload.given_name, payload.family_name].filter(Boolean).join(' ') ||
-          persona?.name ||
-          'Keycloak Officer',
-        jurisdiction_code: payload.jurisdiction_code ?? persona?.jurisdiction_code ?? null,
-        clearance_level: payload.clearance_level || persona?.clearance_level || 'PUBLIC',
-        is_gazetted: isGazetted,
-        vasp_id: payload.vasp_id ? Number(payload.vasp_id) : persona?.vasp_id ?? null,
-        iat: payload.iat || now,
-        exp: payload.exp || now + TOKEN_EXPIRY_SECONDS,
-        idp: 'KEYCLOAK'
-      };
+      if (!verified) {
+        return null;
+      }
+      return parseVerifiedKeycloakPayload(payload, now);
     }
 
     // ── Native HMAC-SHA256 Verification ───────────────────────────────────
-    const data = `${encodedHeader}.${encodedPayload}`;
-    const expectedSignature = crypto
-      .createHmac('sha256', JWT_SECRET)
-      .update(data)
-      .digest('base64')
-      .replace(/=/g, '')
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_');
+    if (header.alg === 'HS256') {
+      const data = `${encodedHeader}.${encodedPayload}`;
+      const expectedSignature = crypto
+        .createHmac('sha256', JWT_SECRET)
+        .update(data)
+        .digest('base64')
+        .replace(/=/g, '')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_');
 
-    const expectedBuf = Buffer.from(expectedSignature);
-    const actualBuf = Buffer.from(signature);
+      const expectedBuf = Buffer.from(expectedSignature);
+      const actualBuf = Buffer.from(signature);
 
-    if (expectedBuf.length !== actualBuf.length) return null;
-    if (!crypto.timingSafeEqual(expectedBuf, actualBuf)) return null;
+      if (expectedBuf.length !== actualBuf.length) return null;
+      if (!crypto.timingSafeEqual(expectedBuf, actualBuf)) return null;
 
-    return payload as JWTPayload;
+      return payload as JWTPayload;
+    }
+
+    // Reject any unknown or insecure algorithm (e.g., none)
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Asynchronous JWT verifier that fetches live JWKS if an RS256 key is not yet in cache
+ */
+export async function verifyJWTAsync(token: string): Promise<JWTPayload | null> {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+
+    const [encodedHeader, encodedPayload, signature] = parts;
+    const header = JSON.parse(base64UrlDecode(encodedHeader));
+    const payload = JSON.parse(base64UrlDecode(encodedPayload));
+    const now = Math.floor(Date.now() / 1000);
+
+    if (payload.exp && payload.exp < now) {
+      return null;
+    }
+
+    if (header.alg === 'HS256') {
+      return verifyJWT(token);
+    }
+
+    if (header.alg === 'RS256') {
+      if (verifyKeycloakSignatureSync(encodedHeader, encodedPayload, signature, header.kid)) {
+        return parseVerifiedKeycloakPayload(payload, now);
+      }
+
+      // Live fetch if not in cache
+      const keys = await fetchKeycloakJWKS();
+      if (!keys || keys.length === 0) return null;
+      const matchingKey = keys.find((k) => k.kid === header.kid) || (keys.length === 1 ? keys[0] : null);
+      if (!matchingKey) return null;
+
+      try {
+        const publicKey = crypto.createPublicKey({
+          key: matchingKey as any,
+          format: 'jwk'
+        });
+        const verifier = crypto.createVerify('RSA-SHA256');
+        verifier.update(`${encodedHeader}.${encodedPayload}`);
+        const valid = verifier.verify(
+          publicKey,
+          signature.replace(/-/g, '+').replace(/_/g, '/'),
+          'base64'
+        );
+        if (!valid) return null;
+        return parseVerifiedKeycloakPayload(payload, now);
+      } catch {
+        return null;
+      }
+    }
+
+    return null;
   } catch {
     return null;
   }
@@ -208,7 +287,13 @@ export function extractTokenFromRequest(req: Request): string | null {
   return null;
 }
 
-export function extractUserClaims(req: Request): JWTPayload | null {
+export async function extractUserClaims(req: Request): Promise<JWTPayload | null> {
+  const token = extractTokenFromRequest(req);
+  if (!token) return null;
+  return verifyJWTAsync(token);
+}
+
+export function extractUserClaimsSync(req: Request): JWTPayload | null {
   const token = extractTokenFromRequest(req);
   if (!token) return null;
   return verifyJWT(token);

@@ -117,6 +117,10 @@ type JWKKey = {
 let jwksCache: { keys: JWKKey[]; fetchedAt: number } | null = null;
 const JWKS_TTL_MS = 60000; // 60 seconds
 
+export function getCachedJWKS(): JWKKey[] {
+  return jwksCache ? jwksCache.keys : [];
+}
+
 export async function fetchKeycloakJWKS(): Promise<JWKKey[]> {
   const now = Date.now();
   if (jwksCache && now - jwksCache.fetchedAt < JWKS_TTL_MS) {
@@ -144,6 +148,37 @@ export async function fetchKeycloakJWKS(): Promise<JWKKey[]> {
   } catch {
     clearTimeout(timeoutId);
     return jwksCache ? jwksCache.keys : [];
+  }
+}
+
+/**
+ * Verify RSA-SHA256 signature synchronously against cached JWKS public keys
+ */
+export function verifyKeycloakSignatureSync(
+  headerB64: string,
+  payloadB64: string,
+  sigB64: string,
+  kid?: string
+): boolean {
+  if (!jwksCache || !jwksCache.keys || jwksCache.keys.length === 0) {
+    return false;
+  }
+  const matchingKey = jwksCache.keys.find((k) => k.kid === kid) || (jwksCache.keys.length === 1 ? jwksCache.keys[0] : null);
+  if (!matchingKey) return false;
+  try {
+    const publicKey = crypto.createPublicKey({
+      key: matchingKey as any,
+      format: 'jwk'
+    });
+    const verifier = crypto.createVerify('RSA-SHA256');
+    verifier.update(`${headerB64}.${payloadB64}`);
+    return verifier.verify(
+      publicKey,
+      sigB64.replace(/-/g, '+').replace(/_/g, '/'),
+      'base64'
+    );
+  } catch {
+    return false;
   }
 }
 
@@ -204,34 +239,42 @@ export async function verifyKeycloakToken(token: string): Promise<JWTPayload | n
       return null;
     }
 
-    // If RS256, verify signature against Keycloak JWKS public key
-    if (header.alg === 'RS256') {
-      const keys = await fetchKeycloakJWKS();
-      const matchingKey = keys.find((k) => k.kid === header.kid) || keys[0];
+    // Strict algorithm verification: Only RS256 is accepted for Keycloak tokens
+    if (header.alg !== 'RS256') {
+      return null;
+    }
 
-      if (matchingKey) {
-        try {
-          const publicKey = crypto.createPublicKey({
-            key: matchingKey as any,
-            format: 'jwk'
-          });
+    // Cryptographic signature verification against Keycloak JWKS
+    const keys = await fetchKeycloakJWKS();
+    if (!keys || keys.length === 0) {
+      return null;
+    }
 
-          const verifier = crypto.createVerify('RSA-SHA256');
-          verifier.update(`${headerB64}.${payloadB64}`);
-          const valid = verifier.verify(
-            publicKey,
-            sigB64.replace(/-/g, '+').replace(/_/g, '/'),
-            'base64'
-          );
+    const matchingKey = keys.find((k) => k.kid === header.kid) || (keys.length === 1 ? keys[0] : null);
+    if (!matchingKey) {
+      return null;
+    }
 
-          if (!valid) {
-            return null;
-          }
-        } catch {
-          // If public key conversion fails or key is expired, reject
-          return null;
-        }
+    try {
+      const publicKey = crypto.createPublicKey({
+        key: matchingKey as any,
+        format: 'jwk'
+      });
+
+      const verifier = crypto.createVerify('RSA-SHA256');
+      verifier.update(`${headerB64}.${payloadB64}`);
+      const valid = verifier.verify(
+        publicKey,
+        sigB64.replace(/-/g, '+').replace(/_/g, '/'),
+        'base64'
+      );
+
+      if (!valid) {
+        return null;
       }
+    } catch {
+      // If public key conversion fails or signature is invalid, reject
+      return null;
     }
 
     // Extract roles

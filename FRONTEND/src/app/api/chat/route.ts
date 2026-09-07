@@ -328,7 +328,7 @@ function asTrace(context: unknown): TraceResult {
 
 export async function POST(req: Request) {
   try {
-    const claims = extractUserClaims(req);
+    const claims = await extractUserClaims(req);
     if (!claims) {
       return NextResponse.json(
         { error: "Unauthorized: Authentication required to use the AI forensic investigator." },
