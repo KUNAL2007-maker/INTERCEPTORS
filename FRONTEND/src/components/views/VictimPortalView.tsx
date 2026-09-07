@@ -80,8 +80,10 @@ export function VictimPortalView() {
     setFiling(true);
 
     try {
-      const complaintId = `NCRP-2026-${Math.floor(10000 + Math.random() * 90000)}`;
+      const isDemoWallet = suspectWallet.trim().toLowerCase() === "0x71c7656ec7ab88b098defb751b7401b5f6d8976f";
+      const complaintId = isDemoWallet ? "CRIME-165445" : `NCRP-2026-${Math.floor(10000 + Math.random() * 90000)}`;
       const newCase = await ingestNcrpComplaint({
+        case_number: complaintId,
         complaint_id: complaintId,
         portal: "NCRP_1930_CFCFRMS",
         victim_name: user?.name || "Rajesh Verma",
@@ -175,11 +177,11 @@ export function VictimPortalView() {
             </button>
             <button
               onClick={() => setShowFileModal(true)}
-              className="px-4 py-2.5 rounded-xl text-xs font-bold text-black transition hover:opacity-90 shadow-glow flex items-center gap-1.5"
+              className="px-4 py-2.5 rounded-xl text-xs font-bold text-black transition hover:opacity-90 shadow-sm flex items-center gap-1.5"
               style={{ background: "linear-gradient(135deg, #06b6d4, #3b82f6)" }}
             >
               <span>+</span>
-              <span>Register New Fraud Complaint</span>
+              <span>Register New Incident</span>
             </button>
           </div>
         </div>
@@ -385,7 +387,7 @@ export function VictimPortalView() {
                     title="5. Exchange Asset Freezing & Escrow Confirmed"
                     description={
                       activeComplaint.status === "FROZEN"
-                        ? `${activeComplaint.target_vasp || "Binance"} Nodal Officer confirmed asset lock. Cryptocurrency balance held safely in escrow under police directive.`
+                        ? `${activeComplaint.target_vasp || "Binance"} Nodal Officer confirmed asset lock. Cryptocurrency balance held safely in escrow under police directive. Escrow Reference: ${activeComplaint.escrow_ref || activeComplaint.freeze_notice_id || "ESCROW-BIN-2026-98124"}`
                         : activeComplaint.status === "NOTICE_SERVED"
                         ? `Exchange Compliance Nodal Desk processing freezing directive under 45-minute statutory SLA.`
                         : "Awaiting legal notice delivery to exchange compliance desk."
@@ -446,6 +448,21 @@ export function VictimPortalView() {
                       <code className="text-[11px] break-all text-slate-300 font-mono">
                         {activeComplaint.tx_hashes[0]}
                       </code>
+                    </div>
+                  )}
+
+                  {activeComplaint.status === "FROZEN" && (
+                    <div className="p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-xs">
+                      <div className="flex items-center gap-1.5 font-bold text-emerald-300">
+                        <span>🔒</span>
+                        <span>Assets Frozen in Escrow</span>
+                      </div>
+                      <p className="text-[11px] text-slate-200 mt-1">
+                        VASP Escrow Reference: <strong className="font-mono text-emerald-300">{activeComplaint.escrow_ref || activeComplaint.freeze_notice_id || "ESCROW-BIN-2026-98124"}</strong>
+                      </p>
+                      <p className="text-[10px] text-muted mt-0.5">
+                        Statutory freeze confirmed by {activeComplaint.target_vasp || "Binance"} Compliance under Sec 94(1) BNSS.
+                      </p>
                     </div>
                   )}
 

@@ -42,6 +42,8 @@ export type StoredCase = {
   created_at: string;
   tx_hashes?: string[];
   freeze_notice_id?: string;
+  escrow_ref?: string;
+  account_uid?: string;
   notes?: string;
 };
 
@@ -149,56 +151,31 @@ const memoryStore = {
   cases: [
     {
       id: 1,
-      case_number: 'MH-CYBER-2026-0842',
-      victim_id: 50,
-      victim_name: 'Anita Deshmukh',
-      victim_email: 'anita.deshmukh@example.demo',
+      case_number: 'CRIME-165445',
+      victim_id: 5,
+      victim_name: 'Rajesh Verma',
+      victim_email: 'victim.verma@example.demo',
       workspace_id: 1,
       jurisdiction_code: 'MH-CYBER-01',
       assigned_investigator_id: 3,
       assigned_investigator_name: 'SI Patil',
       suspect_wallet_address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F',
       blockchain_network: 'Ethereum',
-      loss_amount_inr: 450000.0,
+      loss_amount_inr: 350000.0,
       token_symbol: 'USDT',
-      crime_type: 'Task-based Fake Part-Time Job Scam',
-      incident_date: '2026-08-17',
+      crime_type: 'Task-based Fake Part-Time Job / VIP Group Scam',
+      incident_date: '2026-09-05',
       target_vasp: 'Binance International',
       vasp_id: 1,
       classification: 'CONFIDENTIAL',
-      status: 'TRACED',
+      status: 'PENDING_TRACING',
       priority: 'HIGH',
       tx_hashes: ['0x3a1b49e8d3840291f09e81b37492c019d3847291a0293b89c2'],
-      notes: 'Complainant promised high daily returns for rating hotels on Telegram group. Transferred USDT via P2P.',
-      created_at: '2026-08-17T09:15:00.000Z'
+      notes: 'Contacted via Telegram group for hotel review rating tasks, transferred USDT to suspect deposit wallet.',
+      created_at: '2026-09-05T10:00:00.000Z'
     },
     {
-      id: 4,
-      case_number: 'CRIME-165445',
-      victim_id: 50,
-      victim_name: 'Anita Deshmukh',
-      victim_email: 'anita.deshmukh@example.demo',
-      workspace_id: 1,
-      jurisdiction_code: 'MH-CYBER-01',
-      assigned_investigator_id: 3,
-      assigned_investigator_name: 'SI Patil',
-      suspect_wallet_address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F',
-      blockchain_network: 'Ethereum',
-      loss_amount_inr: 750000.0,
-      token_symbol: 'USDT',
-      crime_type: 'Investment Scam / Phishing Drainer',
-      incident_date: '2026-08-25',
-      target_vasp: 'Binance International',
-      vasp_id: 1,
-      classification: 'CONFIDENTIAL',
-      status: 'TRACED',
-      priority: 'HIGH',
-      tx_hashes: ['0x9d4a8e3c1b7f2a4e6d8c0b2e4f6a8c0d2e4f6a8b0c2d4e6f8a0b2c4d6e8f0a2b'],
-      notes: 'Warrant Case assigned to SI Patil. Suspect wallet confirmed as multi-hop transit node.',
-      created_at: '2026-08-25T10:00:00.000Z'
-    },
-    {
-      id: 5,
+      id: 2,
       case_number: 'CRIME-999999',
       victim_id: 88,
       victim_name: 'Kavita Sundaram',
@@ -221,106 +198,9 @@ const memoryStore = {
       tx_hashes: ['0x8888888888888888888888888888888888888888888888888888888888888888'],
       notes: 'Jurisdiction Karnataka Cyber Crime Unit. Not assigned to Maharashtra unit.',
       created_at: '2026-08-28T14:30:00.000Z'
-    },
-    {
-      id: 6,
-      case_number: 'KA-CYBER-2026-1104',
-      victim_id: 89,
-      victim_name: 'Sunil Rao',
-      victim_email: 'sunil.rao@example.demo',
-      workspace_id: 4,
-      jurisdiction_code: 'KA-CYBER-03',
-      assigned_investigator_id: 14,
-      assigned_investigator_name: 'Inspector Gowda',
-      suspect_wallet_address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F',
-      blockchain_network: 'Ethereum',
-      loss_amount_inr: 1800000.0,
-      token_symbol: 'USDT',
-      crime_type: 'Cross-State Syndicate Phishing',
-      incident_date: '2026-08-22',
-      target_vasp: 'Binance International',
-      vasp_id: 1,
-      classification: 'CONFIDENTIAL',
-      status: 'TRACED',
-      priority: 'CRITICAL',
-      tx_hashes: ['0x77aa1192837461902837461928374619283746111bb'],
-      notes: 'Potential Cross-Jurisdictional Link: Suspect wallet matches active cluster in Maharashtra Case MH-CYBER-2026-0842.',
-      created_at: '2026-08-22T16:00:00.000Z'
-    },
-    {
-      id: 2,
-      case_number: 'DL-CYBER-2026-0319',
-      victim_id: 99,
-      victim_name: 'Aakash Sharma',
-      victim_email: 'aakash.sharma@example.demo',
-      workspace_id: 2,
-      jurisdiction_code: 'DL-CYBER-02',
-      assigned_investigator_id: 12,
-      assigned_investigator_name: 'Inspector Mehra',
-      suspect_wallet_address: '0x1928aBc849102c98Dfe10293bC8419280918234A',
-      blockchain_network: 'Polygon',
-      loss_amount_inr: 8500000.0,
-      token_symbol: 'MATIC',
-      crime_type: 'Fake Crypto Exchange Phishing',
-      incident_date: '2026-08-20',
-      target_vasp: 'WazirX India',
-      vasp_id: 2,
-      classification: 'RESTRICTED',
-      status: 'PENDING_TRACING',
-      priority: 'MEDIUM',
-      tx_hashes: ['0x992a8371902bc9182a01948572b9182019a84712bb14'],
-      notes: 'Phishing website mimicking Indian crypto exchange lured victim into entering seed phrase.',
-      created_at: '2026-08-20T11:30:00.000Z'
-    },
-    {
-      id: 3,
-      case_number: 'IN-I4C-2026-9901',
-      victim_id: 50,
-      victim_name: 'Anita Deshmukh',
-      victim_email: 'anita.deshmukh@example.demo',
-      workspace_id: 3,
-      jurisdiction_code: 'IN-I4C-00',
-      assigned_investigator_id: 1,
-      assigned_investigator_name: 'Central Cyber Cell',
-      suspect_wallet_address: '0x55aa33bb110022cc44dd99ee88ff77aa66bb55cc',
-      blockchain_network: 'TRON',
-      loss_amount_inr: 125000000.0,
-      token_symbol: 'USDT',
-      crime_type: 'Cross-Border Syndicate Laundering',
-      incident_date: '2026-08-10',
-      target_vasp: 'Binance International',
-      vasp_id: 1,
-      classification: 'TOP_SECRET',
-      status: 'NOTICE_SERVED',
-      priority: 'CRITICAL',
-      freeze_notice_id: 'NOTICE-2026-0842-BN',
-      tx_hashes: ['0xcc77192837461902837461928374619283746111aa'],
-      notes: 'International organized cyber crime syndicate laundering funds across bridge into Tron USDT.',
-      created_at: '2026-08-10T14:20:00.000Z'
     }
   ] as StoredCase[],
-  notices: [
-    {
-      id: 'NOTICE-2026-0842-BN',
-      case_id: 3,
-      case_number: 'IN-I4C-2026-9901',
-      target_vasp: 'Binance International',
-      vasp_id: 1,
-      status: 'Issued',
-      drafted_by_name: 'ACP Sharma (Gazetted Officer)',
-      approved_by_name: 'ACP Sharma (Gazetted Officer)',
-      created_at: 1788710000000,
-      notice: ensureLegalNotice({
-        ref: 'BNSS-2026-0842-BN',
-        case_number: 'IN-I4C-2026-9901',
-        to_vasp: 'Binance International',
-        to_email: 'compliance@binance.com',
-        amountInr: 125000000.0,
-        amountUsd: 1500000,
-        targetAddresses: ['0x55aa33bb110022cc44dd99ee88ff77aa66bb55cc']
-      })
-    }
-  ] as StoredFreezeNotice[],
+  notices: [] as StoredFreezeNotice[],
   audit_logs: [] as StoredAuditLog[],
   traces: [] as any[]
 };
@@ -598,6 +478,14 @@ export function getCaseByIdOrNumber(caseIdOrNumber: string | number): StoredCase
 }
 
 export async function createCase(newCase: Partial<StoredCase>): Promise<StoredCase> {
+  if (newCase.case_number) {
+    const existing = getCaseByIdOrNumber(newCase.case_number);
+    if (existing) {
+      Object.assign(existing, newCase);
+      return existing;
+    }
+  }
+
   const caseObj: StoredCase = {
     id: memoryStore.cases.length + 1,
     case_number: newCase.case_number || `CRIME-${Date.now().toString().slice(-6)}`,
@@ -607,7 +495,7 @@ export async function createCase(newCase: Partial<StoredCase>): Promise<StoredCa
     workspace_id: newCase.workspace_id || 1,
     jurisdiction_code: newCase.jurisdiction_code || 'MH-CYBER-01',
     assigned_investigator_id: newCase.assigned_investigator_id !== undefined ? newCase.assigned_investigator_id : 3,
-    assigned_investigator_name: newCase.assigned_investigator_name || 'SI Patil',
+    assigned_investigator_name: newCase.assigned_investigator_name || (newCase.assigned_investigator_id === 3 ? 'SI Patil' : undefined),
     suspect_wallet_address: newCase.suspect_wallet_address || '',
     blockchain_network: newCase.blockchain_network || 'Ethereum',
     loss_amount_inr: Number(newCase.loss_amount_inr) || 0,
@@ -805,6 +693,12 @@ export async function saveFreezeNotice(
   if (targetCaseKey && linkedCase) {
     if (stored.status === 'Acknowledged') {
       linkedCase.status = 'FROZEN';
+      if ((noticeData as any).escrow_ref_id || (noticeData as any).escrow_ref) {
+        linkedCase.escrow_ref = (noticeData as any).escrow_ref_id || (noticeData as any).escrow_ref;
+      }
+      if ((noticeData as any).account_uid) {
+        linkedCase.account_uid = (noticeData as any).account_uid;
+      }
     } else if (stored.status === 'Issued') {
       linkedCase.status = 'NOTICE_SERVED';
     }

@@ -280,10 +280,10 @@ export function GraphView({
             {onOpenNotices && (
               <button
                 onClick={onOpenNotices}
-                className="text-[11.5px] rounded-md border border-amber-500/40 bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 px-2.5 py-1.5 transition flex items-center gap-1.5"
+                className="text-[11.5px] rounded-lg border border-amber-500/40 bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 px-3 py-1.5 font-semibold transition flex items-center gap-1.5 shadow-sm cursor-pointer"
               >
                 <span>⚖️</span>
-                <span>Issue Notice</span>
+                <span>Prepare Draft Notice</span>
               </button>
             )}
             <div className="flex gap-1">

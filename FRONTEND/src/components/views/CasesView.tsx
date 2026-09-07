@@ -46,6 +46,78 @@ export function CasesView({
   const [certModalCase, setCertModalCase] = useState<StoredCase | null>(null);
   const [certCopied, setCertCopied] = useState(false);
 
+  const [assignModalCase, setAssignModalCase] = useState<StoredCase | null>(null);
+  const [selectedIoId, setSelectedIoId] = useState<number>(3);
+  const [selectedIoName, setSelectedIoName] = useState<string>("Sub-Inspector Patil");
+  const [selectedPriority, setSelectedPriority] = useState<string>("HIGH");
+  const [isAssigning, setIsAssigning] = useState<boolean>(false);
+
+  const handleOpenAssignModal = (c: StoredCase) => {
+    setAssignModalCase(c);
+    setSelectedIoId(3);
+    setSelectedIoName("Sub-Inspector Patil");
+    setSelectedPriority(c.priority === "CRITICAL" ? "CRITICAL" : "HIGH");
+  };
+
+  const handleExecuteAssignment = async () => {
+    if (!assignModalCase) return;
+    setIsAssigning(true);
+    try {
+      const res = await fetch("/api/cases", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          case_number: assignModalCase.case_number,
+          assigned_investigator_id: selectedIoId,
+          assigned_investigator_name: selectedIoName,
+          priority: selectedPriority
+        })
+      });
+      if (res.ok) {
+        await loadCases();
+        setAssignModalCase(null);
+      }
+    } catch {
+      // Handled
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
+  const handleAssignIO = async (caseNumber: string, ioId: number, ioName: string) => {
+    try {
+      const res = await fetch("/api/cases", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          case_number: caseNumber,
+          assigned_investigator_id: ioId,
+          assigned_investigator_name: ioName
+        })
+      });
+      if (res.ok) {
+        await loadCases();
+      }
+    } catch {
+      // Handled
+    }
+  };
+
+  const handleChangePriority = async (caseNumber: string, priority: string) => {
+    try {
+      const res = await fetch("/api/cases", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ case_number: caseNumber, priority })
+      });
+      if (res.ok) {
+        await loadCases();
+      }
+    } catch {
+      // Handled
+    }
+  };
+
   const generateDossierHash = (c: StoredCase) => {
     const input = `${c.case_number}:${c.suspect_wallet_address}:${c.loss_amount_inr || 0}:SIH2026:BSA65B`;
     let h1 = 0xdeadbeef, h2 = 0x41c6ce57, h3 = 0x9e3779b9, h4 = 0x85ebca6b;
@@ -149,31 +221,6 @@ C. ADMISSIBILITY ATTESTATION:
     user?.role === "WORKSPACE_ADMIN" ||
     Boolean(user?.is_gazetted);
 
-  const handleAssignIO = async (caseNumber: string, ioId: number, ioName: string) => {
-    try {
-      const res = await fetch('/api/cases', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ case_number: caseNumber, assigned_investigator_id: ioId, assigned_investigator_name: ioName })
-      });
-      if (res.ok) {
-        await loadCases();
-      }
-    } catch {}
-  };
-
-  const handleChangePriority = async (caseNumber: string, priority: string) => {
-    try {
-      const res = await fetch('/api/cases', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ case_number: caseNumber, priority })
-      });
-      if (res.ok) {
-        await loadCases();
-      }
-    } catch {}
-  };
 
   useEffect(() => {
     void loadCases();
@@ -489,36 +536,27 @@ C. ADMISSIBILITY ATTESTATION:
               {/* Action Buttons */}
               <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t" style={{ borderColor: "var(--border)" }}>
                 <div className="text-[11px] text-muted flex flex-wrap items-center gap-2">
-                  <span>IO:</span>
-                  {isSupervisor ? (
-                    <select
-                      value={c.assigned_investigator_id || 3}
-                      onChange={(e) => {
-                        const val = Number(e.target.value);
-                        handleAssignIO(c.case_number, val, val === 3 ? "SI Patil" : val === 12 ? "Inspector Mehra" : "SI Kulkarni");
-                      }}
-                      className="rounded border px-2 py-0.5 text-xs bg-[var(--chip)] text-white focus:outline-none"
-                      style={{ borderColor: "var(--border)" }}
-                    >
-                      <option value={3}>SI Patil (id: 3)</option>
-                      <option value={12}>Inspector Mehra (id: 12)</option>
-                      <option value={14}>SI Kulkarni (id: 14)</option>
-                    </select>
-                  ) : (
-                    <strong className="text-white">{c.assigned_investigator_name || user?.name || "SI Patil"}</strong>
+                  <span>Assigned IO:</span>
+                  <strong className="text-white">
+                    {c.assigned_investigator_name || (c.assigned_investigator_id ? "SI Patil" : "Unassigned")}
+                  </strong>
+                  {c.priority && (
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                      c.priority === "CRITICAL"
+                        ? "bg-red-500/20 text-red-300 border border-red-500/30"
+                        : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                    }`}>
+                      {c.priority}
+                    </span>
                   )}
                   {isSupervisor && (
-                    <select
-                      value={c.priority || "HIGH"}
-                      onChange={(e) => handleChangePriority(c.case_number, e.target.value)}
-                      className="rounded border px-1.5 py-0.5 text-[10px] font-bold bg-[var(--chip)] text-amber-400 focus:outline-none"
-                      style={{ borderColor: "var(--border)" }}
+                    <button
+                      onClick={() => handleOpenAssignModal(c)}
+                      className="ml-2 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 border border-purple-400/40 shadow-sm transition inline-flex items-center gap-1.5 cursor-pointer"
                     >
-                      <option value="LOW">LOW</option>
-                      <option value="MEDIUM">MEDIUM</option>
-                      <option value="HIGH">HIGH</option>
-                      <option value="CRITICAL">CRITICAL</option>
-                    </select>
+                      <span>👮‍♂️</span>
+                      <span>Assign Case to Officer</span>
+                    </button>
                   )}
                 </div>
 
@@ -931,6 +969,118 @@ C. ADMISSIBILITY ATTESTATION:
                   className="px-4 py-2 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition cursor-pointer"
                 >
                   Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Supervisor Case Assignment Modal */}
+      {assignModalCase && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div
+            className="w-full max-w-lg rounded-2xl border p-6 shadow-2xl relative"
+            style={{ background: "#0e1420", borderColor: "rgba(168, 85, 247, 0.4)" }}
+          >
+            <button
+              onClick={() => setAssignModalCase(null)}
+              className="absolute right-4 top-4 text-muted hover:text-white text-base"
+            >
+              ✕
+            </button>
+
+            <div className="flex items-center gap-2.5 mb-2">
+              <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-500/40 text-purple-300 grid place-items-center text-lg">
+                👮‍♂️
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-white">Assign Case to Investigating Officer</h2>
+                <p className="text-xs text-muted">Maharashtra Cyber Crime Police Headquarters · Unit Triage Desk</p>
+              </div>
+            </div>
+
+            {/* Case Details Summary */}
+            <div className="my-4 p-3.5 rounded-xl border border-white/10 bg-white/[0.02] space-y-2 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-muted">Case Docket:</span>
+                <span className="font-mono font-bold text-white">{assignModalCase.case_number}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted">Suspect Wallet:</span>
+                <span className="font-mono text-cyan-300">{shortWallet(assignModalCase.suspect_wallet_address)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted">Complainant:</span>
+                <span className="text-slate-200 font-medium">{assignModalCase.victim_name || "Rajesh Verma"}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted">Claimed Loss:</span>
+                <span className="font-mono font-bold text-rose-400">{formatINR(assignModalCase.loss_amount_inr ?? 0)}</span>
+              </div>
+            </div>
+
+            <div className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-semibold text-muted mb-1">
+                  Select Investigating Officer <span className="text-purple-400">*</span>
+                </label>
+                <select
+                  value={selectedIoId}
+                  onChange={(e) => {
+                    const id = Number(e.target.value);
+                    setSelectedIoId(id);
+                    const names: Record<number, string> = {
+                      3: "Sub-Inspector Patil",
+                      12: "Inspector Mehra",
+                      14: "Inspector Gowda",
+                      2: "ACP Sharma"
+                    };
+                    setSelectedIoName(names[id] || "Sub-Inspector Patil");
+                  }}
+                  className="w-full px-3.5 py-2.5 rounded-xl text-xs border border-purple-500/30 bg-purple-950/30 text-white font-medium focus:outline-none focus:ring-1 focus:ring-purple-400"
+                >
+                  <option value={3}>Sub-Inspector Patil (SI Patil · officer.patil@mhcyber.gov.in)</option>
+                  <option value={12}>Inspector Mehra (inspector.mehra@mhcyber.gov.in)</option>
+                  <option value={14}>Inspector Gowda (inspector.gowda@mhcyber.gov.in)</option>
+                  <option value={2}>ACP Sharma (senior.sharma@mhcyber.gov.in · Gazetted)</option>
+                </select>
+                <p className="text-[11px] text-muted mt-1">
+                  Designated field officer responsible for executing multi-hop tracing and preparing draft notice.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-muted mb-1">
+                  Investigation Priority Level <span className="text-purple-400">*</span>
+                </label>
+                <select
+                  value={selectedPriority}
+                  onChange={(e) => setSelectedPriority(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl text-xs border border-white/15 bg-white/[0.04] text-white font-medium focus:outline-none"
+                >
+                  <option value="CRITICAL">CRITICAL — High-Risk Syndicate (Golden Window SLA)</option>
+                  <option value="HIGH">HIGH — Active Attributable Fraud Flow</option>
+                  <option value="MEDIUM">MEDIUM — Standard Investigation Queue</option>
+                  <option value="LOW">LOW — Dormant / Delayed Complaint</option>
+                </select>
+              </div>
+
+              <div className="pt-3 flex items-center justify-end gap-2.5 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setAssignModalCase(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold border border-white/10 hover:bg-white/5 text-muted transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExecuteAssignment}
+                  disabled={isAssigning}
+                  className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 shadow-md transition disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>👮‍♂️</span>
+                  <span>{isAssigning ? "Assigning Docket..." : `Assign Docket to ${selectedIoName}`}</span>
                 </button>
               </div>
             </div>

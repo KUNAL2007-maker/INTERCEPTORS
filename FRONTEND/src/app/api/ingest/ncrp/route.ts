@@ -48,7 +48,7 @@ export async function POST(req: Request) {
     const crimeCategory = body.crime_category || body.crime_type || 'Task-based Investment Scam';
     const amountInr = Number(body.loss_amount_inr || body.amount_inr || 450000);
     const portal = body.portal || 'NCRP_1930';
-    const complaintId = body.complaint_id || `NCRP-${Date.now().toString().slice(-5)}`;
+    const complaintId = body.case_number || body.complaint_id || `NCRP-${Date.now().toString().slice(-5)}`;
 
     // Privacy isolation: If complainant is a citizen, lock complaint strictly to their own victim ID
     const isVictim = normRole === 'VICTIM';
@@ -71,9 +71,9 @@ export async function POST(req: Request) {
       vasp_id: body.vasp_id || 1,
       classification: isVictim ? 'RESTRICTED' : 'CONFIDENTIAL',
       status: 'PENDING_TRACING',
-      priority: 'HIGH',
-      assigned_investigator_id: 3,
-      assigned_investigator_name: 'SI Patil',
+      priority: body.priority || 'HIGH',
+      assigned_investigator_id: body.assigned_investigator_id !== undefined ? body.assigned_investigator_id : (isVictim ? null : 3),
+      assigned_investigator_name: body.assigned_investigator_name !== undefined ? body.assigned_investigator_name : (isVictim ? null : 'SI Patil'),
       tx_hashes: body.tx_hash ? [body.tx_hash] : (body.tx_hashes || []),
       notes: body.notes || body.incident_description || ''
     });

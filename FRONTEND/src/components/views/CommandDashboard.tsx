@@ -33,6 +33,11 @@ export function CommandDashboard({
   const { cases, loadCases, runTrace, setActiveCase, trace, activeCase } = useTraceStore();
   const [tracingCaseId, setTracingCaseId] = useState<string | null>(null);
   const [updatingCase, setUpdatingCase] = useState<string | null>(null);
+  const [assignModalCase, setAssignModalCase] = useState<StoredCase | null>(null);
+  const [selectedIoId, setSelectedIoId] = useState<number>(3);
+  const [selectedIoName, setSelectedIoName] = useState<string>("Sub-Inspector Patil");
+  const [selectedPriority, setSelectedPriority] = useState<string>("HIGH");
+  const [isAssigning, setIsAssigning] = useState<boolean>(false);
 
   const normRole = user ? normalizeRole(user.role) : null;
   const isSupervisor = normRole === "CYBERCRIME_SUPERVISOR" || user?.role === "WORKSPACE_ADMIN";
@@ -64,6 +69,38 @@ export function CommandDashboard({
       // Handled
     } finally {
       setTracingCaseId(null);
+    }
+  };
+
+  const handleOpenAssignModal = (c: StoredCase) => {
+    setAssignModalCase(c);
+    setSelectedIoId(3);
+    setSelectedIoName("Sub-Inspector Patil");
+    setSelectedPriority(c.priority === "CRITICAL" ? "CRITICAL" : "HIGH");
+  };
+
+  const handleExecuteAssignment = async () => {
+    if (!assignModalCase) return;
+    setIsAssigning(true);
+    try {
+      const res = await fetch("/api/cases", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          case_number: assignModalCase.case_number,
+          assigned_investigator_id: selectedIoId,
+          assigned_investigator_name: selectedIoName,
+          priority: selectedPriority
+        })
+      });
+      if (res.ok) {
+        await loadCases();
+        setAssignModalCase(null);
+      }
+    } catch {
+      // Handled
+    } finally {
+      setIsAssigning(false);
     }
   };
 
@@ -200,13 +237,15 @@ export function CommandDashboard({
                   <th className="pb-3 pr-4">Loss (INR)</th>
                   <th className="pb-3 pr-4">Status</th>
                   <th className="pb-3 pr-4">Assigned Field IO</th>
-                  <th className="pb-3">Case Priority</th>
+                  <th className="pb-3 pr-4">Priority</th>
+                  <th className="pb-3 text-right">Supervisory Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
                 {cases.map((c) => {
                   const chain = detectChain(c.suspect_wallet_address);
                   const isUpdating = updatingCase === c.case_number;
+                  const hasAssignedIO = Boolean(c.assigned_investigator_name || (c.assigned_investigator_id && c.assigned_investigator_id !== 0));
                   return (
                     <tr key={c.case_number} className="hover:bg-white/[0.02] transition">
                       <td className="py-3.5 pr-4">
@@ -238,29 +277,20 @@ export function CommandDashboard({
                         <DashboardStatusBadge status={c.status} />
                       </td>
                       <td className="py-3.5 pr-4">
-                        <select
-                          disabled={isUpdating}
-                          value={c.assigned_investigator_id || 3}
-                          onChange={(e) => {
-                            const val = Number(e.target.value);
-                            const nameMap: Record<number, string> = {
-                              3: "SI Patil",
-                              12: "Inspector Mehra",
-                              14: "Inspector Gowda",
-                              2: "ACP Sharma"
-                            };
-                            void handleAssignIO(c.case_number, val, nameMap[val] || "SI Patil");
-                          }}
-                          className="rounded-lg border px-2 py-1 text-xs font-semibold bg-[var(--chip)] text-white focus:outline-none"
-                          style={{ borderColor: "var(--border)" }}
-                        >
-                          <option value={3}>SI Patil (Field IO)</option>
-                          <option value={12}>Inspector Mehra</option>
-                          <option value={14}>Inspector Gowda</option>
-                          <option value={2}>ACP Sharma (Gazetted)</option>
-                        </select>
+                        {hasAssignedIO ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                            <span className="font-semibold text-white">
+                              {c.assigned_investigator_name || (c.assigned_investigator_id === 3 ? "SI Patil" : "Assigned IO")}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold text-[10px] border border-amber-500/30">
+                            ⚠️ Unassigned
+                          </span>
+                        )}
                       </td>
-                      <td className="py-3.5">
+                      <td className="py-3.5 pr-4">
                         <select
                           disabled={isUpdating}
                           value={c.priority || "HIGH"}
@@ -279,6 +309,15 @@ export function CommandDashboard({
                           <option value="CRITICAL">CRITICAL</option>
                         </select>
                       </td>
+                      <td className="py-3.5 text-right">
+                        <button
+                          onClick={() => handleOpenAssignModal(c)}
+                          className="px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 border border-purple-400/40 shadow-sm transition inline-flex items-center gap-1.5 cursor-pointer ml-auto"
+                        >
+                          <span>👮‍♂️</span>
+                          <span>Assign Case to Officer</span>
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
@@ -286,6 +325,119 @@ export function CommandDashboard({
             </table>
           </div>
         </div>
+
+        {/* Supervisor Case Assignment Modal */}
+        {assignModalCase && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            <div
+              className="w-full max-w-lg rounded-2xl border p-6 shadow-2xl relative"
+              style={{ background: "#0e1420", borderColor: "rgba(168, 85, 247, 0.4)" }}
+            >
+              <button
+                onClick={() => setAssignModalCase(null)}
+                className="absolute right-4 top-4 text-muted hover:text-white text-base"
+              >
+                ✕
+              </button>
+
+              <div className="flex items-center gap-2.5 mb-2">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-500/40 text-purple-300 grid place-items-center text-lg">
+                  👮‍♂️
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-white">Assign Case to Investigating Officer</h2>
+                  <p className="text-xs text-muted">Maharashtra Cyber Crime Police Headquarters · Unit Triage Desk</p>
+                </div>
+              </div>
+
+              {/* Case Details Summary */}
+              <div className="my-4 p-3.5 rounded-xl border border-white/10 bg-white/[0.02] space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted">Case Docket:</span>
+                  <span className="font-mono font-bold text-white">{assignModalCase.case_number}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted">Suspect Wallet:</span>
+                  <span className="font-mono text-cyan-300">{shortWallet(assignModalCase.suspect_wallet_address)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted">Complainant:</span>
+                  <span className="text-slate-200 font-medium">{assignModalCase.victim_name || "Rajesh Verma"}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted">Claimed Loss:</span>
+                  <span className="font-mono font-bold text-rose-400">{formatINR(assignModalCase.loss_amount_inr ?? 0)}</span>
+                </div>
+              </div>
+
+              <div className="space-y-3.5">
+                <div>
+                  <label className="block text-xs font-semibold text-muted mb-1">
+                    Select Investigating Officer <span className="text-purple-400">*</span>
+                  </label>
+                  <select
+                    value={selectedIoId}
+                    onChange={(e) => {
+                      const id = Number(e.target.value);
+                      setSelectedIoId(id);
+                      const names: Record<number, string> = {
+                        3: "Sub-Inspector Patil",
+                        12: "Inspector Mehra",
+                        14: "Inspector Gowda",
+                        2: "ACP Sharma"
+                      };
+                      setSelectedIoName(names[id] || "Sub-Inspector Patil");
+                    }}
+                    className="w-full px-3.5 py-2.5 rounded-xl text-xs border border-purple-500/30 bg-purple-950/30 text-white font-medium focus:outline-none focus:ring-1 focus:ring-purple-400"
+                  >
+                    <option value={3}>Sub-Inspector Patil (SI Patil · officer.patil@mhcyber.gov.in)</option>
+                    <option value={12}>Inspector Mehra (inspector.mehra@mhcyber.gov.in)</option>
+                    <option value={14}>Inspector Gowda (inspector.gowda@mhcyber.gov.in)</option>
+                    <option value={2}>ACP Sharma (senior.sharma@mhcyber.gov.in · Gazetted)</option>
+                  </select>
+                  <p className="text-[11px] text-muted mt-1">
+                    Designated field officer responsible for executing multi-hop tracing and preparing draft notice.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-muted mb-1">
+                    Investigation Priority Level <span className="text-purple-400">*</span>
+                  </label>
+                  <select
+                    value={selectedPriority}
+                    onChange={(e) => setSelectedPriority(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl text-xs border border-white/15 bg-white/[0.04] text-white font-medium focus:outline-none"
+                  >
+                    <option value="CRITICAL">CRITICAL — High-Risk Syndicate (Golden Window SLA)</option>
+                    <option value="HIGH">HIGH — Active Attributable Fraud Flow</option>
+                    <option value="MEDIUM">MEDIUM — Standard Investigation Queue</option>
+                    <option value="LOW">LOW — Dormant / Delayed Complaint</option>
+                  </select>
+                </div>
+
+                <div className="pt-3 flex items-center justify-end gap-2.5 border-t border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setAssignModalCase(null)}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold border border-white/10 hover:bg-white/5 text-muted transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleExecuteAssignment}
+                    disabled={isAssigning}
+                    className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 shadow-md transition disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span>👮‍♂️</span>
+                    <span>{isAssigning ? "Assigning Docket..." : `Assign Docket to ${selectedIoName}`}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </Page>
     );
   }
