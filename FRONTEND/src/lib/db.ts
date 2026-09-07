@@ -157,8 +157,8 @@ const memoryStore = {
       victim_email: 'victim.verma@example.demo',
       workspace_id: 1,
       jurisdiction_code: 'MH-CYBER-01',
-      assigned_investigator_id: 3,
-      assigned_investigator_name: 'SI Patil',
+      assigned_investigator_id: null,
+      assigned_investigator_name: undefined,
       suspect_wallet_address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F',
       blockchain_network: 'Ethereum',
       loss_amount_inr: 350000.0,
@@ -481,6 +481,12 @@ export async function createCase(newCase: Partial<StoredCase>): Promise<StoredCa
   if (newCase.case_number) {
     const existing = getCaseByIdOrNumber(newCase.case_number);
     if (existing) {
+      existing.freeze_notice_id = undefined;
+      existing.escrow_ref = undefined;
+      existing.account_uid = undefined;
+      memoryStore.notices = memoryStore.notices.filter(
+        (n) => n.case_number !== newCase.case_number && n.notice?.case_number !== newCase.case_number
+      );
       Object.assign(existing, newCase);
       return existing;
     }

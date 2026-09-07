@@ -512,8 +512,7 @@ export function VictimPortalView() {
           <div className="flex flex-wrap items-center justify-center gap-3 mt-4">
             <button
               onClick={() => setShowFileModal(true)}
-              className="px-5 py-2.5 rounded-xl text-xs font-bold text-black transition shadow-glow"
-              style={{ background: "linear-gradient(135deg, #06b6d4, #3b82f6)" }}
+              className="px-5 py-2.5 rounded-xl text-xs font-bold text-white transition shadow-sm border border-cyan-500/40 bg-cyan-600 hover:bg-cyan-500"
             >
               + Register Fraud Complaint Now
             </button>
@@ -749,8 +748,7 @@ export function VictimPortalView() {
                 <button
                   type="submit"
                   disabled={filing}
-                  className="w-full py-2.5 rounded-xl text-xs font-bold text-black transition disabled:opacity-50 shadow-glow"
-                  style={{ background: "linear-gradient(135deg, #06b6d4, #3b82f6)" }}
+                  className="w-full py-2.5 rounded-xl text-xs font-bold text-white transition disabled:opacity-50 shadow-sm border border-cyan-500/40 bg-cyan-600 hover:bg-cyan-500"
                 >
                   {filing ? "Submitting to NCRP 1930..." : "Transmit Complaint to State Cyber Police"}
                 </button>

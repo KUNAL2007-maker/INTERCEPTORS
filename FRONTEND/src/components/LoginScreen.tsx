@@ -46,7 +46,7 @@ export function LoginScreen() {
         {/* Brand mark — same shield and wordmark as the sidebar, so signing in
             visibly lands you in the same product. */}
         <div className="flex items-center justify-center gap-3 mb-7">
-          <div className="w-11 h-11 shrink-0 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-700 grid place-items-center shadow-glow">
+          <div className="w-11 h-11 shrink-0 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 grid place-items-center shadow-sm">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
               <path
                 d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"
@@ -128,7 +128,7 @@ export function LoginScreen() {
             <button
               type="submit"
               disabled={busy}
-              className="w-full rounded-xl border border-emerald-500/40 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-200 py-2.5 text-[14px] font-medium shadow-glow transition disabled:opacity-50"
+              className="w-full rounded-xl border border-emerald-500/40 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-200 py-2.5 text-[14px] font-medium shadow-sm transition disabled:opacity-50"
             >
               {busy
                 ? "Please wait…"

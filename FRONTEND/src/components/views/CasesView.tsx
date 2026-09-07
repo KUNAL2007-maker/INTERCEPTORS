@@ -262,7 +262,7 @@ C. ADMISSIBILITY ATTESTATION:
     try {
       setActiveCase(c);
       await runTrace(c.suspect_wallet_address, c);
-      onGoToTrace(c.suspect_wallet_address);
+      onGoToGraph();
     } catch {
       // Fallback
     } finally {
@@ -343,8 +343,8 @@ C. ADMISSIBILITY ATTESTATION:
           {!isCourtReviewer ? (
             <button
               onClick={() => setShowIngestModal(true)}
-              className="px-4 py-2.5 rounded-xl text-xs font-bold text-black transition hover:opacity-90 shadow-glow"
-              style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}
+              className="px-4 py-2.5 rounded-xl text-xs font-bold text-white transition hover:opacity-90 shadow-sm border border-emerald-500/40"
+              style={{ background: "#059669" }}
             >
               + Ingest 1930 Phone Complaint
             </button>
@@ -595,8 +595,8 @@ C. ADMISSIBILITY ATTESTATION:
                           <button
                             onClick={() => handleTraceClick(c)}
                             disabled={isTracingThis}
-                            className="px-4 py-2 rounded-xl text-xs font-bold text-black transition hover:opacity-90 shadow-glow disabled:opacity-50 flex items-center gap-1.5"
-                            style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}
+                            className="px-4 py-2 rounded-xl text-xs font-bold text-white transition hover:opacity-90 shadow-sm border border-emerald-500/40 disabled:opacity-50 flex items-center gap-1.5"
+                            style={{ background: "#059669" }}
                           >
                             <span>⚡</span>
                             <span>{isTracingThis ? "Tracing Suspect Wallet..." : "Initiate Trace on Suspect Wallet"}</span>

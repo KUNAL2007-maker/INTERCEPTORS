@@ -216,24 +216,16 @@ Compliance Status              : 100% COMPLIANT (ASSETS FROZEN IN ESCROW)
           title="Active Law Enforcement Statutory Requisitions"
           hint="Issued under Section 94 Bharatiya Nagarik Suraksha Sanhita, 2023 (Mandatory Compliance)"
         >
-          {(noticesList.length > 0
-            ? noticesList
-            : [
-                {
-                  id: "NOTICE-STATIC-0842",
-                  case_number: "CRIME-165445",
-                  target_vasp: "Binance International",
-                  status: confirmedNotices["NOTICE-STATIC-0842"] ? "Acknowledged" : "Issued",
-                  drafted_by_name: "ACP Sharma (Gazetted)",
-                  notice: {
-                    ref: "BNSS-2026-165445-BN",
-                    amountUsd: 5400,
-                    amountInr: 350000,
-                    targetAddresses: ["0x71C7656EC7ab88b098defB751B7401B5f6d8976F"],
-                  },
-                },
-              ]
-          ).map((item: any) => {
+          {noticesList.length === 0 ? (
+            <div className="p-8 text-center text-xs text-muted">
+              <div className="text-3xl mb-2">🏛️</div>
+              <div className="font-semibold text-white">No Inbound Requisitions Awaiting Compliance</div>
+              <p className="mt-1 max-w-md mx-auto text-[11px]">
+                Statutory Section 94 BNSS freezing directives served by authorized Gazetted Police Officers (ACP Sharma) will appear here for internal UID attribution and custodial escrow lock.
+              </p>
+            </div>
+          ) : (
+            noticesList.map((item: any) => {
             const isConfirmed = confirmedNotices[item.id] || item.status === "Acknowledged";
             const isKycSent = kycSubmitted[item.id];
             const ref = item.notice?.ref || `BNSS-2026-${(item.case_number || "165445").slice(-6)}-BN`;
@@ -418,8 +410,8 @@ Compliance Status              : 100% COMPLIANT (ASSETS FROZEN IN ESCROW)
                   {!isConfirmed ? (
                     <button
                       onClick={() => handleConfirmFreeze(item.id, item.case_number)}
-                      className="px-4 py-2.5 rounded-xl text-xs font-bold text-black transition hover:opacity-90 shadow-md flex items-center gap-1.5 cursor-pointer"
-                      style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}
+                      className="px-4 py-2.5 rounded-xl text-xs font-bold text-white transition hover:opacity-90 shadow-sm border border-emerald-500/40 flex items-center gap-1.5 cursor-pointer"
+                      style={{ background: "#059669" }}
                     >
                       <span>🔒</span>
                       <span>Confirm Wallet Freeze & Escrow Lock</span>
@@ -449,7 +441,7 @@ Compliance Status              : 100% COMPLIANT (ASSETS FROZEN IN ESCROW)
                 </div>
               </div>
             );
-          })}
+          }))}
         </Card>
       </div>
 

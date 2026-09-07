@@ -30,7 +30,7 @@ export function CommandDashboard({
   onGoToChat?: () => void;
 }) {
   const { user } = useAuth();
-  const { cases, loadCases, runTrace, setActiveCase, trace, activeCase } = useTraceStore();
+  const { cases, loadCases, runTrace, setActiveCase, trace, activeCase, generateNotice, notices } = useTraceStore();
   const [tracingCaseId, setTracingCaseId] = useState<string | null>(null);
   const [updatingCase, setUpdatingCase] = useState<string | null>(null);
   const [assignModalCase, setAssignModalCase] = useState<StoredCase | null>(null);
@@ -65,6 +65,7 @@ export function CommandDashboard({
       setActiveCase(c);
       await runTrace(c.suspect_wallet_address, c);
       await loadCases();
+      onGoToGraph?.();
     } catch {
       // Handled
     } finally {
@@ -579,8 +580,8 @@ export function CommandDashboard({
                         setActiveCase(c);
                         onGoToNotices?.();
                       }}
-                      className="px-4 py-2 rounded-xl text-xs font-bold text-black transition hover:opacity-90 shadow-glow flex items-center gap-1.5 cursor-pointer"
-                      style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}
+                      className="px-4 py-2 rounded-xl text-xs font-bold text-white transition hover:opacity-90 shadow-sm border border-emerald-500/40 flex items-center gap-1.5 cursor-pointer"
+                      style={{ background: "#059669" }}
                     >
                       <span>✍️</span>
                       <span>Sign Sec 94 Notice</span>
@@ -715,7 +716,12 @@ export function CommandDashboard({
                 <span>AI Forensics Copilot</span>
               </button>
               <button
-                onClick={() => onGoToNotices?.()}
+                onClick={() => {
+                  if (activeCase && (!notices || !notices.some((n) => n.case_number === activeCase.case_number))) {
+                    generateNotice(activeCase.target_vasp || "Binance International", activeCase.case_number);
+                  }
+                  onGoToNotices?.();
+                }}
                 className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-amber-500/20 text-amber-200 border border-amber-500/40 hover:bg-amber-500/30 transition flex items-center gap-1.5 cursor-pointer"
               >
                 <span>📝</span>
@@ -781,8 +787,8 @@ export function CommandDashboard({
                     <button
                       onClick={() => handleTraceClick(c)}
                       disabled={isTracingThis}
-                      className="px-4 py-2 rounded-xl text-xs font-bold text-black transition hover:opacity-90 shadow-glow disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
-                      style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}
+                      className="px-4 py-2 rounded-xl text-xs font-bold text-white transition hover:opacity-90 shadow-sm border border-emerald-500/40 disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                      style={{ background: "#059669" }}
                     >
                       <span>⚡</span>
                       <span>{isTracingThis ? "Tracing Suspect Wallet..." : "Initiate Trace on Suspect Wallet"}</span>
@@ -806,6 +812,9 @@ export function CommandDashboard({
                         onClick={() => {
                           setActiveCase(c);
                           void runTrace(c.suspect_wallet_address, c);
+                          if (!notices || !notices.some((n) => n.case_number === c.case_number)) {
+                            generateNotice(c.target_vasp || "Binance International", c.case_number);
+                          }
                           onGoToNotices?.();
                         }}
                         className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/40 hover:bg-amber-500/25 transition flex items-center gap-1.5 cursor-pointer"

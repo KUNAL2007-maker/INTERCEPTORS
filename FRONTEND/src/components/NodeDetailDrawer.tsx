@@ -15,6 +15,8 @@ import {
   type WalletNode,
 } from "@/lib/domain";
 import { useTraceStore } from "@/lib/store";
+import { useAuth } from "./AuthProvider";
+import { normalizeRole } from "@/lib/rbac-abac";
 import { SeverityBadge } from "./ui/SeverityBadge";
 
 type Flow = {
@@ -48,6 +50,9 @@ export function NodeDetailDrawer({
   onOpenNotices?: () => void;
 }) {
   const open = !!node;
+  const { user } = useAuth();
+  const normRole = user ? normalizeRole(user.role) : null;
+  const isCourtReviewer = normRole === "COURT_REVIEWER" || user?.role === "AUDITOR";
   const { trace, notices, generateNotice } = useTraceStore();
 
   useEffect(() => {
@@ -434,7 +439,12 @@ export function NodeDetailDrawer({
                 className="shrink-0 border-t p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
                 style={{ borderColor: "var(--border)", background: "var(--panel-strong)" }}
               >
-                {existing ? (
+                {isCourtReviewer ? (
+                  <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[12px] text-amber-200">
+                    <span>⚖️</span>
+                    <span className="font-semibold">Read-Only Judicial Evidence Review (BSA Sec 65B)</span>
+                  </div>
+                ) : existing ? (
                   <div className="flex items-center gap-2">
                     <div className="flex-1 min-w-0 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-[12.5px] text-emerald-200">
                       ✓ Sec 91 notice drafted · {existing.status}
@@ -452,7 +462,7 @@ export function NodeDetailDrawer({
                 ) : serviceable ? (
                   <button
                     onClick={draftNotice}
-                    className="w-full rounded-lg border border-emerald-500/40 bg-emerald-500/15 hover:bg-emerald-500/25 px-3 py-2 text-[13px] text-emerald-200 shadow-glow transition"
+                    className="w-full rounded-lg border border-emerald-500/40 bg-emerald-500/15 hover:bg-emerald-500/25 px-3 py-2 text-[13px] text-emerald-200 shadow-sm transition"
                   >
                     Generate Sec 91 Notice → {targetVasp}
                   </button>
