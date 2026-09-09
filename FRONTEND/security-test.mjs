@@ -12,7 +12,7 @@
  * 7. Super Admin national emergency lockdown gate
  */
 
-const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:3001';
 
 let passed = 0;
 let failed = 0;
@@ -224,21 +224,34 @@ async function runSecurityTests() {
   const sharmaAuth = await login('senior.sharma@mhcyber.gov.in', 'Police@123');
   assert(sharmaAuth.status === 200 && sharmaAuth.token, `Authenticated as ACP Sharma (SENIOR_INVESTIGATOR, Gazetted): HTTP ${sharmaAuth.status}`);
 
+  // Precondition: Mark MH-CYBER-2026-0842 as TRACED before issuing Section 94 BNSS notice
+  const patchTracedRes = await api('/api/cases', {
+    method: 'PATCH',
+    token: sharmaAuth.token,
+    body: JSON.stringify({
+      case_number: 'MH-CYBER-2026-0842',
+      status: 'TRACED'
+    })
+  });
+  assert(patchTracedRes.status === 200 && patchTracedRes.body?.case?.status === 'TRACED', 'Precondition: Case MH-CYBER-2026-0842 marked as TRACED');
+
   // Can Gazetted ACP Sharma sign and issue Section 94 BNSS freezing orders? (MUST BE PERMITTED: 200)
   const sharmaNoticeIssue = await api('/api/notices', {
     method: 'POST',
     token: sharmaAuth.token,
     body: JSON.stringify({
+      case_number: 'MH-CYBER-2026-0842',
       target_vasp: 'Binance International',
       vasp_id: 1,
       status: 'Issued',
-      notice: { ref: 'BNSS-2026-TEST-01', to_vasp: 'Binance International', amountUsd: 5400 }
+      notice: { ref: 'BNSS-2026-TEST-01', to_vasp: 'Binance International', amountUsd: 5400, case_number: 'MH-CYBER-2026-0842' }
     })
   });
   assert(
     sharmaNoticeIssue.status === 200 && sharmaNoticeIssue.body?.success,
     `Gazetted ACP Sharma successfully signed & issued Section 94 BNSS freezing order: HTTP ${sharmaNoticeIssue.status}`
   );
+  const issuedNoticeId = sharmaNoticeIssue.body?.notice?.id;
 
   // Can ACP Sharma inspect state audit logs? (MUST BE PERMITTED: 200)
   const sharmaAudit = await api('/api/audit', { method: 'GET', token: sharmaAuth.token });
@@ -248,7 +261,7 @@ async function runSecurityTests() {
   // TEST GROUP 5: EXCHANGE NODAL DESK ISOLATION (Binance Compliance)
   // ──────────────────────────────────────────────────────────────────────────
   console.log('\n\x1b[36m[GROUP 5] Testing Exchange Nodal Officer Boundaries (legal@binance.com):\x1b[0m');
-  const binanceAuth = await login('legal@binance.com', 'Binance@123');
+  const binanceAuth = await login('legal@binance.com', 'Compliance@123');
   assert(binanceAuth.status === 200 && binanceAuth.token, `Authenticated as Binance Compliance Lead: HTTP ${binanceAuth.status}`);
 
   // Can Exchange Officer create police case dossiers? (MUST BE DENIED: 403)
@@ -288,6 +301,7 @@ async function runSecurityTests() {
     method: 'POST',
     token: binanceAuth.token,
     body: JSON.stringify({
+      id: issuedNoticeId,
       action: 'acknowledge',
       status: 'Acknowledged',
       target_vasp: 'Binance International',
@@ -298,6 +312,24 @@ async function runSecurityTests() {
   assert(
     binanceConfirmFreeze.status === 200 && binanceConfirmFreeze.body?.success,
     `Exchange Nodal Officer successfully confirmed Section 94 BNSS freeze compliance: HTTP ${binanceConfirmFreeze.status}`
+  );
+
+  // Can Exchange Officer report action taken (FREEZE_EXECUTED)? (MUST BE PERMITTED: 200)
+  const binanceReportAction = await api('/api/notices', {
+    method: 'POST',
+    token: binanceAuth.token,
+    body: JSON.stringify({
+      id: issuedNoticeId,
+      action: 'report_action',
+      action_taken: 'FREEZE_EXECUTED',
+      exchange_ref_no: 'BINANCE-FRZ-SEC-01',
+      executed_by: 'Binance Compliance Lead',
+      frozen_amount: '$5,400 USDT'
+    })
+  });
+  assert(
+    binanceReportAction.status === 200 && binanceReportAction.body?.success,
+    `Exchange Nodal Officer successfully reported freeze execution action: HTTP ${binanceReportAction.status}`
   );
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -384,34 +416,45 @@ async function runSecurityTests() {
   // ──────────────────────────────────────────────────────────────────────────
   console.log('\n\x1b[36m[GROUP 9] Testing Case-Level Access Control & IDOR Prevention:\x1b[0m');
 
-  // SI Patil accesses assigned case CRIME-165445 (MUST BE PERMITTED: 200)
-  const ioAssignedCase = await api('/api/cases?case_number=CRIME-165445', {
+  // Assign SI Patil to MH-CYBER-2026-0842 via supervisor
+  await api('/api/cases', {
+    method: 'PATCH',
+    token: authTokens['CYBERCRIME_SUPERVISOR'],
+    body: JSON.stringify({
+      case_number: 'MH-CYBER-2026-0842',
+      assigned_investigator_id: 3,
+      assigned_investigator_name: 'SI Patil'
+    })
+  });
+
+  // SI Patil accesses assigned case MH-CYBER-2026-0842 (MUST BE PERMITTED: 200)
+  const ioAssignedCase = await api('/api/cases?case_number=MH-CYBER-2026-0842', {
     method: 'GET',
     token: authTokens['INVESTIGATING_OFFICER']
   });
   assert(
-    ioAssignedCase.status === 200 && ioAssignedCase.body?.case?.case_number === 'CRIME-165445',
-    `IO access to assigned case CRIME-165445 permitted: HTTP ${ioAssignedCase.status}`
+    ioAssignedCase.status === 200 && ioAssignedCase.body?.case?.case_number === 'MH-CYBER-2026-0842',
+    `IO access to assigned case MH-CYBER-2026-0842 permitted: HTTP ${ioAssignedCase.status}`
   );
 
-  // SI Patil attempts to access unassigned foreign case CRIME-999999 (MUST BE DENIED: 403 Forbidden)
-  const ioUnassignedCase = await api('/api/cases?case_number=CRIME-999999', {
+  // SI Patil attempts to access unassigned foreign case KA-CYBER-2026-1104 (MUST BE DENIED: 403 Forbidden)
+  const ioUnassignedCase = await api('/api/cases?case_number=KA-CYBER-2026-1104', {
     method: 'GET',
     token: authTokens['INVESTIGATING_OFFICER']
   });
   assert(
     ioUnassignedCase.status === 403,
-    `IO access to unassigned case CRIME-999999 blocked by Case-Level Access Control: HTTP ${ioUnassignedCase.status} (Expected: 403)`
+    `IO access to unassigned case KA-CYBER-2026-1104 blocked by Case-Level Access Control: HTTP ${ioUnassignedCase.status} (Expected: 403)`
   );
 
-  // Victim attempts to access unassigned foreign case CRIME-999999 (MUST BE DENIED: 403 Forbidden)
-  const victimForeignCase = await api('/api/cases?case_number=CRIME-999999', {
+  // Victim attempts to access unassigned foreign case KA-CYBER-2026-1104 (MUST BE DENIED: 403 Forbidden)
+  const victimForeignCase = await api('/api/cases?case_number=KA-CYBER-2026-1104', {
     method: 'GET',
     token: authTokens['VICTIM']
   });
   assert(
     victimForeignCase.status === 403,
-    `Victim access to foreign case CRIME-999999 blocked by Victim Isolation: HTTP ${victimForeignCase.status} (Expected: 403)`
+    `Victim access to foreign case KA-CYBER-2026-1104 blocked by Victim Isolation: HTTP ${victimForeignCase.status} (Expected: 403)`
   );
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -433,7 +476,7 @@ async function runSecurityTests() {
   const nationalMutate = await api('/api/cases', {
     method: 'PATCH',
     token: authTokens['NATIONAL_COORDINATION_ANALYST'],
-    body: JSON.stringify({ case_number: 'CRIME-165445', status: 'CLOSED' })
+    body: JSON.stringify({ case_number: 'MH-CYBER-2026-0842', status: 'CLOSED' })
   });
   assert(
     nationalMutate.status === 403,
@@ -461,7 +504,7 @@ async function runSecurityTests() {
     method: 'PATCH',
     token: authTokens['CYBERCRIME_SUPERVISOR'],
     body: JSON.stringify({
-      case_number: 'CRIME-165445',
+      case_number: 'MH-CYBER-2026-0842',
       assigned_investigator_id: 3,
       assigned_investigator_name: 'SI Patil',
       priority: 'CRITICAL'
@@ -489,7 +532,7 @@ async function runSecurityTests() {
   console.log('\n\x1b[36m[GROUP 12] Testing Parameter Pollution, VASP Boundaries & Case Audit Trail:\x1b[0m');
 
   // 1. Parameter pollution attempt on case queries (Expect 403 Forbidden)
-  const pollutedCase = await api('/api/cases?case_number=CRIME-165445&case_number=CRIME-999999', {
+  const pollutedCase = await api('/api/cases?case_number=MH-CYBER-2026-0842&case_number=KA-CYBER-2026-1104', {
     method: 'GET',
     token: authTokens['INVESTIGATING_OFFICER']
   });
@@ -499,7 +542,7 @@ async function runSecurityTests() {
   );
 
   // 2. Array notation bypass attempt (Expect 403 Forbidden)
-  const arrayCase = await api('/api/cases?case_number[]=CRIME-999999', {
+  const arrayCase = await api('/api/cases?case_number[]=KA-CYBER-2026-1104', {
     method: 'GET',
     token: authTokens['INVESTIGATING_OFFICER']
   });
@@ -542,7 +585,7 @@ async function runSecurityTests() {
   );
 
   // 6. Investigating Officer accessing assigned case audit history (Expect 200 OK)
-  const ioCaseAudit = await api('/api/audit?case_number=CRIME-165445', {
+  const ioCaseAudit = await api('/api/audit?case_number=MH-CYBER-2026-0842', {
     method: 'GET',
     token: authTokens['INVESTIGATING_OFFICER']
   });
@@ -552,7 +595,7 @@ async function runSecurityTests() {
   );
 
   // 7. Investigating Officer accessing unassigned case audit history (Expect 403 Forbidden)
-  const ioForeignAudit = await api('/api/audit?case_number=CRIME-999999', {
+  const ioForeignAudit = await api('/api/audit?case_number=KA-CYBER-2026-1104', {
     method: 'GET',
     token: authTokens['INVESTIGATING_OFFICER']
   });

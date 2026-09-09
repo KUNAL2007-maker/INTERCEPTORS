@@ -995,7 +995,7 @@ export async function recordVaspResponse(
     if (!existing.acknowledged_at) {
       return { success: false, error: 'Acknowledge receipt of the requisition before reporting action taken.' };
     }
-    const action = payload.action;
+    const action = (payload as any).action_taken || ((payload as any).action !== 'report_action' ? (payload as any).action : undefined);
     if (action !== 'FREEZE_EXECUTED' && action !== 'PARTIAL_FREEZE' && action !== 'REFUSED') {
       return { success: false, error: 'Report the action taken: freeze executed, partial freeze, or refused.' };
     }

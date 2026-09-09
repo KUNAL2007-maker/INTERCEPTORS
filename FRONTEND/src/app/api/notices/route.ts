@@ -56,7 +56,7 @@ export async function POST(req: Request) {
     const vaspStage: 'acknowledge' | 'report_action' | null =
       body.action === 'acknowledge' || body.status === 'Acknowledged'
         ? 'acknowledge'
-        : body.action === 'report_action'
+        : body.action === 'report_action' || body.action_taken || ['FREEZE_EXECUTED', 'PARTIAL_FREEZE', 'REFUSED'].includes(body.action)
         ? 'report_action'
         : null;
     const isAck = vaspStage !== null;

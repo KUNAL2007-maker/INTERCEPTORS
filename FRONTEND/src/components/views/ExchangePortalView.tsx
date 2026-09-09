@@ -143,10 +143,16 @@ export function ExchangePortalView() {
     async (noticeId: string, payload: Record<string, unknown>) => {
       setError(null);
       try {
+        const actionTaken = (payload.action_taken as string) || (payload.action as string);
         const res = await fetch("/api/notices", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: noticeId, action: "report_action", ...payload }),
+          body: JSON.stringify({
+            id: noticeId,
+            ...payload,
+            action_taken: actionTaken,
+            action: "report_action",
+          }),
         });
         const data = await res.json();
         if (!res.ok) {

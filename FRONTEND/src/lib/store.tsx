@@ -506,11 +506,11 @@ export function TraceStoreProvider({ children }: { children: ReactNode }) {
 
           return ingestedCase;
         }
-      } catch {
-        // Fallback for law enforcement roles
-        if (user?.role !== "VICTIM" && user?.role !== "EXCHANGE_NODAL_OFFICER" && user?.role !== "AUDITOR") {
-          await runTrace("demo");
-        }
+      } catch (err) {
+        // The ingest failed. Surface that rather than papering over it with a
+        // fabricated demo trace — a live console must never silently substitute
+        // sample data for a real complaint that did not go through.
+        console.error("[CryptoTrace] NCRP ingest failed:", err);
       }
       return null;
     },

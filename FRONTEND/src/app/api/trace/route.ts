@@ -148,9 +148,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ probe: true, ...seen, quota: quotaSnapshot() });
     }
 
-    // Explicit demo, or nothing usable to trace → the built-in scenario. It
-    // honours a pasted seed as the victim-entry address if one was given.
-    if (demo || !rawSeed || rawSeed.toLowerCase() === "demo") {
+    // An explicit, intentional demo request → the built-in scenario, clearly
+    // labelled source:"mock". This runs ONLY when the caller asks for it by name,
+    // never as a silent stand-in for a live trace.
+    if (demo || rawSeed.toLowerCase() === "demo") {
       const trace = loadMockTrace(
         rawSeed && rawSeed.toLowerCase() !== "demo" ? rawSeed : undefined,
         caseMeta
@@ -158,9 +159,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ ...trace, generatedAt: Date.now() });
     }
 
-    // A pasted address whose shape matches no chain we trace is worth saying so
-    // plainly — but still return a usable trace rather than a bare error, so the
-    // console always has something to render.
+    // No address to trace. With live providers configured, an empty seed is a
+    // user error — say so, rather than fabricate a scenario. Only a keyless
+    // console (nothing live to query) falls back to the offline demo.
+    if (!rawSeed) {
+      if (hasLiveProviders()) {
+        return NextResponse.json(
+          { error: "Enter a wallet address to trace (Ethereum, Polygon, TRON or Bitcoin)." },
+          { status: 400 }
+        );
+      }
+      const trace = loadMockTrace(undefined, caseMeta);
+      return NextResponse.json({ ...trace, generatedAt: Date.now() });
+    }
+
+    // Trace the pasted address. traceWallet is live-first: with providers set it
+    // returns real data or an honest empty/degraded result (never the demo
+    // scenario), and it carries its own warnings when the address is unsupported
+    // or the trail is empty. So we forward its result verbatim.
     const chain = detectChain(rawSeed);
     const trace = await traceWallet(rawSeed, { caseMeta });
 
@@ -175,24 +191,15 @@ export async function POST(req: Request) {
       });
     }
 
-    return NextResponse.json({
-      ...trace,
-      generatedAt: Date.now(),
-      ...(chain
-        ? {}
-        : {
-            note: "Address shape didn't match a supported chain — showing the demo trace instead.",
-          }),
-    });
+    return NextResponse.json({ ...trace, generatedAt: Date.now() });
   } catch (err) {
     console.error("[CryptoTrace] trace API error:", err);
-    // Last-resort fallback: never leave the client without a trace to show.
-    const trace = loadMockTrace();
-    return NextResponse.json({
-      ...trace,
-      generatedAt: Date.now(),
-      degraded: true,
-      warnings: ["The trace service errored — showing the demo scenario instead."],
-    });
+    // A genuine server error (bad request body, auth/db failure) — report it
+    // honestly rather than paper over it with a fabricated trace that a court
+    // could mistake for real evidence.
+    return NextResponse.json(
+      { error: "The trace service hit an unexpected error. Please try again." },
+      { status: 500 }
+    );
   }
 }

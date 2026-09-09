@@ -894,16 +894,30 @@ export async function traceWallet(
   opts?: { caseMeta?: CaseMeta; maxHops?: number; forceMock?: boolean }
 ): Promise<TraceResult> {
   const chain = detectChain(seed);
-  const goLive = !opts?.forceMock && hasLiveProviders() && !!chain;
-  if (!goLive) return loadMockTrace(seed, opts?.caseMeta);
+  const live = !opts?.forceMock && hasLiveProviders();
+
+  // The ONLY path that ever fabricates data: no live providers are configured at
+  // all, so there is genuinely nothing to query. What it returns is clearly
+  // labelled source:"mock". With provider keys set (the deployed console) this
+  // never runs — every path below returns real data or an honest empty result,
+  // and the demo scenario never silently stands in for a live wallet lookup.
+  if (!live) return loadMockTrace(seed, opts?.caseMeta);
+
+  // Providers are live but the address matches no chain we trace. Say so plainly
+  // rather than fabricate a laundering trail for an address we never looked up.
+  if (!chain) {
+    return emptyLiveTrace(seed, "ETHEREUM", opts?.caseMeta, {
+      warning: `"${shortWallet(seed)}" doesn't match a chain we trace (Ethereum, Polygon, TRON or Bitcoin). Check the address and re-run.`,
+    });
+  }
 
   const maxHops = opts?.maxHops ?? MAX_HOPS;
   try {
-    let res = await liveTrace(seed, chain!, maxHops, opts?.caseMeta);
+    let res = await liveTrace(seed, chain, maxHops, opts?.caseMeta);
 
     // Nothing on the assumed chain, and the providers were healthy — so "empty"
     // is a real answer about THIS chain, which makes it worth asking the other.
-    const alt = EVM_FALLBACK[chain!];
+    const alt = EVM_FALLBACK[chain];
     if (res.transfers.length === 0 && !res.degraded && alt) {
       const altRes = await liveTrace(seed, alt, maxHops, opts?.caseMeta);
       if (altRes.transfers.length > 0) {
@@ -920,28 +934,50 @@ export async function traceWallet(
 
     if (res.transfers.length > 0) return res;
 
-    // Zero transfers. Falling back to the mock keeps the console demoable, but
-    // the REASON has to travel with it — the two causes are not equivalent:
-    //
-    //   • degraded → the providers failed or rate-limited us. We do not know
-    //     whether this wallet moved funds. Claiming a clean trail here is the
-    //     exact "empty response" failure this hardening exists to prevent.
-    //   • not degraded → the providers answered, and this wallet genuinely has
-    //     no outgoing transfers we can follow.
+    // Zero transfers on a LIVE trace. Return the real result as-is — the reported
+    // wallet with no onward flow — never the demo scenario. The two causes carry
+    // different words, but each is the honest truth about this address:
+    //   • degraded → a provider call failed; the trail is partial, not proven clean.
+    //   • not degraded → the providers answered and this wallet has no outgoing
+    //     transfers we can follow; the trail ends at the reported wallet.
     const why = res.degraded
-      ? "Live lookup was incomplete (see below) — showing the demo scenario instead. Re-run in a few minutes for real data."
-      : "This address has no outgoing transfers on the chains we cover — showing the demo scenario instead.";
-    const mock = loadMockTrace(seed, opts?.caseMeta);
-    return { ...mock, degraded: res.degraded, warnings: [why, ...(res.warnings ?? [])] };
+      ? "Live lookup was incomplete — one or more provider calls failed, so the trail below is partial. Re-run in a few minutes for a complete trace."
+      : "This address has no outgoing transfers on the chains we cover — the trail ends at the reported wallet.";
+    return { ...res, warnings: [why, ...(res.warnings ?? [])] };
   } catch (err) {
     const msg = (err as Error)?.message ?? "unknown error";
     console.warn(`[trace] live trace of ${shortWallet(seed)} failed:`, msg);
-    return {
-      ...loadMockTrace(seed, opts?.caseMeta),
+    // Honest failure: the reported wallet only, marked degraded — never a
+    // fabricated trail standing in for a lookup that did not complete.
+    return emptyLiveTrace(seed, chain, opts?.caseMeta, {
       degraded: true,
-      warnings: [`Live trace failed (${msg}) — showing the demo scenario instead.`],
-    };
+      warning: `Live trace failed (${msg}). No data could be retrieved for this address — re-run in a few minutes.`,
+    });
   }
+}
+
+// A minimal, honest live-shaped trace: the reported wallet and nothing else.
+// Returned when providers are live but the address is unsupported, the trail is
+// empty, or a lookup errored — so the console shows the real seed wallet and the
+// reason, never the fabricated demo scenario dressed up as a live result.
+function emptyLiveTrace(
+  seed: string,
+  chain: Chain,
+  caseMeta: CaseMeta | undefined,
+  opts: { degraded?: boolean; warning: string }
+): TraceResult {
+  return {
+    seed,
+    seed_chain: chain,
+    nodes: [makeNode(seed, chain, "VICTIM_ENTRY", 0)],
+    transfers: [],
+    hops: 0,
+    source: "live",
+    generatedAt: Date.now(),
+    case: caseMeta,
+    degraded: opts.degraded ?? false,
+    warnings: [opts.warning],
+  };
 }
 
 // ── Node helpers ────────────────────────────────────────────────────────────

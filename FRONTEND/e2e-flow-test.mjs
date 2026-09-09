@@ -10,7 +10,7 @@
  * 7. Super Admin verifies national oversight
  */
 
-const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:3001';
 
 let passed = 0;
 let failed = 0;
@@ -190,7 +190,7 @@ async function runE2EFlow() {
 
   // STEP 5: Exchange Compliance confirms freeze & locks escrow
   console.log('\n[STEP 5] Exchange Compliance: Acknowledging Freeze & Escrow Lock');
-  const exchangeAuth = await login('legal@binance.com', 'Binance@123');
+  const exchangeAuth = await login('legal@binance.com', 'Compliance@123');
   assert(exchangeAuth.status === 200 && exchangeAuth.token, 'Binance Compliance Officer authenticated');
   assert(exchangeAuth.user.role === 'VASP_COMPLIANCE_OFFICER' || exchangeAuth.user.role === 'EXCHANGE_NODAL_OFFICER', 'Role is VASP_COMPLIANCE_OFFICER');
 
@@ -209,6 +209,22 @@ async function runE2EFlow() {
     })
   });
   assert(ackRes.status === 200 && ackRes.body?.success, 'Exchange successfully acknowledged freeze directive under Sec 94(1) BNSS');
+
+  // Stage 2: Exchange Compliance reports FREEZE_EXECUTED action taken
+  const actionRes = await api('/api/notices', {
+    method: 'POST',
+    token: exchangeAuth.token,
+    body: JSON.stringify({
+      id: issuedNotice.id,
+      case_number: createdCase.case_number,
+      action: 'report_action',
+      action_taken: 'FREEZE_EXECUTED',
+      exchange_ref_no: 'BINANCE-FRZ-88219',
+      executed_by: 'VASP Compliance Officer',
+      frozen_amount: '$9,000 USDT'
+    })
+  });
+  assert(actionRes.status === 200 && actionRes.body?.success, 'Exchange successfully reported FREEZE_EXECUTED compliance action');
 
   // Verify case status synchronized to FROZEN
   const casesAfterAck = await api('/api/cases', { token: acpAuth.token });

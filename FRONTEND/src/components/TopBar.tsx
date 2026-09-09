@@ -63,20 +63,6 @@ export function TopBar({
       className="shrink-0 z-20 border-b backdrop-blur flex flex-col"
       style={{ borderColor: "var(--border)", background: "var(--panel-strong)" }}
     >
-      {/* ⚠️ Prototype & Simulated LEA Environment Mandatory Banner */}
-      <div
-        className="w-full py-1 px-3 text-center text-[10.5px] font-medium tracking-wide flex items-center justify-center gap-2 border-b"
-        style={{
-          background: "linear-gradient(90deg, rgba(245,158,11,0.12) 0%, rgba(59,130,246,0.12) 50%, rgba(245,158,11,0.12) 100%)",
-          borderColor: "var(--border)",
-          color: "var(--muted)"
-        }}
-      >
-        <span className="font-bold text-amber-400">SIH 2026 Prototype / Simulated LEA Environment</span>
-        <span className="hidden md:inline text-muted">·</span>
-        <span className="hidden md:inline">For Demonstration Purposes Only · Demo accounts do not represent real government personnel · Application permissions hierarchy only</span>
-      </div>
-
       <div className={`mx-auto w-full max-w-[1760px] ${PAGE_GUTTER} flex flex-wrap items-center gap-2 sm:gap-4 py-2.5`}>
         {/* Mobile menu trigger */}
         <button

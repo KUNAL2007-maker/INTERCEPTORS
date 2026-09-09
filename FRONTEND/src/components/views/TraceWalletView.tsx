@@ -16,10 +16,6 @@ import {
 import { buildEvidence, type CryptoEvidence } from "@/lib/investigation";
 import { useTraceStore, useTraceHistory } from "@/lib/store";
 
-// A demo seed to prefill the box so the address format is obvious even before
-// "Load demo case" is clicked. The mock tracer ignores the exact value.
-const DEMO_SEED = "0x9F2a7c4b1E5d38A6c0B4e21f7D8a9C3b0E1f2A6d";
-
 const LAYER_LABEL: Record<string, string> = {
   VICTIM_ENTRY: "Victim entry",
   BURNER_MULE: "Burner mule",
