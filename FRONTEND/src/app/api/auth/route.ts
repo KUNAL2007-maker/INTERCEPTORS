@@ -12,14 +12,17 @@ import {
   createSystemUser,
   updateUserStatus,
   updateUserRole,
-  resetUserPassword
+  resetUserPassword,
+  deleteSystemUser
 } from '@/lib/db';
-import { SYSTEM_PERSONAS, hasPermission, normalizeRole, type RoleName } from '@/lib/rbac-abac';
+import { hasPermission, normalizeRole, type RoleName } from '@/lib/rbac-abac';
 import { signJWT, extractUserClaims } from '@/lib/auth-crypto';
 import {
   checkKeycloakHealth,
   loginKeycloakDirect,
   logoutKeycloakSession,
+  createKeycloakUser,
+  deleteKeycloakUser,
   PERSONA_KEYCLOAK_CREDENTIALS
 } from '@/lib/keycloak';
 
@@ -43,7 +46,9 @@ export async function GET(req: Request) {
     user: activeUser || null,
     idp,
     environment: getEnvironment(),
-    personas: SYSTEM_PERSONAS,
+    // Dynamic: created/deleted accounts are reflected here, not just the
+    // compiled-in seed personas. Survives restart via the durable store.
+    personas: getSystemUsers(),
     keycloak: {
       ...keycloakHealth,
       realm: 'sih-lea',
@@ -334,7 +339,7 @@ export async function POST(req: Request) {
     }
 
     // ── 5. System Administrator: User Management ────────────────────────
-    if (['create_user', 'toggle_user_status', 'assign_role', 'reset_password', 'get_users', 'system_health'].includes(action)) {
+    if (['create_user', 'delete_user', 'toggle_user_status', 'assign_role', 'reset_password', 'get_users', 'system_health'].includes(action)) {
       const claims = await extractUserClaims(req);
       if (!claims) {
         return NextResponse.json(
@@ -371,6 +376,7 @@ export async function POST(req: Request) {
         if (!name || !email || !role) {
           return NextResponse.json({ error: 'Name, email, and role are required.' }, { status: 400 });
         }
+        // Durable local store is the source of truth — this always succeeds.
         const created = createSystemUser({
           name,
           email,
@@ -382,6 +388,18 @@ export async function POST(req: Request) {
           is_gazetted
         });
 
+        // Mirror to Keycloak when the IAM is online; never fatal if it isn't.
+        const kcSync = await createKeycloakUser({
+          name: created.name,
+          email: created.email,
+          role: created.role as RoleName,
+          password: password || 'Secure@123',
+          jurisdiction_code: created.jurisdiction_code,
+          clearance_level: created.clearance_level,
+          is_gazetted: created.is_gazetted,
+          vasp_id: created.vasp_id
+        });
+
         recordAuditLog({
           user_id: user.id,
           user_name: user.name,
@@ -390,10 +408,67 @@ export async function POST(req: Request) {
           resource_type: 'SYSTEM_USER',
           resource_id: created.id,
           decision: 'GRANTED',
-          reason: `Created user ${created.name} (${created.email}) with role ${created.role}.`
+          reason: `Created user ${created.name} (${created.email}) with role ${created.role}. Keycloak: ${kcSync.reason}`
         });
 
-        return NextResponse.json({ success: true, user: created });
+        return NextResponse.json({ success: true, user: created, keycloak: kcSync });
+      }
+
+      if (action === 'delete_user') {
+        const { user_id } = body;
+        if (user_id === undefined || user_id === null || user_id === '') {
+          return NextResponse.json({ error: 'user_id is required.' }, { status: 400 });
+        }
+
+        // The API layer guards the one invariant db.ts cannot see: you may not
+        // delete the account you are signed in as. (db.ts guards the last-admin
+        // invariant.)
+        if (String(user_id) === String(user.id)) {
+          recordAuditLog({
+            user_id: user.id,
+            user_name: user.name,
+            user_role: user.role,
+            action: 'ADMIN_DELETE_USER',
+            resource_type: 'SYSTEM_USER',
+            resource_id: user_id,
+            decision: 'DENIED',
+            reason: 'An administrator cannot delete their own active account.'
+          });
+          return NextResponse.json({ error: 'You cannot delete your own account.' }, { status: 400 });
+        }
+
+        const result = deleteSystemUser(user_id);
+        if (!result.success) {
+          recordAuditLog({
+            user_id: user.id,
+            user_name: user.name,
+            user_role: user.role,
+            action: 'ADMIN_DELETE_USER',
+            resource_type: 'SYSTEM_USER',
+            resource_id: user_id,
+            decision: 'DENIED',
+            reason: result.error || 'Deletion refused.'
+          });
+          return NextResponse.json({ error: result.error || 'Unable to delete user.' }, { status: 409 });
+        }
+
+        // Mirror the delete to Keycloak when online; never fatal.
+        const kcSync = result.user?.email
+          ? await deleteKeycloakUser(result.user.email)
+          : { synced: false, reason: 'No email on record to mirror.' };
+
+        recordAuditLog({
+          user_id: user.id,
+          user_name: user.name,
+          user_role: user.role,
+          action: 'ADMIN_DELETE_USER',
+          resource_type: 'SYSTEM_USER',
+          resource_id: user_id,
+          decision: 'GRANTED',
+          reason: `Deleted ${result.user?.name} (${result.user?.email}). Keycloak: ${kcSync.reason}`
+        });
+
+        return NextResponse.json({ success: true, user_id, keycloak: kcSync });
       }
 
       if (action === 'toggle_user_status') {

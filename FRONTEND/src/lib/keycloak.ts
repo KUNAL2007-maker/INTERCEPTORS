@@ -451,6 +451,189 @@ export const PERSONA_KEYCLOAK_CREDENTIALS: Record<string, { email: string; pass:
   'NATIONAL_COORDINATION_ANALYST': { email: 'national@example.demo', pass: 'National@123' }
 };
 
+// ---------------------------------------------------------------------------
+// Keycloak Admin REST — user provisioning (health-gated, best-effort)
+//
+// Every function here first checks Keycloak health and returns a structured
+// { synced, reason } result instead of throwing: user CRUD must always succeed
+// locally (the durable store is the source of truth), and Keycloak is a mirror
+// that is provisioned when it happens to be online. Admin credentials come from
+// the environment only and are NEVER logged.
+// ---------------------------------------------------------------------------
+
+const KEYCLOAK_ADMIN = {
+  user: process.env.KEYCLOAK_ADMIN_USER || 'admin',
+  password: process.env.KEYCLOAK_ADMIN_PASSWORD || 'Admin@123',
+  clientId: process.env.KEYCLOAK_ADMIN_CLIENT_ID || 'admin-cli'
+};
+
+export type KeycloakSyncResult = { synced: boolean; reason: string; keycloakUserId?: string };
+
+/**
+ * Obtain a master-realm admin access token via the admin-cli password grant.
+ * Returns null (never throws) when Keycloak is unreachable or rejects the login.
+ */
+async function getKeycloakAdminToken(): Promise<string | null> {
+  const tokenUrl = `${KEYCLOAK_CONFIG.baseUrl}/realms/master/protocol/openid-connect/token`;
+  try {
+    const params = new URLSearchParams();
+    params.append('grant_type', 'password');
+    params.append('client_id', KEYCLOAK_ADMIN.clientId);
+    params.append('username', KEYCLOAK_ADMIN.user);
+    params.append('password', KEYCLOAK_ADMIN.password);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const res = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
+      body: params.toString(),
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    if (!res.ok) return null;
+    const data = await res.json().catch(() => ({}));
+    return data.access_token || null;
+  } catch {
+    return null;
+  }
+}
+
+/** Resolve a Keycloak user id by exact email, then username. */
+async function findKeycloakUserId(adminToken: string, email: string): Promise<string | null> {
+  const base = `${KEYCLOAK_CONFIG.baseUrl}/admin/realms/${KEYCLOAK_CONFIG.realm}/users`;
+  const auth = { Authorization: `Bearer ${adminToken}`, Accept: 'application/json' };
+  try {
+    const byEmail = await fetch(`${base}?email=${encodeURIComponent(email)}&exact=true`, { headers: auth });
+    if (byEmail.ok) {
+      const arr = await byEmail.json().catch(() => []);
+      if (Array.isArray(arr) && arr.length && arr[0].id) return arr[0].id;
+    }
+    const byUser = await fetch(`${base}?username=${encodeURIComponent(email)}&exact=true`, { headers: auth });
+    if (byUser.ok) {
+      const arr = await byUser.json().catch(() => []);
+      if (Array.isArray(arr) && arr.length && arr[0].id) return arr[0].id;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Provision a user in the sih-lea realm: create the account with a password,
+ * set the ABAC attributes (jurisdiction_code / is_gazetted / clearance_level /
+ * vasp_id), and map the matching realm role. Best-effort and non-fatal.
+ */
+export async function createKeycloakUser(input: {
+  name: string;
+  email: string;
+  role: RoleName;
+  password: string;
+  jurisdiction_code?: string | null;
+  clearance_level?: string | null;
+  is_gazetted?: boolean;
+  vasp_id?: number | null;
+}): Promise<KeycloakSyncResult> {
+  const health = await checkKeycloakHealth();
+  if (!health.online) return { synced: false, reason: 'Keycloak offline — provisioned in local store only.' };
+
+  const adminToken = await getKeycloakAdminToken();
+  if (!adminToken) return { synced: false, reason: 'Keycloak admin authentication unavailable.' };
+
+  const usersUrl = `${KEYCLOAK_CONFIG.baseUrl}/admin/realms/${KEYCLOAK_CONFIG.realm}/users`;
+  const parts = (input.name || '').trim().split(/\s+/);
+  const firstName = parts[0] || 'Officer';
+  const lastName = parts.slice(1).join(' ') || firstName;
+  const role = normalizeRole(input.role);
+
+  const attributes: Record<string, string[]> = { is_gazetted: [String(Boolean(input.is_gazetted))] };
+  if (input.jurisdiction_code) attributes.jurisdiction_code = [String(input.jurisdiction_code)];
+  if (input.clearance_level) attributes.clearance_level = [String(input.clearance_level)];
+  if (input.vasp_id != null) attributes.vasp_id = [String(input.vasp_id)];
+
+  try {
+    const createRes = await fetch(usersUrl, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: input.email,
+        email: input.email,
+        firstName,
+        lastName,
+        enabled: true,
+        emailVerified: true,
+        attributes,
+        credentials: [{ type: 'password', value: input.password, temporary: false }]
+      })
+    });
+
+    if (createRes.status === 409) {
+      return { synced: false, reason: 'A Keycloak account with this email already exists.' };
+    }
+    if (!createRes.ok && createRes.status !== 201) {
+      return { synced: false, reason: `Keycloak rejected user creation (HTTP ${createRes.status}).` };
+    }
+
+    const kcUserId = await findKeycloakUserId(adminToken, input.email);
+    if (!kcUserId) {
+      return { synced: true, reason: 'Created in Keycloak; realm-role mapping skipped (id unresolved).' };
+    }
+
+    // Map the realm role by looking up its representation, then POSTing it.
+    const roleRes = await fetch(
+      `${KEYCLOAK_CONFIG.baseUrl}/admin/realms/${KEYCLOAK_CONFIG.realm}/roles/${encodeURIComponent(role)}`,
+      { headers: { Authorization: `Bearer ${adminToken}`, Accept: 'application/json' } }
+    );
+    if (roleRes.ok) {
+      const roleRep = await roleRes.json().catch(() => null);
+      if (roleRep && roleRep.id) {
+        await fetch(
+          `${KEYCLOAK_CONFIG.baseUrl}/admin/realms/${KEYCLOAK_CONFIG.realm}/users/${kcUserId}/role-mappings/realm`,
+          {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify([{ id: roleRep.id, name: roleRep.name }])
+          }
+        ).catch(() => {});
+      }
+    }
+
+    return {
+      synced: true,
+      reason: `Provisioned in Keycloak realm ${KEYCLOAK_CONFIG.realm} with role ${role}.`,
+      keycloakUserId: kcUserId
+    };
+  } catch (err: any) {
+    return { synced: false, reason: `Keycloak provisioning error: ${err?.message || 'network failure'}.` };
+  }
+}
+
+/** Remove a user from the sih-lea realm by email. Best-effort and non-fatal. */
+export async function deleteKeycloakUser(email: string): Promise<KeycloakSyncResult> {
+  const health = await checkKeycloakHealth();
+  if (!health.online) return { synced: false, reason: 'Keycloak offline — removed from local store only.' };
+
+  const adminToken = await getKeycloakAdminToken();
+  if (!adminToken) return { synced: false, reason: 'Keycloak admin authentication unavailable.' };
+
+  try {
+    const kcUserId = await findKeycloakUserId(adminToken, email);
+    if (!kcUserId) return { synced: false, reason: 'No matching Keycloak account to remove.' };
+
+    const delRes = await fetch(
+      `${KEYCLOAK_CONFIG.baseUrl}/admin/realms/${KEYCLOAK_CONFIG.realm}/users/${kcUserId}`,
+      { method: 'DELETE', headers: { Authorization: `Bearer ${adminToken}` } }
+    );
+    if (!delRes.ok && delRes.status !== 204) {
+      return { synced: false, reason: `Keycloak rejected deletion (HTTP ${delRes.status}).` };
+    }
+    return { synced: true, reason: 'Removed from Keycloak realm.' };
+  } catch (err: any) {
+    return { synced: false, reason: `Keycloak deletion error: ${err?.message || 'network failure'}.` };
+  }
+}
+
 /**
  * Terminate user session in Keycloak via OIDC logout
  */

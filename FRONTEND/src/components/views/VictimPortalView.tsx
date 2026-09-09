@@ -15,11 +15,13 @@ import {
 
 export function VictimPortalView() {
   const { user } = useAuth();
-  const { cases, loadCases, ingestNcrpComplaint } = useTraceStore();
+  const { cases, loadCases, ingestNcrpComplaint, withdrawComplaint } = useTraceStore();
 
   const [selectedCaseNumber, setSelectedCaseNumber] = useState<string | null>(null);
   const [showFileModal, setShowFileModal] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [withdrawMsg, setWithdrawMsg] = useState<string | null>(null);
 
   // Registration Form State
   const [suspectWallet, setSuspectWallet] = useState("");
@@ -120,6 +122,32 @@ export function VictimPortalView() {
   };
 
   const activeChain = activeComplaint ? detectChain(activeComplaint.suspect_wallet_address) : null;
+
+  // A complaint can be withdrawn only while it is still an untouched intake -
+  // once tracing has begun or a freeze order is bound to it, it is a live
+  // record and the server refuses (409). The button mirrors that gate so the
+  // citizen sees why, rather than getting a silent rejection.
+  const canWithdraw = Boolean(
+    activeComplaint && activeComplaint.status === "PENDING_TRACING" && !activeComplaint.freeze_notice_id
+  );
+
+  const handleWithdraw = async () => {
+    if (!activeComplaint || !canWithdraw) return;
+    const ok = window.confirm(
+      `Withdraw complaint ${activeComplaint.case_number}?\n\nThis permanently removes it from the NCRP gateway. You can only withdraw while it is still at intake — before an officer begins tracing.`
+    );
+    if (!ok) return;
+    setWithdrawing(true);
+    setWithdrawMsg(null);
+    const res = await withdrawComplaint(activeComplaint.case_number);
+    setWithdrawing(false);
+    if (res.success) {
+      setSelectedCaseNumber(null);
+      setFiledSuccessCase(null);
+    } else {
+      setWithdrawMsg(res.error || "Could not withdraw the complaint.");
+    }
+  };
 
   return (
     <Page width="wide">
@@ -478,6 +506,31 @@ export function VictimPortalView() {
                     >
                       Download Official NCRP Receipt
                     </button>
+                  </div>
+
+                  <div className="border-t pt-3" style={{ borderColor: "var(--border)" }}>
+                    <span className="text-muted block text-[10px] uppercase font-bold mb-1">Withdraw Complaint</span>
+                    <button
+                      onClick={handleWithdraw}
+                      disabled={!canWithdraw || withdrawing}
+                      title={
+                        canWithdraw
+                          ? "Permanently withdraw this complaint from the NCRP gateway."
+                          : "This complaint is already under investigation and can no longer be withdrawn. Contact the investigating unit for any correction."
+                      }
+                      className="w-full py-2 px-3 rounded border text-xs font-semibold transition hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      style={{ background: "rgba(244,63,94,0.10)", borderColor: "rgba(244,63,94,0.40)", color: "#fda4af" }}
+                    >
+                      {withdrawing ? "Withdrawing…" : "Withdraw / Delete Complaint"}
+                    </button>
+                    {!canWithdraw && (
+                      <p className="text-[10px] text-muted mt-1">
+                        Once an officer begins tracing, the complaint becomes a live investigation record and cannot be withdrawn.
+                      </p>
+                    )}
+                    {withdrawMsg && (
+                      <p className="text-[10px] text-rose-300 mt-1">{withdrawMsg}</p>
+                    )}
                   </div>
 
                   <div className="border-t pt-3" style={{ borderColor: "var(--border)" }}>

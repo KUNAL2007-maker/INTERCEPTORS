@@ -43,6 +43,12 @@ export function CasesView({
   const [caseAuditLogs, setCaseAuditLogs] = useState<any[]>([]);
   const [loadingAudit, setLoadingAudit] = useState(false);
 
+  // Live roster of investigating officers for the supervisor's assignment dropdown.
+  // Same source as CommandDashboard — replaces the old hardcoded "SI Patil" option.
+  const [officers, setOfficers] = useState<
+    Array<{ id: number; name: string; badge?: string; jurisdiction_code?: string; clearance_level?: number }>
+  >([]);
+
   const [certModalCase, setCertModalCase] = useState<StoredCase | null>(null);
   const [certCopied, setCertCopied] = useState(false);
   // Real SHA-256 hashes computed via Web Crypto API, keyed by case_number.
@@ -187,6 +193,25 @@ C. ADMISSIBILITY:
   useEffect(() => {
     void loadCases();
   }, [loadCases]);
+
+  // Supervisors load the assignable officer roster (active INVESTIGATING_OFFICERs in jurisdiction).
+  useEffect(() => {
+    if (!isSupervisor) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/officers");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled) setOfficers(Array.isArray(data.officers) ? data.officers : []);
+      } catch {
+        /* roster fetch is best-effort; the dropdown simply shows "no officers" */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isSupervisor]);
 
   const filteredCases = useMemo(() => {
     return cases.filter((c) => {
@@ -489,11 +514,23 @@ C. ADMISSIBILITY:
                         const val = Number(e.target.value);
                         if (val) handleAssignIO(c.case_number, val);
                       }}
-                      className="rounded border px-2 py-0.5 text-xs bg-[var(--chip)] text-white focus:outline-none"
+                      className="rounded border px-2 py-0.5 text-xs bg-[var(--chip)] text-white focus:outline-none min-w-[13rem]"
                       style={{ borderColor: "var(--border)" }}
                     >
                       <option value="">— Unallocated —</option>
-                      <option value={3}>SI Patil (id: 3)</option>
+                      {officers.map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {o.name}
+                          {o.badge ? ` · ${o.badge}` : ""}
+                        </option>
+                      ))}
+                      {/* Show any already-assigned officer not in the current roster so the name never blanks out */}
+                      {c.assigned_investigator_id != null &&
+                        !officers.some((o) => o.id === c.assigned_investigator_id) && (
+                          <option value={c.assigned_investigator_id}>
+                            {c.assigned_investigator_name || `Officer #${c.assigned_investigator_id}`}
+                          </option>
+                        )}
                     </select>
                   ) : (
                     <strong className="text-white">{c.assigned_investigator_name || "Unallocated"}</strong>
@@ -920,6 +957,12 @@ function StatusBadge({ status }: { status: string }) {
       return (
         <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-semibold">
           TRACED
+        </span>
+      );
+    case "AWAITING_SIGNATURE":
+      return (
+        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-orange-500/20 text-orange-300 border border-orange-500/40 font-semibold">
+          AWAITING SIGN-OFF
         </span>
       );
     case "NOTICE_SERVED":

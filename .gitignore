@@ -35,3 +35,8 @@ build/
 .env.*.local
 *.pem
 *.key
+
+# Durable local store (file-backed prototype DB). Holds user records with
+# password hashes + salts, exactly like a real users table - NEVER commit.
+.data/
+store.json

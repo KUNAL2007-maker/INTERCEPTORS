@@ -546,6 +546,15 @@ export type GraphNode = {
   risk_score: number;
   risk_band: RiskBand;
   vasp?: string | null;
+  /** True when this wallet is attributed to a mixer (Tornado Cash, CoinJoin). */
+  is_mixer?: boolean;
+  /**
+   * De-anonymisation / attribution confidence 0-100, carried through from the
+   * wallet's VASP attribution when one exists. Absent when the trace never
+   * assigned a confidence — the renderer must NOT fabricate a P= badge in that
+   * case.
+   */
+  confidence_score?: number;
   hop?: number;
   degree?: number;
   x: number;
@@ -614,6 +623,8 @@ export function buildGraphFromTransfers(
     risk_score: n.risk_score,
     risk_band: n.risk_band,
     vasp: n.vasp_attribution?.vasp_name ?? null,
+    is_mixer: n.vasp_attribution?.is_mixer ?? false,
+    confidence_score: n.vasp_attribution?.confidence_score,
     hop: n.hop,
     degree: 0,
     x: 0,

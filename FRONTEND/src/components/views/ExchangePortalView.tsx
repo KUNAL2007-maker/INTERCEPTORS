@@ -28,7 +28,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Page, Card, PanelHeader } from "../ui/Page";
 import { useAuth } from "../AuthProvider";
-import { formatINR, shortWallet } from "@/lib/domain";
+import { formatINR, formatUSD, shortWallet, CHAINS, chainColor, type Chain } from "@/lib/domain";
 
 type VaspResponse = {
   acknowledged_at?: string;
@@ -335,6 +335,10 @@ function NoticeRow({
         </Field>
       </div>
 
+      {/* Forensic case analytics + the report the field officer forwarded. The
+          compliance desk acts on evidence, not on a bare instruction to freeze. */}
+      <CaseAnalytics notice={notice} />
+
       {/* Signature check. Before, not after, acting on the order. */}
       <div className="border-t px-4 py-3" style={{ borderColor: "var(--border)" }}>
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -342,6 +346,11 @@ function NoticeRow({
             {notice.signature ? (
               <>
                 Signed {notice.signature.algorithm} · key {notice.signature.key_id}
+                {notice.signature.payload_hash && (
+                  <span className="mt-0.5 block font-mono text-[10px] text-muted-2">
+                    SHA-256 dossier hash {notice.signature.payload_hash.slice(0, 28)}…
+                  </span>
+                )}
               </>
             ) : (
               <>This order carries no digital signature.</>
@@ -383,6 +392,38 @@ function NoticeRow({
                   </li>
                 ))}
               </ul>
+            )}
+            {(verification.recorded_hash || verification.computed_hash) && (
+              <div className="mt-2.5 space-y-1 border-t pt-2 text-[10px]" style={{ borderColor: "var(--border)" }}>
+                <div className="font-medium uppercase tracking-wider text-muted-2">SHA-256 dossier integrity</div>
+                {verification.recorded_hash && (
+                  <div className="text-muted">
+                    Recorded at signing:{" "}
+                    <code className="break-all font-mono text-cyan-300">{verification.recorded_hash}</code>
+                  </div>
+                )}
+                {verification.computed_hash && (
+                  <div className="text-muted">
+                    Recomputed now:{" "}
+                    <code
+                      className="break-all font-mono"
+                      style={{
+                        color:
+                          verification.computed_hash === verification.recorded_hash ? "#6ee7b7" : "#fca5a5",
+                      }}
+                    >
+                      {verification.computed_hash}
+                    </code>
+                  </div>
+                )}
+                <div className="text-muted-2">
+                  {verification.computed_hash && verification.recorded_hash
+                    ? verification.computed_hash === verification.recorded_hash
+                      ? "The document forwarded to you is byte-for-byte the one the gazetted officer signed. Nothing was altered in transit."
+                      : "The document does not match what was signed — it was altered after signing. Do not act on it."
+                    : "The dossier hash recorded when the order was signed."}
+                </div>
+              </div>
             )}
           </div>
         )}
@@ -438,6 +479,157 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     <div>
       <div className="text-[10px] font-medium uppercase tracking-wider text-muted-2">{label}</div>
       <div className="mt-1">{children}</div>
+    </div>
+  );
+}
+
+/**
+ * The client-side analytics the investigating officer forwarded with the order:
+ * the reported loss, the value that reached this exchange, the depth of the
+ * deposit trail (its shortest path to the VASP), the chains it crossed, and the
+ * full reconstructed trail + report body. Everything here is read straight off
+ * the notice payload the platform already computed — no figure is invented on
+ * this screen. The compliance officer decides on this evidence, not on a bare
+ * instruction to freeze.
+ */
+function CaseAnalytics({ notice }: { notice: Notice }) {
+  const nt = notice.notice || {};
+  const trail: Array<{ hop: number; from: string; to: string; chain: Chain; token: string; valueUsd: number; tx_hash: string }> =
+    Array.isArray(nt.walletTrail) ? nt.walletTrail : [];
+  const chains = Array.from(new Set(trail.map((h) => h?.chain).filter(Boolean)));
+  const hops = trail.length;
+  const landedUsd = hops ? Number(trail[hops - 1]?.valueUsd) || 0 : 0;
+  const amountInr = Number(nt.amountInr ?? 0);
+  const serviceable = nt.serviceable !== false;
+  const wallets: string[] = Array.isArray(nt.targetAddresses) ? nt.targetAddresses : [];
+  const body: string[] = Array.isArray(nt.body) ? nt.body : [];
+  const seedWallet = wallets[0];
+
+  return (
+    <div className="border-t px-4 py-3" style={{ borderColor: "var(--border)" }}>
+      <div className="text-[10px] font-medium uppercase tracking-wider text-muted-2">
+        Forensic case analytics · forwarded by the investigating officer
+      </div>
+
+      <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Metric label="Reported loss" value={amountInr > 0 ? formatINR(amountInr) : "—"} />
+        <Metric label="Traced to this exchange" value={landedUsd > 0 ? formatUSD(landedUsd) : "—"} />
+        <Metric
+          label="Hops to VASP"
+          value={hops > 0 ? String(hops) : "—"}
+          hint={hops > 0 ? "shortest deposit trail" : "no reconstructed trail on file"}
+        />
+        <Metric
+          label="Endpoint"
+          value={serviceable ? "Serviceable" : "Non-serviceable"}
+          tone={serviceable ? "#6ee7b7" : "#fcd34d"}
+        />
+      </div>
+
+      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Field label="Chains traversed">
+          {chains.length ? (
+            <div className="flex flex-wrap gap-1.5">
+              {chains.map((c) => (
+                <span
+                  key={c}
+                  className="inline-flex items-center gap-1.5 rounded border px-1.5 py-0.5 text-[10.5px] text-muted"
+                  style={{ borderColor: "var(--border)" }}
+                >
+                  <span className="h-2 w-2 rounded-full" style={{ background: chainColor(c) }} />
+                  {CHAINS[c]?.short ?? c}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <span className="text-muted">Single-chain or not stated</span>
+          )}
+        </Field>
+        <Field label="Victim-reported wallet">
+          {seedWallet ? (
+            <code className="break-all font-mono text-[11px] text-cyan-300">{seedWallet}</code>
+          ) : (
+            <span className="text-muted">Not stated in the order</span>
+          )}
+        </Field>
+      </div>
+
+      {/* The deposit trail + report body — the actual client data, collapsed. */}
+      {(trail.length > 0 || body.length > 0) && (
+        <details
+          className="mt-3 rounded border"
+          style={{ borderColor: "var(--border)", background: "var(--surface-sunken)" }}
+        >
+          <summary
+            className="cursor-pointer select-none px-3 py-2 text-[11px] font-medium"
+            style={{ color: "var(--text-strong)" }}
+          >
+            Reconstructed deposit trail &amp; forensic report
+          </summary>
+          <div className="space-y-3 px-3 pb-3">
+            {trail.length > 0 && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-[10.5px]">
+                  <thead className="text-left text-muted-2">
+                    <tr>
+                      <th className="py-1 pr-3 font-medium">Hop</th>
+                      <th className="py-1 pr-3 font-medium">From → To</th>
+                      <th className="py-1 pr-3 font-medium">Chain</th>
+                      <th className="py-1 pr-3 font-medium">Token</th>
+                      <th className="py-1 pr-3 text-right font-medium">Value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {trail.filter(Boolean).map((h, i) => (
+                      <tr
+                        key={`${h.hop ?? i}-${h.tx_hash ?? i}`}
+                        className="border-t"
+                        style={{ borderColor: "var(--border)" }}
+                      >
+                        <td className="py-1 pr-3 font-mono text-muted">{h.hop ?? i + 1}</td>
+                        <td className="whitespace-nowrap py-1 pr-3 font-mono text-muted">
+                          {shortWallet(h.from)} → {shortWallet(h.to)}
+                        </td>
+                        <td className="py-1 pr-3">
+                          <span className="inline-flex items-center gap-1 whitespace-nowrap text-muted">
+                            <span className="h-1.5 w-1.5 rounded-full" style={{ background: chainColor(h.chain) }} />
+                            {CHAINS[h.chain]?.short ?? h.chain}
+                          </span>
+                        </td>
+                        <td className="py-1 pr-3 text-muted">{h.token || "USDT"}</td>
+                        <td className="py-1 pr-3 text-right font-mono" style={{ color: "var(--text-strong)" }}>
+                          {formatUSD(h.valueUsd)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {body.length > 0 && (
+              <div className="space-y-1.5 text-[11px] leading-relaxed text-muted">
+                {body.map((p, i) => (
+                  <p key={i} style={{ whiteSpace: "pre-wrap" }}>
+                    {p}
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
+        </details>
+      )}
+    </div>
+  );
+}
+
+function Metric({ label, value, hint, tone }: { label: string; value: string; hint?: string; tone?: string }) {
+  return (
+    <div>
+      <div className="text-[10px] font-medium uppercase tracking-wider text-muted-2">{label}</div>
+      <div className="mt-0.5 text-[13px] font-semibold" style={{ color: tone ?? "var(--text-strong)" }}>
+        {value}
+      </div>
+      {hint && <div className="text-[9.5px] text-muted-2">{hint}</div>}
     </div>
   );
 }

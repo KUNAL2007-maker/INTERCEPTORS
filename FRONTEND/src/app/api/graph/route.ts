@@ -6,14 +6,19 @@ import type { WalletNode, WalletTransfer } from "@/lib/domain";
 import {
   analyzeGraph,
   blendRiskScore,
-  featureVector,
+  scoreFactorsAtoG,
   type RiskAssessment,
 } from "@/lib/graph-algorithms";
-import { scoreVectors, mlModelStatus } from "@/lib/ml/risk-model-onnx";
+import {
+  mlServiceEnabled,
+  analyzeViaMlService,
+  canonAddr,
+  type AstarPathToVasp,
+} from "@/lib/ml-service";
 import { neo4jEnabled, projectTrace, queryShortestPathToVasp } from "@/lib/graph-neo4j";
 
-// onnxruntime-node and neo4j-driver are native/networking libraries — this must
-// run on the Node.js runtime, never the Edge runtime.
+// neo4j-driver (networking) and the fetch() call to the Python ML sidecar mean
+// this must run on the Node.js runtime, never the Edge runtime.
 export const runtime = "nodejs";
 // Graph analysis is in-memory and fast; the optional Neo4j round-trip is the only
 // network hop. 30s is comfortably enough and well under the trace route's 60.
@@ -132,20 +137,47 @@ export async function POST(req: Request) {
     // 1) In-memory analysis — always runs, needs no database or model.
     const analysis = analyzeGraph(nodes, transfers, seed);
 
-    // 2) Optional ML overlay. scoreVectors returns nulls when the model is absent,
-    //    in which case each assessment keeps its heuristic-only score untouched.
+    // 2) Optional Python ML sidecar overlay (real GDS + XGBoost + A*). When
+    //    ML_SERVICE_URL is set and the sidecar answers, we adopt its REAL GDS
+    //    features, re-run the explainable Factors A–G on them (so genuine
+    //    betweenness / pagerank / community now drive Factors E/F, not the
+    //    zero-defaults), and blend in the XGBoost fraud probability via the app's
+    //    own blendRiskScore. analyzeViaMlService returns null on ANY failure, in
+    //    which case the heuristic-only assessments below are used unchanged —
+    //    exactly today's behaviour. Supersedes the dormant ONNX scaffold.
     let assessments: RiskAssessment[] = analysis.assessments;
-    const mlStatus = await mlModelStatus();
-    if (mlStatus.available) {
-      const vectors = assessments.map((a) => featureVector(a.features));
-      const scores = await scoreVectors(vectors);
-      assessments = assessments.map((a, i) => {
-        const ml = scores[i];
-        if (ml === null) return a;
-        const blended = blendRiskScore(ml, a.heuristic_score);
-        return { ...a, ...blended, ml_score: ml };
-      });
+    let astarPathToVasp: AstarPathToVasp | null = null;
+    let mlSource = "heuristic";
+    let gdsSource = "in-memory-ts";
+    let modelKind = "none";
+
+    if (mlServiceEnabled()) {
+      const ml = await analyzeViaMlService(nodes, transfers, seed);
+      if (ml) {
+        astarPathToVasp = ml.astarPathToVasp;
+        gdsSource = ml.gdsSource;
+        mlSource = ml.mlSource;
+        modelKind = ml.modelKind;
+        assessments = assessments.map((a) => {
+          const key = canonAddr(a.address);
+          const feats = ml.features.get(key) ?? a.features;
+          const fraud = ml.fraud.get(key) ?? null;
+          // Re-run the heuristic on the real features, then blend.
+          const heuristic = scoreFactorsAtoG(feats);
+          const blended = blendRiskScore(fraud, heuristic.score);
+          return {
+            ...a,
+            ...blended,
+            ml_score: fraud,
+            heuristic_score: heuristic.score,
+            reasons: heuristic.reasons,
+            topology: heuristic.topology,
+            features: feats,
+          };
+        });
+      }
     }
+    const mlAvailable = mlSource === "python-xgboost";
 
     // 3) Optional Neo4j projection + Cypher-verified shortest path.
     let projectedToNeo4j = false;
@@ -162,10 +194,20 @@ export async function POST(req: Request) {
     return NextResponse.json({
       cytoscape: analysis.cytoscape,
       shortestPathToVasp,
+      astarPathToVasp,
       syndicateHubs: analysis.syndicateHubs,
       riskAssessments: assessments,
       projectedToNeo4j,
-      ml: { available: mlStatus.available, reason: mlStatus.reason },
+      ml: {
+        available: mlAvailable,
+        reason: mlAvailable
+          ? `Python XGBoost (${modelKind})`
+          : mlServiceEnabled()
+            ? "ML sidecar unreachable — heuristic-only."
+            : "ML sidecar not configured — heuristic-only.",
+      },
+      mlSource,
+      gdsSource,
       counts: {
         wallets: nodes.length,
         transfers: transfers.length,

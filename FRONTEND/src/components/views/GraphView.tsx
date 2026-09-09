@@ -16,6 +16,7 @@ import {
   type GraphNode,
   type LayerType,
 } from "@/lib/domain";
+import { CoinLogo, ExchangeLogo, EXCHANGE_LEGEND } from "@/lib/brand-logos";
 import { useTraceStore } from "@/lib/store";
 import { useTheme } from "@/components/ThemeProvider";
 import { useAuth } from "@/components/AuthProvider";
@@ -37,6 +38,39 @@ const LAYER_SHORT: Record<LayerType, string> = {
   VASP_DEPOSIT: "Deposit",
   VASP_HOT_WALLET: "Exchange",
 };
+
+// ── Entity typing (the "Transaction Flow" skin) ──────────────────────────────
+// The graph reads as a story from victim → laundering → exchange. Each wallet is
+// classified into one of five entity roles, and the whole visual language (shape,
+// colour, glyph) keys off that role rather than off raw risk. This mirrors the
+// investigator's mental model: a red victim card at the entry, gray hops through
+// the middle, a black mixer that MUST be halted, purple relayer exits with a
+// de-anon confidence, and a green exchange as the freeze target.
+type EntityType = "victim" | "intermediate" | "mixer" | "relayer" | "exchange";
+
+const ENTITY_COLOR: Record<EntityType, string> = {
+  victim: "#ef4444", // red
+  intermediate: "#94a3b8", // slate/gray
+  mixer: "#0d1117", // black
+  relayer: "#a855f7", // purple
+  exchange: "#22c55e", // green
+};
+
+const ENTITY_LABEL: Record<EntityType, string> = {
+  victim: "Victim wallet",
+  intermediate: "Intermediate wallet",
+  mixer: "Mixer (must halt)",
+  relayer: "DEX / Bridge relayer",
+  exchange: "Exchange (freeze target)",
+};
+
+function entityOf(n: GraphNode): EntityType {
+  if (n.is_mixer) return "mixer";
+  if (n.layer_type === "VICTIM_ENTRY") return "victim";
+  if (n.layer_type === "VASP_HOT_WALLET" || n.layer_type === "VASP_DEPOSIT" || n.vasp) return "exchange";
+  if (n.layer_type === "BRIDGE_HOP") return "relayer";
+  return "intermediate"; // BURNER_MULE / PEELING_CHAIN and anything else mid-trail
+}
 
 export function GraphView({
   focusAccounts,
@@ -245,8 +279,13 @@ export function GraphView({
           style={{ borderColor: "var(--border)" }}
         >
           <div className="flex items-center gap-2.5 flex-wrap">
-            <div className="text-[11px] uppercase tracking-widest" style={{ color: "var(--muted)" }}>
-              Network Canvas
+            <div>
+              <div className="text-[14px] font-semibold leading-tight" style={{ color: "var(--text-strong)" }}>
+                Transaction Flow
+              </div>
+              <div className="text-[11px] leading-tight" style={{ color: "var(--muted)" }}>
+                Visual trace from victim wallet to exchange (multi-chain)
+              </div>
             </div>
             <span
               className="text-[11px] rounded px-1.5 py-0.5 border"
@@ -382,7 +421,19 @@ export function GraphView({
                   <stop offset="0%" stopColor="rgba(239,68,68,0.5)" />
                   <stop offset="100%" stopColor="rgba(239,68,68,0)" />
                 </radialGradient>
+                {/* Purple marker for the relayer fan-out; entity-typed edge heads. */}
+                <marker id="arrowPurple" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#a855f7" />
+                </marker>
+                {/* Light dot-grid canvas backdrop (the "Transaction Flow" look). */}
+                <pattern id="dotGrid" width="26" height="26" patternUnits="userSpaceOnUse">
+                  <circle cx="1.5" cy="1.5" r="1.5" fill={theme === "light" ? "#cbd5e1" : "#1e293b"} />
+                </pattern>
               </defs>
+
+              {/* Dot-grid background fills the whole scrollable canvas. */}
+              <rect x={0} y={0} width={W} height={H} fill={theme === "light" ? "#f8fafc" : "#0b0f17"} />
+              <rect x={0} y={0} width={W} height={H} fill="url(#dotGrid)" />
 
               {/* Cluster cards. Each ring is a titled panel — dot, typology, wallet
                   count and money moved — so the canvas reads as a list of findings
@@ -421,30 +472,51 @@ export function GraphView({
                 );
               })}
 
-              {/* Edges */}
+              {/* Edges — coloured by the role of the path, not raw severity. The
+                  mixer fan-out (anything touching a mixer) is tainted → red; the
+                  final hop into an exchange is the recoverable off-ramp → green;
+                  everything else keeps the money-laundering purple/gray flow. */}
               {visibleEdges.map((e) => {
                 const s = nodeIndex.get(e.source);
                 const t = nodeIndex.get(e.target);
                 if (!s || !t) return null;
-                const color = severityColor(e.severity);
-                const isHigh = e.severity === "high";
+                const sEnt = entityOf(s);
+                const tEnt = entityOf(t);
+                const touchesMixer = sEnt === "mixer" || tEnt === "mixer";
+                const intoExchange = tEnt === "exchange";
+                const color = touchesMixer
+                  ? "#ef4444"
+                  : intoExchange
+                    ? "#22c55e"
+                    : sEnt === "relayer" || tEnt === "relayer"
+                      ? "#a855f7"
+                      : severityColor(e.severity);
+                // The mixer fan-out and any high-severity hop get the animated dash.
+                const isHigh = e.severity === "high" || touchesMixer;
                 const lit = !!highlightIds && highlightIds.has(e.source) && highlightIds.has(e.target);
                 const hovered = !!hoverIds && hoverIds.has(e.source) && hoverIds.has(e.target);
                 const touched = lit || hovered;
                 const faded = !!hoverIds && !hovered;
-                const marker =
-                  e.severity === "high" ? "url(#arrowRed)" : e.severity === "medium" ? "url(#arrowAmber)" : "url(#arrowGreen)";
+                const marker = touchesMixer
+                  ? "url(#arrowRed)"
+                  : intoExchange
+                    ? "url(#arrowGreen)"
+                    : sEnt === "relayer" || tEnt === "relayer"
+                      ? "url(#arrowPurple)"
+                      : e.severity === "medium"
+                        ? "url(#arrowAmber)"
+                        : "url(#arrowGreen)";
                 return (
                   <g key={e.id} opacity={faded ? 0.5 : 1} style={{ transition: "opacity 0.15s ease" }}>
                     <path
                       d={curvePath(s.x, s.y, t.x, t.y)}
                       fill="none"
                       stroke={color}
-                      strokeOpacity={touched ? 1 : isHigh ? 0.8 : 0.5}
-                      strokeWidth={touched ? 2.4 : isHigh ? 1.8 : 1.3}
-                      strokeDasharray={isHigh ? "6 6" : undefined}
+                      strokeOpacity={touched ? 1 : isHigh ? 0.85 : 0.55}
+                      strokeWidth={touched ? 2.4 : isHigh ? 1.9 : 1.4}
+                      strokeDasharray="6 6"
                       markerEnd={marker}
-                      className={isHigh ? "animate-dashmove" : ""}
+                      className="animate-dashmove"
                     />
                     {touched && (
                       <text
@@ -463,86 +535,188 @@ export function GraphView({
                 );
               })}
 
-              {/* Nodes */}
+              {/* Nodes — entity-typed. Shape and colour key off the wallet's role
+                  in the laundering story, not raw risk: red victim card, gray hop
+                  circles with a tx-count badge, a black mixer with a pulsing red
+                  MUST-HALT halo, purple relayer diamonds carrying a de-anon P=xx%
+                  (only when the trace actually attributed one), and a green
+                  exchange as the freeze target. */}
               {visibleNodes.map((n) => {
                 const isHover = hover === n.id;
-                const isHigh = n.severity === "high";
-                const color = severityColor(n.severity);
+                const entity = entityOf(n);
+                const eColor = ENTITY_COLOR[entity];
                 const deg = n.degree ?? 1;
-                const base = nodeRadius(deg);
+                const base = Math.max(nodeRadius(deg), 20);
                 const r = isHover ? base + 3 : base;
-                const isHub = deg >= 4;
                 const isNamed = pinned.includes(n.id);
                 const lit = !!highlightIds && highlightIds.has(n.id);
                 const faded = !!hoverIds && !hoverIds.has(n.id);
-                const cColor = chainColor(n.chain);
-                return (
-                  <g
-                    key={n.id}
-                    transform={`translate(${n.x}, ${n.y})`}
-                    className="cursor-pointer"
-                    opacity={faded ? 0.55 : 1}
-                    style={{ transition: "opacity 0.15s ease" }}
-                    onMouseEnter={() => setHover(n.id)}
-                    onMouseLeave={() => setHover(null)}
-                    onClick={() => setSelected(n)}
+                const textColor = theme === "light" ? "#0f172a" : "#e2e8f0";
+                const subColor = theme === "light" ? "#475569" : "#94a3b8";
+                // Purple relayers show a de-anon confidence ONLY when the trace
+                // carried one — never fabricated.
+                const pConf =
+                  entity === "relayer" && typeof n.confidence_score === "number" && n.confidence_score > 0
+                    ? Math.round(n.confidence_score)
+                    : null;
+
+                const focusRing = lit ? (
+                  <circle
+                    r={r + 9}
+                    fill="none"
+                    stroke="#38bdf8"
+                    strokeOpacity={isNamed ? 0.95 : 0.5}
+                    strokeWidth={isNamed ? 2.4 : 1.4}
+                    strokeDasharray={isNamed ? undefined : "3 3"}
+                  />
+                ) : null;
+
+                const label = (
+                  <text
+                    y={r + 16}
+                    textAnchor="middle"
+                    fontSize={9.5}
+                    fontWeight={isHover || isNamed ? 700 : 500}
+                    fill={textColor}
+                    className="font-mono"
+                    style={{ paintOrder: "stroke", stroke: theme === "light" ? "#f8fafc" : "#0b0f17", strokeWidth: 3 }}
                   >
-                    {isHigh && <circle r={r + 14} fill="url(#redGlow)" />}
-                    {lit && (
-                      <circle
-                        r={r + 7}
-                        fill="none"
-                        stroke="#38bdf8"
-                        strokeOpacity={isNamed ? 0.95 : 0.5}
-                        strokeWidth={isNamed ? 2.4 : 1.4}
-                        strokeDasharray={isNamed ? undefined : "3 3"}
-                      />
-                    )}
-                    {isHigh && (isHub || isHover) && (
-                      <circle r={r + 4} fill="none" stroke="#ef4444" strokeOpacity={0.5} strokeWidth={1.5}>
-                        <animate attributeName="r" from={String(r + 4)} to={String(r + 18)} dur="1.6s" repeatCount="indefinite" />
-                        <animate attributeName="opacity" from="0.7" to="0" dur="1.6s" repeatCount="indefinite" />
+                    {shortWallet(n.label)}
+                  </text>
+                );
+                const sublabel = (
+                  <text
+                    y={r + 28}
+                    textAnchor="middle"
+                    fontSize={8.5}
+                    fill={subColor}
+                    style={{ paintOrder: "stroke", stroke: theme === "light" ? "#f8fafc" : "#0b0f17", strokeWidth: 3 }}
+                  >
+                    {CHAINS[n.chain].short} · {n.vasp ?? LAYER_SHORT[n.layer_type]}
+                  </text>
+                );
+
+                const commonProps = {
+                  transform: `translate(${n.x}, ${n.y})`,
+                  className: "cursor-pointer",
+                  opacity: faded ? 0.55 : 1,
+                  style: { transition: "opacity 0.15s ease" as const },
+                  onMouseEnter: () => setHover(n.id),
+                  onMouseLeave: () => setHover(null),
+                  onClick: () => setSelected(n),
+                };
+
+                // The forensic role now lives entirely in this coloured ring —
+                // the token inside carries the coin/exchange brand identity. A
+                // soft glow in the entity hue makes the role legible at a glance
+                // without hiding the logo it frames.
+                const roleRing = (
+                  <circle
+                    r={r + 4.5}
+                    fill="none"
+                    stroke={eColor}
+                    strokeWidth={isHover ? 2.8 : 2.2}
+                    style={{ filter: `drop-shadow(0 0 6px ${eColor}70)` }}
+                  />
+                );
+
+                // ── Mixer: black circle, funnel glyph, pulsing red MUST-HALT halo ──
+                if (entity === "mixer") {
+                  return (
+                    <g key={n.id} {...commonProps}>
+                      <circle r={r + 16} fill="url(#redGlow)" />
+                      {focusRing}
+                      <circle r={r + 5} fill="none" stroke="#ef4444" strokeOpacity={0.7} strokeWidth={2} strokeDasharray="4 4">
+                        <animate attributeName="r" from={String(r + 5)} to={String(r + 22)} dur="1.6s" repeatCount="indefinite" />
+                        <animate attributeName="opacity" from="0.8" to="0" dur="1.6s" repeatCount="indefinite" />
                       </circle>
-                    )}
-                    <circle
-                      r={r}
-                      fill="#0d1117"
-                      stroke={color}
-                      strokeWidth={isHub ? 2.6 : isHover ? 2.2 : 1.6}
-                      style={{ filter: `drop-shadow(0 0 6px ${color}80)`, transition: "r 0.15s ease" }}
-                    />
-                    {/* Inner core carries the chain identity; the ring carries risk. */}
-                    <circle r={Math.max(5, r * 0.38)} fill={cColor} opacity={0.92} />
-                    {isHub && (
-                      <text y={4} textAnchor="middle" fontSize={11} fontWeight={700} fill="#0d1117">
-                        {deg}
-                      </text>
-                    )}
-                    <text
-                      y={r + 14}
-                      textAnchor="middle"
-                      fontSize={9.5}
-                      fontWeight={isHover || isHub || isNamed ? 700 : 400}
-                      fill={isHover ? "#ffffff" : isNamed ? "#7dd3fc" : isHub ? "#e2e8f0" : "#94a3b8"}
-                      className="font-mono"
-                      style={{ paintOrder: "stroke", stroke: "var(--bg)", strokeWidth: 3 }}
-                    >
-                      {shortWallet(n.label)}
-                    </text>
-                    {/* Named wallets keep their chain and role on screen permanently;
-                        everything else reveals it on hover. */}
-                    {(isHover || isNamed) && (
+                      <circle r={r} fill="#0d1117" stroke="#ef4444" strokeWidth={2.4} style={{ filter: "drop-shadow(0 0 8px rgba(239,68,68,0.6))" }} />
+                      {/* Funnel glyph */}
+                      <path d="M -9 -8 L 9 -8 L 2.5 1 L 2.5 9 L -2.5 6 L -2.5 1 Z" fill="#f87171" stroke="#fca5a5" strokeWidth={0.6} />
+                      {label}
+                      <g transform={`translate(0, ${-(r + 14)})`}>
+                        <rect x={-42} y={-11} width={84} height={17} rx={8.5} fill="#ef4444" />
+                        <text textAnchor="middle" y={1.5} fontSize={9} fontWeight={800} fill="#ffffff" letterSpacing="0.05em">
+                          ⚠ MUST-HALT
+                        </text>
+                      </g>
+                      {(isHover || isNamed) && sublabel}
+                    </g>
+                  );
+                }
+
+                // ── Relayer: coin token in a purple ring + P=xx% de-anon badge ──
+                if (entity === "relayer") {
+                  return (
+                    <g key={n.id} {...commonProps}>
+                      {focusRing}
+                      {roleRing}
+                      <CoinLogo chain={n.chain} size={r * 2} />
+                      {pConf !== null && (
+                        <g transform={`translate(0, ${-(r + 15)})`}>
+                          <rect x={-24} y={-9} width={48} height={15} rx={7.5} fill={eColor} />
+                          <text textAnchor="middle" y={1.5} fontSize={9} fontWeight={800} fill="#ffffff" className="font-mono">
+                            P={pConf}%
+                          </text>
+                        </g>
+                      )}
+                      {label}
+                      {(isHover || isNamed) && sublabel}
+                    </g>
+                  );
+                }
+
+                // ── Victim: coin token in a double red ring (the reported entry) ──
+                if (entity === "victim") {
+                  return (
+                    <g key={n.id} {...commonProps}>
+                      {focusRing}
+                      <circle r={r + 8} fill="none" stroke={eColor} strokeOpacity={0.4} strokeWidth={1.4} />
+                      {roleRing}
+                      <CoinLogo chain={n.chain} size={r * 2} />
+                      {label}
+                      {(isHover || isNamed) && sublabel}
+                    </g>
+                  );
+                }
+
+                // ── Exchange: the VASP's own logo in a green ring (freeze target) ──
+                if (entity === "exchange") {
+                  return (
+                    <g key={n.id} {...commonProps}>
+                      {focusRing}
+                      {roleRing}
+                      <ExchangeLogo vasp={n.vasp} size={r * 2} />
+                      {label}
                       <text
-                        y={r + 25}
+                        y={r + 28}
                         textAnchor="middle"
                         fontSize={8.5}
-                        fill={laneText(cColor)}
-                        className="font-mono"
-                        style={{ paintOrder: "stroke", stroke: "var(--bg)", strokeWidth: 3 }}
+                        fontWeight={700}
+                        fill="#16a34a"
+                        style={{ paintOrder: "stroke", stroke: theme === "light" ? "#f8fafc" : "#0b0f17", strokeWidth: 3 }}
                       >
-                        {CHAINS[n.chain].short} · {n.vasp ?? LAYER_SHORT[n.layer_type]}
+                        {n.vasp ? n.vasp : "Consolidated Exit"}
                       </text>
-                    )}
+                    </g>
+                  );
+                }
+
+                // ── Intermediate: coin token in a gray ring + tx-count badge ──
+                return (
+                  <g key={n.id} {...commonProps}>
+                    {focusRing}
+                    {roleRing}
+                    <CoinLogo chain={n.chain} size={r * 2} />
+                    {/* Tx-count badge (counterparties) on the shoulder. */}
+                    <g transform={`translate(${r - 2}, ${-(r - 2)})`}>
+                      <circle r={8} fill="#334155" stroke={theme === "light" ? "#f8fafc" : "#0b0f17"} strokeWidth={1.5} />
+                      <text textAnchor="middle" y={3} fontSize={9} fontWeight={700} fill="#ffffff">
+                        {deg}
+                      </text>
+                    </g>
+                    {label}
+                    {(isHover || isNamed) && sublabel}
                   </g>
                 );
               })}
@@ -571,9 +745,28 @@ export function GraphView({
         className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border px-4 py-2.5 text-[12px] lg:gap-x-6"
         style={{ background: "var(--panel)", borderColor: "var(--border)", color: "var(--text)" }}
       >
-        <LegendRow color="#ef4444" label="High risk" />
-        <LegendRow color="#f59e0b" label="Medium risk" />
-        <LegendRow color="#22c55e" label="Safe" />
+        {/* Role rings — the coloured ring around a token states its forensic role. */}
+        <LegendRing color="#ef4444" label="Victim" />
+        <LegendRing color="#94a3b8" label="Intermediate" />
+        <LegendRing color="#0d1117" ringStroke="#ef4444" label="Mixer · must halt" />
+        <LegendRing color="#a855f7" label="Relayer (DEX / bridge)" />
+        <LegendRing color="#22c55e" label="Exchange" />
+        <span className="hidden h-4 w-px lg:block" style={{ background: "var(--border)" }} />
+        {/* Token = the coin the wallet holds, or the exchange it belongs to. */}
+        <LogoChip label="ETH"><CoinLogo chain="ETHEREUM" size={32} /></LogoChip>
+        <LogoChip label="BTC"><CoinLogo chain="BITCOIN" size={32} /></LogoChip>
+        <LogoChip label="TRX"><CoinLogo chain="TRON" size={32} /></LogoChip>
+        <LogoChip label="POL"><CoinLogo chain="POLYGON" size={32} /></LogoChip>
+        <LogoChip label="SOL"><CoinLogo chain="SOLANA" size={32} /></LogoChip>
+        {EXCHANGE_LEGEND.map((x) => (
+          <LogoChip key={x.name} label={x.label}>
+            <ExchangeLogo vasp={x.name} size={32} />
+          </LogoChip>
+        ))}
+        <span className="hidden h-4 w-px lg:block" style={{ background: "var(--border)" }} />
+        {/* Compact risk sub-legend kept for the edge colours. */}
+        <LegendRow color="#ef4444" label="Tainted (mixer) flow" />
+        <LegendRow color="#22c55e" label="Exit to exchange" />
         <span className="flex items-center gap-2">
           <span
             className="grid place-items-center w-4 h-4 rounded-full border text-[8px] font-bold"
@@ -581,11 +774,7 @@ export function GraphView({
           >
             n
           </span>
-          Number in a node = counterparties
-        </span>
-        <span className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full ring-2 ring-white/20" style={{ background: "#38bdf8" }} />
-          Core colour = chain
+          Badge = counterparties · P= = de-anon confidence
         </span>
         <span className="w-full text-[11.5px] lg:ml-auto lg:w-auto" style={{ color: "var(--muted)" }}>
           <span className="lg:hidden">Tap any node for its full dossier · pinch or use + to zoom in</span>
@@ -609,7 +798,9 @@ export function GraphView({
           <div className="mt-2.5 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
             {displayChains.map((b) => (
               <div key={b.id} className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 shrink-0 rounded-sm" style={{ background: b.color, boxShadow: `0 0 8px ${b.color}` }} />
+                <svg width={18} height={18} viewBox="-16 -16 32 32" className="shrink-0" style={{ filter: `drop-shadow(0 0 6px ${b.color}66)` }}>
+                  <CoinLogo chain={b.id} size={32} />
+                </svg>
                 <span className="text-[12.5px] truncate" style={{ color: "var(--text)" }}>
                   {b.name}
                 </span>
@@ -820,8 +1011,39 @@ function Stat({ label, value, color }: { label: string; value: string; color: st
 function LegendRow({ color, label }: { color: string; label: string }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="w-2 h-2 rounded-full" style={{ background: color, boxShadow: `0 0 8px ${color}` }} />
+      <span className="h-0.5 w-4 rounded" style={{ background: color, boxShadow: `0 0 6px ${color}` }} />
       <span>{label}</span>
+    </div>
+  );
+}
+
+// Role swatch — a hollow ring in the entity colour, mirroring the coloured ring
+// the renderer now draws around every coin/exchange token on the canvas.
+function LegendRing({ color, ringStroke, label }: { color: string; ringStroke?: string; label: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span
+        className="inline-block h-3.5 w-3.5 rounded-full"
+        style={{
+          background: color,
+          border: `1.5px solid ${ringStroke ?? color}`,
+          boxShadow: `0 0 6px ${(ringStroke ?? color)}90`,
+        }}
+      />
+      <span>{label}</span>
+    </div>
+  );
+}
+
+// A tiny logo chip for the legend — wraps a centred CoinLogo/ExchangeLogo in a
+// self-contained <svg> viewport so it renders inline alongside its ticker.
+function LogoChip({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <svg width={18} height={18} viewBox="-16 -16 32 32" className="shrink-0">
+        {children}
+      </svg>
+      <span className="font-mono text-[11.5px]">{label}</span>
     </div>
   );
 }

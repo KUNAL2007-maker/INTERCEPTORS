@@ -33,20 +33,27 @@ import { Page, PanelHeader } from "@/components/ui/Page";
 import { severityColor, shortWallet } from "@/lib/domain";
 import {
   analyzeGraph,
+  type GraphFeatures,
   type RiskAssessment,
   type RiskFactor,
   type ShortestPathResult,
   type SyndicateHub,
 } from "@/lib/graph-algorithms";
+// Type-only: fully erased at compile, so the server-side sidecar client is never
+// pulled into this client bundle.
+import type { AstarPathToVasp } from "@/lib/ml-service";
 
 // The /api/graph response shape (see src/app/api/graph/route.ts). Only the fields
 // this view consumes are typed; the route may send more.
 type GraphApiResult = {
   shortestPathToVasp: ShortestPathResult | null;
+  astarPathToVasp: AstarPathToVasp | null;
   syndicateHubs: SyndicateHub[];
   riskAssessments: RiskAssessment[];
   projectedToNeo4j: boolean;
   ml: { available: boolean; reason: string };
+  mlSource?: string; // "python-xgboost" | "features-only" | "heuristic"
+  gdsSource?: string; // "networkx" | "neo4j-gds" | "in-memory-ts"
   counts: { wallets: number; transfers: number; hubs: number };
   error?: string;
 };
@@ -106,6 +113,7 @@ export function CrimeCanvasView({ onGoToTrace }: { onGoToTrace?: () => void }) {
   }, [assessments]);
 
   const shortestPath = enriched?.shortestPathToVasp ?? analysis?.shortestPathToVasp ?? null;
+  const astarPath = enriched?.astarPathToVasp ?? null; // A* only exists on the sidecar path
   const hubs = enriched?.syndicateHubs ?? analysis?.syndicateHubs ?? [];
   const selectedAssessment = selected ? assessmentByAddr.get(canon(selected)) ?? null : null;
 
@@ -306,7 +314,16 @@ export function CrimeCanvasView({ onGoToTrace }: { onGoToTrace?: () => void }) {
     transfers: trace!.transfers.length,
     hubs: hubs.length,
   };
-  const mlOn = enriched?.ml?.available === true;
+  const mlSource = enriched?.mlSource ?? "heuristic";
+  const gdsSource = enriched?.gdsSource ?? "in-memory-ts";
+  const mlXgb = mlSource === "python-xgboost";
+  const gdsReal = gdsSource === "neo4j-gds" || gdsSource === "networkx";
+  const gdsLabel =
+    gdsSource === "neo4j-gds"
+      ? "GDS: Neo4j"
+      : gdsSource === "networkx"
+        ? "GDS: NetworkX"
+        : "GDS: in-memory";
 
   return (
     <Page width="wide" className="space-y-4">
@@ -318,10 +335,11 @@ export function CrimeCanvasView({ onGoToTrace }: { onGoToTrace?: () => void }) {
             <Chip label={`${counts.wallets} wallets`} />
             <Chip label={`${counts.transfers} transfers`} />
             <Chip
-              label={mlOn ? "ML overlay: on" : "ML overlay: heuristic"}
+              label={mlXgb ? "XGBoost (Python)" : "ML: heuristic"}
               title={enriched?.ml?.reason}
-              tone={mlOn ? "good" : "muted"}
+              tone={mlXgb ? "good" : "muted"}
             />
+            <Chip label={gdsLabel} tone={gdsReal ? "good" : "muted"} />
             <Chip
               label={enriched?.projectedToNeo4j ? "Neo4j-verified" : "in-memory"}
               tone={enriched?.projectedToNeo4j ? "good" : "muted"}
@@ -347,6 +365,7 @@ export function CrimeCanvasView({ onGoToTrace }: { onGoToTrace?: () => void }) {
         {/* Side panel */}
         <div className="space-y-4">
           <SelectedCard assessment={selectedAssessment} hasSelection={!!selected} />
+          <AstarPanel path={astarPath} mlXgb={mlXgb} />
           <PathPanel path={shortestPath} verified={enriched?.projectedToNeo4j === true} />
           <HubsPanel hubs={hubs} onSelect={setSelected} />
         </div>
@@ -479,10 +498,7 @@ function SelectedCard({
 
         <div className="grid grid-cols-2 gap-2">
           <Stat label="Final score" value={a.final_score.toFixed(1)} />
-          <Stat
-            label="Model"
-            value={a.ml_score !== null ? `ML ${a.ml_score.toFixed(1)}` : "heuristic"}
-          />
+          <FraudStat prob={a.ml_score} />
         </div>
 
         <div
@@ -491,6 +507,8 @@ function SelectedCard({
         >
           {a.recommended_action}
         </div>
+
+        <GdsReadout features={a.features} />
 
         <div>
           <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-2">
@@ -536,6 +554,73 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
+function fraudColor(p: number): string {
+  return p >= 80 ? "#ef4444" : p >= 60 ? "#f97316" : p >= 35 ? "#f59e0b" : "#10b981";
+}
+
+// The headline XGBoost output: P(fraud) as a percent, e.g. "96%". Null when the
+// Python ML sidecar isn't running (the score is heuristic-only) — shown as "—".
+function FraudStat({ prob }: { prob: number | null }) {
+  if (prob === null) {
+    return (
+      <div
+        className="rounded border px-2 py-1.5"
+        style={{ borderColor: "var(--border)", background: "var(--chip)" }}
+        title="XGBoost fraud probability needs the Python ML sidecar; heuristic-only here."
+      >
+        <div className="text-[9px] uppercase tracking-wider text-muted-2">Fraud probability</div>
+        <div className="mt-0.5 text-[12px] font-semibold text-muted-2">—</div>
+      </div>
+    );
+  }
+  const color = fraudColor(prob);
+  return (
+    <div
+      className="rounded border px-2 py-1.5"
+      style={{ borderColor: withAlpha(color, 0.45), background: withAlpha(color, 0.12) }}
+      title="XGBoost P(fraud) — demonstration model trained on synthetic data."
+    >
+      <div className="text-[9px] uppercase tracking-wider text-muted-2">Fraud probability</div>
+      <div className="mt-0.5 text-[14px] font-bold tabular-nums" style={{ color }}>
+        {Math.round(prob)}%
+      </div>
+    </div>
+  );
+}
+
+// Compact readout of the four GDS graph-topology features. When the sidecar runs
+// these are real (NetworkX / Neo4j GDS); in heuristic-only mode betweenness and
+// clustering are the TS zero-defaults, which is honest to show.
+function GdsReadout({ features }: { features: GraphFeatures }) {
+  const cells: Array<[string, string]> = [
+    ["PageRank", features.pagerank_score.toFixed(3)],
+    ["Between", features.betweenness_centrality.toFixed(3)],
+    ["Community", String(Math.round(features.community_size))],
+    ["Cluster", features.local_clustering_coeff.toFixed(3)],
+  ];
+  return (
+    <div>
+      <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-2">
+        GDS features
+      </div>
+      <div className="grid grid-cols-4 gap-1.5">
+        {cells.map(([label, value]) => (
+          <div
+            key={label}
+            className="rounded border px-1 py-1 text-center"
+            style={{ borderColor: "var(--border)", background: "var(--chip)" }}
+          >
+            <div className="text-[8px] uppercase tracking-wide text-muted-2">{label}</div>
+            <div className="mt-0.5 text-[10.5px] font-semibold tabular-nums" style={{ color: "var(--text-strong)" }}>
+              {value}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function PathPanel({ path, verified }: { path: ShortestPathResult | null; verified: boolean }) {
   return (
     <Panel
@@ -573,6 +658,74 @@ function PathPanel({ path, verified }: { path: ShortestPathResult | null; verifi
               </li>
             ))}
           </ol>
+        </div>
+      )}
+    </Panel>
+  );
+}
+
+// The genuine A* (f = g + h) victim→VASP path from the Python ML sidecar, with
+// each hop's search costs exposed. Distinct from the plain-BFS "Shortest path"
+// panel above: blue search accent, a g/h/f cost table, and the heuristic's own
+// explanation. Only the sidecar computes this, so it's empty in heuristic mode.
+function AstarPanel({ path, mlXgb }: { path: AstarPathToVasp | null; mlXgb: boolean }) {
+  return (
+    <Panel
+      title="A* path to VASP"
+      hint={path ? `${path.hops} hop${path.hops === 1 ? "" : "s"} · f = g + h` : undefined}
+      right={path ? <Chip label="XGBoost sidecar" tone="good" /> : undefined}
+    >
+      {!path ? (
+        <div className="py-5 text-center text-[11px] text-muted-2">
+          {mlXgb
+            ? "A* found no serviceable VASP reachable from the seed."
+            : "A* pathfinding runs in the Python ML sidecar — enable it to see the g/h/f search."}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <div
+            className="rounded border px-2 py-1.5"
+            style={{ borderColor: withAlpha("#38bdf8", 0.4), background: withAlpha("#38bdf8", 0.1) }}
+          >
+            <div className="text-[11px] font-semibold" style={{ color: "#7dd3fc" }}>
+              {path.vasp.name ?? shortWallet(path.vasp.address)}
+            </div>
+            {path.vasp.compliance_email && (
+              <div className="text-[9.5px] text-muted-2">{path.vasp.compliance_email}</div>
+            )}
+          </div>
+
+          <div className="overflow-hidden rounded border" style={{ borderColor: "var(--border)" }}>
+            <div
+              className="grid grid-cols-[1fr_1.6rem_1.6rem_1.6rem] gap-x-2 border-b px-2 py-1 text-[8.5px] font-semibold uppercase tracking-wider text-muted-2"
+              style={{ borderColor: "var(--border)", background: "var(--chip)" }}
+            >
+              <span>Wallet</span>
+              <span className="text-right">g</span>
+              <span className="text-right">h</span>
+              <span className="text-right">f</span>
+            </div>
+            {path.perNode.map((n, i) => (
+              <div
+                key={`${n.address}-${i}`}
+                className="grid grid-cols-[1fr_1.6rem_1.6rem_1.6rem] items-center gap-x-2 px-2 py-1 text-[10px]"
+                style={i > 0 ? { borderTop: "1px solid var(--border)" } : undefined}
+              >
+                <span className="truncate font-mono" style={{ color: "var(--text-strong)" }}>
+                  {shortWallet(n.address)}
+                </span>
+                <span className="text-right tabular-nums text-muted-2">{n.g}</span>
+                <span className="text-right tabular-nums text-muted-2">{n.h}</span>
+                <span className="text-right font-semibold tabular-nums" style={{ color: "#7dd3fc" }}>
+                  {n.f}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {path.explanation && (
+            <div className="text-[9.5px] leading-snug text-muted-2">{path.explanation}</div>
+          )}
         </div>
       )}
     </Panel>

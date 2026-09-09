@@ -1,0 +1,17 @@
+{
+  "seed": "0x1111111111111111111111111111111111111111",
+  "nodes": [
+    {"address": "0x1111111111111111111111111111111111111111", "layer_type": "VICTIM_SOURCE", "balance_usd": 0.0},
+    {"address": "0x2222222222222222222222222222222222222222", "layer_type": "COLLECTOR", "balance_usd": 0.0},
+    {"address": "0x3333333333333333333333333333333333333333", "layer_type": "MULE", "balance_usd": 0.0},
+    {"address": "0x4444444444444444444444444444444444444444", "layer_type": "VASP_DEPOSIT", "balance_usd": 0.0},
+    {"address": "0x5555555555555555555555555555555555555555", "layer_type": "EXCHANGE", "balance_usd": 9700.0,
+     "vasp_attribution": {"vasp_name": "Demo Exchange", "is_verified": true, "is_mixer": false, "compliance_email": "le@demo.exchange"}}
+  ],
+  "transfers": [
+    {"from_address": "0x1111111111111111111111111111111111111111", "to_address": "0x2222222222222222222222222222222222222222", "value_usd": 10000.0, "timestamp": 0},
+    {"from_address": "0x2222222222222222222222222222222222222222", "to_address": "0x3333333333333333333333333333333333333333", "value_usd": 9900.0, "timestamp": 50000},
+    {"from_address": "0x3333333333333333333333333333333333333333", "to_address": "0x4444444444444444444444444444444444444444", "value_usd": 9800.0, "timestamp": 100000},
+    {"from_address": "0x4444444444444444444444444444444444444444", "to_address": "0x5555555555555555555555555555555555555555", "value_usd": 9700.0, "timestamp": 150000}
+  ]
+}

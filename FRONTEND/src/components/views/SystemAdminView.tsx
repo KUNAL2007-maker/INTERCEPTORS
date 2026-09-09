@@ -123,6 +123,36 @@ export function SystemAdminView() {
     } catch {}
   };
 
+  const handleDeleteUser = async (userId: number, name: string) => {
+    if (userId === user?.id) {
+      setMessage("You cannot delete your own signed-in account.");
+      setTimeout(() => setMessage(null), 4000);
+      return;
+    }
+    if (!confirm(`Permanently delete "${name}"? This removes the account locally and, when the IAM is online, from Keycloak.`)) {
+      return;
+    }
+    try {
+      const res = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete_user", user_id: userId })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        setUsers((prev) => prev.filter((u) => u.id !== userId));
+        const kc = data.keycloak?.synced ? "removed from Keycloak" : `Keycloak: ${data.keycloak?.reason || "local only"}`;
+        setMessage(`Deleted ${name}. ${kc}.`);
+      } else {
+        setMessage(data.error || "Unable to delete user.");
+      }
+      setTimeout(() => setMessage(null), 5000);
+    } catch {
+      setMessage("Network error while deleting user.");
+      setTimeout(() => setMessage(null), 4000);
+    }
+  };
+
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -137,15 +167,25 @@ export function SystemAdminView() {
           password: newPassword
         })
       });
-      if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
         setShowAddModal(false);
         setNewName("");
         setNewEmail("");
         loadData();
-        setMessage(`New user created successfully.`);
+        const kc = data.keycloak?.synced
+          ? "provisioned in Keycloak"
+          : `Keycloak: ${data.keycloak?.reason || "local only"}`;
+        setMessage(`Created ${data.user?.name || "user"}. ${kc}.`);
+        setTimeout(() => setMessage(null), 5000);
+      } else {
+        setMessage(data.error || "Unable to create user.");
         setTimeout(() => setMessage(null), 4000);
       }
-    } catch {}
+    } catch {
+      setMessage("Network error while creating user.");
+      setTimeout(() => setMessage(null), 4000);
+    }
   };
 
   return (
@@ -365,12 +405,20 @@ export function SystemAdminView() {
                       {u.is_active !== false ? "Active" : "Disabled"}
                     </button>
                   </td>
-                  <td className="p-3 text-right">
+                  <td className="p-3 text-right whitespace-nowrap">
                     <button
                       onClick={() => handleResetPassword(u.id)}
                       className="text-sky-400 hover:underline text-[11px] font-medium"
                     >
                       Reset Password
+                    </button>
+                    <button
+                      onClick={() => handleDeleteUser(u.id, u.name)}
+                      disabled={u.id === user?.id}
+                      title={u.id === user?.id ? "You cannot delete your own account" : "Delete this account"}
+                      className="ml-3 text-rose-400 hover:underline text-[11px] font-medium disabled:opacity-40 disabled:no-underline disabled:cursor-not-allowed"
+                    >
+                      Delete
                     </button>
                   </td>
                 </tr>

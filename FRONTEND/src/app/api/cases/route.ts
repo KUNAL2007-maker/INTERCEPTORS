@@ -4,6 +4,7 @@ import {
   getCaseByIdOrNumber,
   createCase,
   updateCase,
+  deleteCase,
   getCurrentUser,
   getUserById,
   recordAuditLog,
@@ -336,6 +337,24 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: 'Case not found' }, { status: 404 });
     }
 
+    // Named workflow transition: a field Investigating Officer hands a fully
+    // traced case up to the gazetted officer for statutory sign-off. Modelling
+    // it as an explicit action (rather than a raw client status write) lets us
+    // enforce the precondition — only a TRACED case can be forwarded — and keeps
+    // the handoff chain (field IO → gazetted → compliance) an audited step. It
+    // resolves to a plain status update, so the ABAC + IO-boundary guards below
+    // still apply unchanged.
+    if (body.action === 'forward_to_gazetted') {
+      if (existing.status !== 'TRACED') {
+        return NextResponse.json(
+          { error: 'Only a fully traced case can be forwarded to the gazetted officer for Section 94 BNSS sign-off.' },
+          { status: 409 }
+        );
+      }
+      body.status = 'AWAITING_SIGNATURE';
+      delete body.action;
+    }
+
     // 1b. Full ABAC evaluation against the specific case. Without this the
     // jurisdiction boundary (POL-04) and clearance (POL-07) were enforced on
     // reads but not on writes, so a supervisor in one state could allocate an
@@ -462,5 +481,115 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ success: true, case: updated });
   } catch (err: any) {
     return NextResponse.json({ error: err?.message || 'Case update error' }, { status: 500 });
+  }
+}
+
+/**
+ * Withdraw (delete) a complaint.
+ *
+ * A citizen may take back a complaint they filed, but only while it is still an
+ * untouched intake - once an officer has been allocated, a trace run, or a
+ * Section 94 BNSS order issued, the file is a live investigative/statutory
+ * record and is no longer the complainant's to erase. So the gate is: the
+ * caller must be the OWNING victim, and the case must still be PENDING_TRACING
+ * with no freeze order bound to it. Anything past that returns 409, surfaced in
+ * the UI as a disabled button with a tooltip rather than a silent failure.
+ */
+export async function DELETE(req: Request) {
+  try {
+    const claims = await extractUserClaims(req);
+    if (!claims) {
+      return NextResponse.json(
+        { error: 'Unauthorized: Authentication required to withdraw a complaint.' },
+        { status: 401 }
+      );
+    }
+    const user = getUserById(claims.id) || (claims as any);
+    const normRole = normalizeRole(user.role);
+
+    const url = new URL(req.url);
+    const targetId =
+      url.searchParams.get('case_number') ||
+      url.searchParams.get('id') ||
+      url.searchParams.get('case_id') ||
+      '';
+    if (!targetId.trim()) {
+      return NextResponse.json({ error: 'Missing case_number.' }, { status: 400 });
+    }
+
+    const existing = getCaseByIdOrNumber(targetId.trim());
+    if (!existing) {
+      return NextResponse.json({ error: 'Case not found.' }, { status: 404 });
+    }
+
+    // Only a citizen complainant may withdraw, and only their own complaint.
+    // Police/VASP/court roles do not delete cases at all - correcting a case is
+    // an update with an audit trail, not an erasure.
+    if (normRole !== 'VICTIM') {
+      return NextResponse.json(
+        { error: 'Access Denied: Only the citizen who filed a complaint may withdraw it.' },
+        { status: 403 }
+      );
+    }
+    if (existing.victim_id !== user.id) {
+      recordAuditLog({
+        user_id: user.id,
+        user_name: user.name,
+        user_role: user.role,
+        action: 'CASE_WITHDRAW_ATTEMPT',
+        resource_type: 'CASE_DOSSIER',
+        resource_id: existing.case_number,
+        decision: 'DENIED',
+        reason: 'VICTIM Privacy Boundary: cannot withdraw another complainant\'s case.'
+      });
+      return NextResponse.json(
+        { error: 'Access Denied: You can only withdraw complaints you filed.' },
+        { status: 403 }
+      );
+    }
+
+    // A file that has moved past intake - allocated, traced, served, frozen - is
+    // a live record. A withdrawal here would erase an active investigation, so
+    // it is refused with 409 Conflict.
+    const isUntouched = existing.status === 'PENDING_TRACING' && !existing.freeze_notice_id;
+    if (!isUntouched) {
+      recordAuditLog({
+        user_id: user.id,
+        user_name: user.name,
+        user_role: user.role,
+        action: 'CASE_WITHDRAW_ATTEMPT',
+        resource_type: 'CASE_DOSSIER',
+        resource_id: existing.case_number,
+        decision: 'DENIED',
+        reason: `Complaint ${existing.case_number} is already under investigation (status ${existing.status}) and cannot be withdrawn.`
+      });
+      return NextResponse.json(
+        {
+          error:
+            'This complaint is already under investigation and can no longer be withdrawn. Contact the investigating unit for any correction.'
+        },
+        { status: 409 }
+      );
+    }
+
+    const result = await deleteCase(existing.case_number);
+    if (!result.success) {
+      return NextResponse.json({ error: result.error || 'Could not withdraw the complaint.' }, { status: 500 });
+    }
+
+    recordAuditLog({
+      user_id: user.id,
+      user_name: user.name,
+      user_role: user.role,
+      action: 'CASE_WITHDRAWN',
+      resource_type: 'CASE_DOSSIER',
+      resource_id: existing.case_number,
+      decision: 'GRANTED',
+      reason: `Complainant ${user.name} withdrew complaint ${existing.case_number} while still at intake.`
+    });
+
+    return NextResponse.json({ success: true, case_number: existing.case_number });
+  } catch (err: any) {
+    return NextResponse.json({ error: err?.message || 'Case withdrawal error' }, { status: 500 });
   }
 }

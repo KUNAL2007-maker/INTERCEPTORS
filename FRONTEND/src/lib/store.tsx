@@ -90,6 +90,7 @@ type TraceStore = {
   removeNotice: (id: string) => void;
   refreshTrace: () => Promise<void>;
   ingestNcrpComplaint: (complaintData?: any) => Promise<any>;
+  withdrawComplaint: (caseNumber: string) => Promise<{ success: boolean; error?: string }>;
 };
 
 // ── Context ──────────────────────────────────────────────────────────────────
@@ -516,6 +517,33 @@ export function TraceStoreProvider({ children }: { children: ReactNode }) {
     [user, runTrace, loadCases]
   );
 
+  /**
+   * Withdraw a complaint the signed-in citizen filed. The server enforces that
+   * it is still an untouched intake (PENDING_TRACING, no freeze order) and that
+   * the caller owns it - the client just relays the outcome and reloads the list
+   * so the withdrawn case disappears. A 409 (already under investigation) or 403
+   * comes back as { success:false, error } for the view to surface.
+   */
+  const withdrawComplaint = useCallback(
+    async (caseNumber: string): Promise<{ success: boolean; error?: string }> => {
+      if (!caseNumber) return { success: false, error: "No complaint selected." };
+      try {
+        const res = await fetch(`/api/cases?case_number=${encodeURIComponent(caseNumber)}`, {
+          method: "DELETE",
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data?.success) {
+          return { success: false, error: data?.error || "The complaint could not be withdrawn." };
+        }
+        await loadCases();
+        return { success: true };
+      } catch (err: any) {
+        return { success: false, error: err?.message || "Could not reach the case service." };
+      }
+    },
+    [loadCases]
+  );
+
   return (
     <Ctx.Provider
       value={{
@@ -546,6 +574,7 @@ export function TraceStoreProvider({ children }: { children: ReactNode }) {
         removeNotice,
         refreshTrace,
         ingestNcrpComplaint,
+        withdrawComplaint,
       }}
     >
       {children}

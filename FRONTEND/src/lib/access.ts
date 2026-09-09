@@ -103,7 +103,7 @@ const VIEW_DEFS: Record<ViewKey, ViewDefinition> = {
     label: 'Section 94 BNSS Orders',
     hint: 'Draft, sign and serve requisitions',
     group: 'Statutory',
-    requires: [PERMISSIONS.FREEZE_NOTICE_DRAFT, PERMISSIONS.FREEZE_ORDER_ISSUE],
+    requires: [PERMISSIONS.FREEZE_NOTICE_DRAFT, PERMISSIONS.FREEZE_ORDER_ISSUE, PERMISSIONS.COURT_EVIDENCE_VIEW],
   },
   audit_logs: {
     label: 'Audit Trail',
@@ -162,8 +162,11 @@ export const ROLE_VIEWS: Record<RoleName, ViewKey[]> = {
 
   VASP_COMPLIANCE_OFFICER: ['exchange_portal'],
 
-  // Strictly read-only. No dashboard, no trace, no notice drafting.
-  COURT_REVIEWER: ['cases', 'graph', 'canvas', 'audit_logs'],
+  // Strictly read-only. No dashboard, no trace, no notice drafting - but the
+  // court must be able to open served freeze orders to verify the Ed25519
+  // signature and SHA-256 dossier hash, so `notices` is granted read-only
+  // (draft/sign/serve controls are gated off in LegalNoticesView).
+  COURT_REVIEWER: ['cases', 'notices', 'graph', 'canvas', 'audit_logs'],
 
   NATIONAL_COORDINATION_ANALYST: ['national_coordination', 'trace', 'graph', 'canvas', 'audit_logs'],
 
@@ -176,7 +179,7 @@ export const ROLE_VIEWS: Record<RoleName, ViewKey[]> = {
   WORKSPACE_ADMIN: ['dashboard', 'cases', 'graph', 'canvas', 'audit_logs'],
   SUPER_ADMIN: ['system_admin', 'audit_logs'],
   EXCHANGE_NODAL_OFFICER: ['exchange_portal'],
-  AUDITOR: ['cases', 'graph', 'canvas', 'audit_logs'],
+  AUDITOR: ['cases', 'notices', 'graph', 'canvas', 'audit_logs'],
 };
 
 /** Role-specific wording where the generic label would mislead. */
@@ -192,6 +195,7 @@ const ROLE_VIEW_LABELS: Partial<Record<RoleName, Partial<Record<ViewKey, { label
   },
   COURT_REVIEWER: {
     cases: { label: 'Evidence Dossier', hint: 'Read-only case record and integrity hash' },
+    notices: { label: 'Freeze Order Review', hint: 'Verify Ed25519 signatures & SHA-256 integrity' },
     graph: { label: 'Fund Flow Review', hint: 'Read-only attribution canvas' },
     audit_logs: { label: 'Chain of Custody', hint: 'Who did what, and when' },
   },

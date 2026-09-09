@@ -113,6 +113,28 @@ export function CommandDashboard({
   };
 
   /**
+   * Field IO hands a traced case up to the gazetted officer. The case moves to
+   * AWAITING_SIGNATURE, which is what the gazetted "Statutory Sign-Off Queue"
+   * lists — making the field → gazetted handoff an explicit, visible step
+   * rather than the case silently sitting in a TRACED pile.
+   */
+  const handleForwardToGazetted = async (caseNumber: string) => {
+    setUpdatingCase(caseNumber);
+    try {
+      const res = await fetch("/api/cases", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ case_number: caseNumber, action: "forward_to_gazetted" })
+      });
+      if (res.ok) await loadCases();
+    } catch {
+      // Handled
+    } finally {
+      setUpdatingCase(null);
+    }
+  };
+
+  /**
    * Allocate (or reallocate) a case to an officer. The officer's name is not
    * sent: the server derives it from the account so the audit trail cannot be
    * made to record a different officer than the one allocated. A rejection is
@@ -367,7 +389,11 @@ export function CommandDashboard({
   // Traced-case review, money-flow graph inspection, Section 94 BNSS sign-off.
   // --------------------------------------------------------------------------
   if (isSenior) {
-    const readyForNotice = cases.filter((c) => c.status === "TRACED");
+    // Cases waiting on the gazetted officer's signature: those a field officer
+    // has explicitly forwarded (AWAITING_SIGNATURE) plus any still-TRACED case
+    // (so nothing is stranded if it was traced before the forward step existed).
+    const readyForNotice = cases.filter((c) => c.status === "AWAITING_SIGNATURE" || c.status === "TRACED");
+    const forwardedCount = cases.filter((c) => c.status === "AWAITING_SIGNATURE").length;
     const servedNotices = cases.filter((c) => c.status === "NOTICE_SERVED");
     const frozenCount = cases.filter((c) => c.status === "FROZEN").length;
 
@@ -392,9 +418,9 @@ export function CommandDashboard({
         {/* Gazetted Status KPIs */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <Card>
-            <div className="text-[11px] uppercase tracking-wider text-muted font-medium mb-1">Traced Cases in Unit</div>
+            <div className="text-[11px] uppercase tracking-wider text-muted font-medium mb-1">Awaiting Your Sign-Off</div>
             <div className="text-2xl font-bold text-cyan-400">{readyForNotice.length}</div>
-            <div className="text-[11px] text-cyan-300/80 mt-1">Ready for Section 94 notice</div>
+            <div className="text-[11px] text-cyan-300/80 mt-1">{forwardedCount} forwarded by field officers</div>
           </Card>
           <Card>
             <div className="text-[11px] uppercase tracking-wider text-muted font-medium mb-1">Directives Issued</div>
@@ -454,6 +480,12 @@ export function CommandDashboard({
                       <span className="text-rose-400 font-mono font-bold">{formatINR(c.loss_amount_inr ?? 0)}</span> &bull; IO:{" "}
                       <span className="text-slate-300">{c.assigned_investigator_name || "Unallocated"}</span>
                     </div>
+                    {c.status === "AWAITING_SIGNATURE" && (
+                      <div className="text-[11px] mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded border text-orange-200" style={{ borderColor: "rgba(249,115,22,0.4)", background: "rgba(249,115,22,0.08)" }}>
+                        <span aria-hidden>↥</span>
+                        Forwarded by {c.assigned_investigator_name || "field officer"} — awaiting your Section 94 signature
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-2.5 ml-auto">
@@ -484,6 +516,56 @@ export function CommandDashboard({
             })}
           </div>
         </div>
+
+        {/* Directives Issued — the explicit handoff to the VASP Compliance Officer.
+            Once a Section 94 order is signed the case is NOTICE_SERVED, which is
+            exactly what the compliance desk sees; surfacing it here makes the
+            "forward to compliance officer" step visible rather than implicit. */}
+        {servedNotices.length > 0 && (
+          <div className="rounded border p-5 mt-6" style={{ background: "var(--panel)", borderColor: "var(--border)" }}>
+            <div className="flex items-center justify-between mb-4 border-b pb-3" style={{ borderColor: "var(--border)" }}>
+              <div>
+                <h2 className="text-sm font-semibold text-white">Signed Orders · Forwarded to VASP Compliance Officer</h2>
+                <p className="text-xs text-muted">Section 94 BNSS orders you have signed and served to the destination exchange&rsquo;s compliance desk.</p>
+              </div>
+              <span className="text-xs font-mono text-muted">{servedNotices.length} served</span>
+            </div>
+            <div className="space-y-3">
+              {servedNotices.map((c) => (
+                <div
+                  key={c.case_number}
+                  className="p-4 rounded border border-white/10 bg-white/[0.02] flex flex-wrap items-center justify-between gap-4"
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-mono font-bold text-sm text-white">{c.case_number}</span>
+                      <DashboardStatusBadge status={c.status} />
+                      {c.target_vasp && (
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded border bg-cyan-500/10 text-cyan-300 border-cyan-500/30">
+                          {c.target_vasp}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted mt-0.5">
+                      Loss: <span className="text-rose-400 font-mono font-bold">{formatINR(c.loss_amount_inr ?? 0)}</span> &bull;{" "}
+                      <span className="text-emerald-300">→ Forwarded to {c.target_vasp || "VASP"} Compliance Officer</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setActiveCase(c);
+                      onGoToNotices?.();
+                    }}
+                    className="rounded border px-3.5 py-2 text-xs font-semibold transition hover:opacity-90 cursor-pointer"
+                    style={{ borderColor: "var(--border)", background: "var(--chip)", color: "var(--text-strong)" }}
+                  >
+                    Track served order
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </Page>
     );
   }
@@ -639,6 +721,36 @@ export function CommandDashboard({
                     {c.token_symbol ? ` (${c.token_symbol})` : ""} &bull; Modus:{" "}
                     <span className="text-slate-300 truncate">{c.crime_type}</span>
                   </div>
+
+                  {/* Complainant contact — so the field officer can actually
+                      call the victim about their complaint (flaw: "the call by
+                      complaint is also not visible"). tel:/mailto: open the
+                      officer's dialer / mail client. */}
+                  {(c.victim_phone || c.victim_email) && (
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <span className="text-[10px] uppercase tracking-wider text-muted font-semibold">Contact complainant:</span>
+                      {c.victim_phone && (
+                        <a
+                          href={`tel:${c.victim_phone.replace(/[^+\d]/g, "")}`}
+                          className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded border transition hover:opacity-80"
+                          style={{ borderColor: "rgba(16,185,129,0.4)", background: "rgba(16,185,129,0.08)", color: "#6ee7b7" }}
+                          title={`Call ${c.victim_name || "the complainant"}`}
+                        >
+                          <span aria-hidden>📞</span> {c.victim_phone}
+                        </a>
+                      )}
+                      {c.victim_email && (
+                        <a
+                          href={`mailto:${c.victim_email}?subject=${encodeURIComponent(`Regarding your cyber-fraud complaint ${c.case_number}`)}`}
+                          className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded border transition hover:opacity-80"
+                          style={{ borderColor: "var(--border)", background: "var(--chip)", color: "var(--text-strong)" }}
+                          title={`Email ${c.victim_name || "the complainant"}`}
+                        >
+                          <span aria-hidden>✉</span> {c.victim_email}
+                        </a>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2.5 ml-auto">
@@ -680,7 +792,22 @@ export function CommandDashboard({
                       >
                         Prepare draft notice
                       </button>
+                      <button
+                        onClick={() => void handleForwardToGazetted(c.case_number)}
+                        disabled={updatingCase === c.case_number}
+                        className="rounded px-4 py-2 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-50 cursor-pointer"
+                        style={{ background: "#c2410c" }}
+                        title="Send this traced case to the gazetted officer for Section 94 BNSS signature"
+                      >
+                        {updatingCase === c.case_number ? "Forwarding…" : "Forward to Gazetted for Sign-off"}
+                      </button>
                     </div>
+                  )}
+
+                  {c.status === "AWAITING_SIGNATURE" && (
+                    <span className="px-3 py-1.5 rounded border bg-orange-500/10 text-orange-300 border-orange-500/30 text-xs font-semibold">
+                      Forwarded — awaiting gazetted signature
+                    </span>
                   )}
 
                   {(c.status === "NOTICE_SERVED" || c.status === "FROZEN") && (
@@ -755,6 +882,7 @@ function DashboardStatusBadge({ status }: { status: string }) {
   const M: Record<string, { label: string; cls: string }> = {
     PENDING_TRACING: { label: "Pending trace", cls: "text-amber-300 border-amber-500/40 bg-amber-500/10" },
     TRACED: { label: "Traced", cls: "text-cyan-300 border-cyan-500/40 bg-cyan-500/10" },
+    AWAITING_SIGNATURE: { label: "Awaiting sign-off", cls: "text-orange-300 border-orange-500/40 bg-orange-500/10" },
     NOTICE_SERVED: { label: "Sec 94 served", cls: "text-purple-300 border-purple-500/40 bg-purple-500/10" },
     FROZEN: { label: "Assets frozen", cls: "text-emerald-300 border-emerald-500/40 bg-emerald-500/10" },
     FREEZE_REFUSED: { label: "Freeze refused", cls: "text-rose-300 border-rose-500/40 bg-rose-500/10" },

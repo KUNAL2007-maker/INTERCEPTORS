@@ -25,6 +25,7 @@ import {
   type SignableOrder,
   type VerificationResult
 } from './order-signing';
+import { loadSnapshot, saveSnapshot, dataFilePath } from './persistence';
 
 export type StoredCase = {
   id: number;
@@ -32,6 +33,7 @@ export type StoredCase = {
   victim_id: number;
   victim_name?: string;
   victim_email?: string;
+  victim_phone?: string;
   workspace_id: number;
   jurisdiction_code: string;
   assigned_investigator_id?: number | null;
@@ -204,6 +206,7 @@ const memoryStore = {
       victim_id: 5,
       victim_name: 'Rajesh Verma',
       victim_email: 'victim.verma@example.demo',
+      victim_phone: '+91-98200-11842',
       workspace_id: 1,
       jurisdiction_code: 'MH-CYBER-01',
       assigned_investigator_id: null,
@@ -230,6 +233,7 @@ const memoryStore = {
       victim_id: 89,
       victim_name: 'Sunil Rao',
       victim_email: 'sunil.rao@example.demo',
+      victim_phone: '+91-99860-33017',
       workspace_id: 4,
       jurisdiction_code: 'KA-CYBER-03',
       assigned_investigator_id: null,
@@ -254,6 +258,7 @@ const memoryStore = {
       victim_id: 99,
       victim_name: 'Aakash Sharma',
       victim_email: 'aakash.sharma@example.demo',
+      victim_phone: '+91-98110-77265',
       workspace_id: 2,
       jurisdiction_code: 'DL-CYBER-02',
       assigned_investigator_id: null,
@@ -281,6 +286,97 @@ const memoryStore = {
   audit_logs: [] as StoredAuditLog[],
   traces: [] as any[]
 };
+
+// ----------------------------------------------------------------------------
+// 1a. Durable hydration + write-through
+//
+// memoryStore above is the single source of truth every reader uses. On boot
+// we replace its cases/users/notices with whatever was last written to disk,
+// so a restart no longer wipes filed complaints, created accounts, assignments
+// and signed orders. On a truly fresh machine (no snapshot yet) we keep the
+// seeds and write the first snapshot so the file exists from the outset.
+//
+// audit_logs are intentionally NOT restored: they already mirror to Postgres
+// and re-loading a truncated 500-entry ring on every boot would be misleading.
+// ----------------------------------------------------------------------------
+const __snapshot = loadSnapshot();
+if (__snapshot) {
+  if (Array.isArray(__snapshot.users) && __snapshot.users.length > 0) {
+    memoryStore.users = __snapshot.users;
+  }
+  if (Array.isArray(__snapshot.cases)) {
+    memoryStore.cases = __snapshot.cases;
+  }
+  if (Array.isArray(__snapshot.notices)) {
+    memoryStore.notices = __snapshot.notices;
+  }
+} else {
+  // First boot: no touching of the Postgres let-bindings (still in their TDZ
+  // this early), so write the seed snapshot straight through the disk layer.
+  saveSnapshot({
+    cases: memoryStore.cases,
+    users: memoryStore.users,
+    notices: memoryStore.notices
+  });
+}
+
+/**
+ * Write-through to disk (durable source of truth) after every mutation, plus a
+ * best-effort Postgres mirror of the cases table. Kept off the hot read path -
+ * only mutators call it. Safe to call at request time: by then the Postgres
+ * pool below has finished initialising.
+ */
+function persist(): void {
+  saveSnapshot({
+    cases: memoryStore.cases,
+    users: memoryStore.users,
+    notices: memoryStore.notices
+  });
+}
+
+/**
+ * Best-effort upsert of one case into the Postgres replica. Fire-and-forget:
+ * the durable snapshot is authoritative and getCasesForUser reads memory, so a
+ * failed mirror only means the optional replica lags. ON CONFLICT keeps it
+ * idempotent when the row already exists; a mismatched pre-existing schema just
+ * makes the whole statement throw and get swallowed.
+ */
+function mirrorCaseToPostgres(c: StoredCase): void {
+  if (!pgAvailable || !pool) return;
+  pool
+    .query(
+      `INSERT INTO cases (case_number, victim_id, victim_name, workspace_id, jurisdiction_code, assigned_investigator_id, assigned_investigator_name, suspect_wallet_address, blockchain_network, loss_amount_inr, crime_type, target_vasp, vasp_id, classification, status, priority, freeze_notice_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+       ON CONFLICT (case_number) DO UPDATE SET
+         assigned_investigator_id = EXCLUDED.assigned_investigator_id,
+         assigned_investigator_name = EXCLUDED.assigned_investigator_name,
+         status = EXCLUDED.status,
+         priority = EXCLUDED.priority,
+         target_vasp = EXCLUDED.target_vasp,
+         vasp_id = EXCLUDED.vasp_id,
+         freeze_notice_id = EXCLUDED.freeze_notice_id`,
+      [
+        c.case_number,
+        c.victim_id ?? null,
+        c.victim_name ?? null,
+        c.workspace_id ?? null,
+        c.jurisdiction_code ?? null,
+        c.assigned_investigator_id ?? null,
+        c.assigned_investigator_name ?? null,
+        c.suspect_wallet_address ?? null,
+        c.blockchain_network ?? null,
+        c.loss_amount_inr ?? null,
+        c.crime_type ?? null,
+        c.target_vasp ?? null,
+        c.vasp_id ?? null,
+        c.classification ?? null,
+        c.status ?? null,
+        c.priority ?? null,
+        c.freeze_notice_id ?? null
+      ]
+    )
+    .catch(() => {});
+}
 
 // ----------------------------------------------------------------------------
 // 2. PostgreSQL Connection Pool
@@ -318,6 +414,49 @@ try {
             statutory_code VARCHAR(100),
             ip_address VARCHAR(50),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          )
+        `).catch(() => {});
+
+        // Mirror tables for the durable store. The disk snapshot is the source
+        // of truth; these exist only so a running Postgres has a live replica
+        // to query. Columns align with the createCase/updateCase mirror writes.
+        // IF NOT EXISTS means a richer pre-existing schema (e.g. a teammate's
+        // migration) is left untouched and the mirror writes degrade quietly.
+        pool.query(`
+          CREATE TABLE IF NOT EXISTS cases (
+            case_number VARCHAR(100) PRIMARY KEY,
+            victim_id INTEGER,
+            victim_name VARCHAR(150),
+            workspace_id INTEGER,
+            jurisdiction_code VARCHAR(50),
+            assigned_investigator_id INTEGER,
+            assigned_investigator_name VARCHAR(150),
+            suspect_wallet_address VARCHAR(120),
+            blockchain_network VARCHAR(50),
+            loss_amount_inr NUMERIC,
+            crime_type VARCHAR(150),
+            target_vasp VARCHAR(120),
+            vasp_id INTEGER,
+            classification VARCHAR(30),
+            status VARCHAR(50),
+            priority VARCHAR(20),
+            freeze_notice_id VARCHAR(100),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          )
+        `).catch(() => {});
+
+        pool.query(`
+          CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY,
+            uid VARCHAR(80),
+            name VARCHAR(150),
+            email VARCHAR(150),
+            role VARCHAR(60),
+            jurisdiction_code VARCHAR(50),
+            clearance_level VARCHAR(30),
+            is_gazetted BOOLEAN,
+            vasp_id INTEGER,
+            is_active BOOLEAN DEFAULT TRUE
           )
         `).catch(() => {});
       }
@@ -459,6 +598,7 @@ export function createSystemUser(userData: {
   };
 
   memoryStore.users.push(newUser);
+  persist();
   const { password_hash, salt: s, ...safeUser } = newUser;
   return safeUser;
 }
@@ -467,6 +607,7 @@ export function updateUserStatus(userId: number | string, isActive: boolean): bo
   const user = memoryStore.users.find((u) => String(u.id) === String(userId) || u.uid === String(userId));
   if (!user) return false;
   user.is_active = isActive;
+  persist();
   return true;
 }
 
@@ -474,6 +615,7 @@ export function updateUserRole(userId: number | string, newRole: RoleName): bool
   const user = memoryStore.users.find((u) => String(u.id) === String(userId) || u.uid === String(userId));
   if (!user) return false;
   user.role = normalizeRole(newRole);
+  persist();
   return true;
 }
 
@@ -486,7 +628,37 @@ export function resetUserPassword(userId: number | string, newPassword?: string)
   const { hash, salt } = hashPassword(pwd);
   user.password_hash = hash;
   user.salt = salt;
+  persist();
   return true;
+}
+
+/**
+ * Hard-delete a user account.
+ *
+ * Guards a data invariant the API layer cannot: the platform must always retain
+ * at least one System Administrator, or it locks itself out of user management
+ * entirely. (Guarding against deleting *yourself* needs the acting user's id
+ * and lives in the API route.) Returns the removed account (minus secrets) so
+ * the caller can mirror the delete to Keycloak.
+ */
+export function deleteSystemUser(userId: number | string): { success: boolean; error?: string; user?: AppUser } {
+  const idx = memoryStore.users.findIndex((u) => String(u.id) === String(userId) || u.uid === String(userId));
+  if (idx < 0) return { success: false, error: 'No such user account on record.' };
+
+  const target = memoryStore.users[idx];
+  if (normalizeRole(target.role) === 'SYSTEM_ADMIN') {
+    const remainingAdmins = memoryStore.users.filter(
+      (u) => u.id !== target.id && normalizeRole(u.role) === 'SYSTEM_ADMIN' && u.is_active !== false
+    );
+    if (remainingAdmins.length === 0) {
+      return { success: false, error: 'Cannot delete the last System Administrator account.' };
+    }
+  }
+
+  memoryStore.users.splice(idx, 1);
+  persist();
+  const { password_hash, salt, ...safe } = target;
+  return { success: true, user: safe };
 }
 
 // ----------------------------------------------------------------------------
@@ -533,14 +705,11 @@ export function getAuditLogs(limit: number = 50): StoredAuditLog[] {
 // 5. Case Management (PostgreSQL with Fallback)
 // ----------------------------------------------------------------------------
 export async function getCasesForUser(user: SubjectAttributes): Promise<StoredCase[]> {
-  if (pgAvailable && pool) {
-    try {
-      const res = await pool.query('SELECT * FROM cases ORDER BY created_at DESC');
-      return filterCasesByScope(user, res.rows);
-    } catch {
-      // Fall through
-    }
-  }
+  // memoryStore.cases is the disk-backed source of truth. Reading Postgres here
+  // instead (as this used to) meant the assignee an assignment wrote to memory
+  // never came back on the next read, because updateCase only mirrored `status`
+  // to PG - the exact "assignment never reaches the field officer" bug. The PG
+  // table is now a write-only replica; reads always come from the durable store.
   return filterCasesByScope(user, memoryStore.cases);
 }
 
@@ -564,6 +733,7 @@ export async function createCase(newCase: Partial<StoredCase>): Promise<StoredCa
         (n) => n.case_number !== newCase.case_number && n.notice?.case_number !== newCase.case_number
       );
       Object.assign(existing, newCase);
+      persist();
       return existing;
     }
   }
@@ -600,31 +770,13 @@ export async function createCase(newCase: Partial<StoredCase>): Promise<StoredCa
     notes: newCase.notes || ''
   };
 
-  if (pgAvailable && pool) {
-    try {
-      const q = `
-        INSERT INTO cases (case_number, victim_id, workspace_id, assigned_investigator_id, suspect_wallet_address, blockchain_network, loss_amount_inr, crime_type, status)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *
-      `;
-      const values = [
-        caseObj.case_number,
-        caseObj.victim_id,
-        caseObj.workspace_id,
-        caseObj.assigned_investigator_id,
-        caseObj.suspect_wallet_address,
-        caseObj.blockchain_network,
-        caseObj.loss_amount_inr,
-        caseObj.crime_type,
-        caseObj.status
-      ];
-      const res = await pool.query(q, values);
-      return { ...caseObj, ...res.rows[0] };
-    } catch {
-      // Fall through
-    }
-  }
-
+  // Durable store first: this is what getCasesForUser reads, so a new complaint
+  // has to land here to be visible. The previous code returned the Postgres row
+  // WITHOUT unshifting to memory when PG was up, so freshly-filed cases silently
+  // vanished from every list. Postgres is now a best-effort replica only.
   memoryStore.cases.unshift(caseObj);
+  persist();
+  mirrorCaseToPostgres(caseObj);
   return caseObj;
 }
 
@@ -636,21 +788,40 @@ export async function updateCase(
   if (!found) return null;
 
   Object.assign(found, updates);
-
-  if (pgAvailable && pool) {
-    try {
-      if (updates.status) {
-        await pool.query('UPDATE cases SET status = $1 WHERE case_number = $2', [
-          updates.status,
-          found.case_number
-        ]);
-      }
-    } catch {
-      // Fall through
-    }
-  }
+  // Disk write makes every field durable - crucially the assignee, which the old
+  // status-only PG mirror dropped. mirrorCaseToPostgres upserts the full row.
+  persist();
+  mirrorCaseToPostgres(found);
 
   return found;
+}
+
+/**
+ * Hard-delete a case. Used by the victim "withdraw complaint" path. The caller
+ * (API layer) enforces WHO may delete and WHEN (owning victim, still
+ * PENDING_TRACING, no freeze order issued) - this function only performs the
+ * removal and keeps the durable store + replica in step.
+ */
+export async function deleteCase(caseIdOrNumber: string | number): Promise<{ success: boolean; error?: string }> {
+  const target = String(caseIdOrNumber).trim();
+  const idx = memoryStore.cases.findIndex(
+    (c) => String(c.id) === target || c.case_number.toLowerCase() === target.toLowerCase()
+  );
+  if (idx === -1) return { success: false, error: 'Case not found.' };
+
+  const [removed] = memoryStore.cases.splice(idx, 1);
+  // Drop any notices bound to the case too, so a re-filed complaint with the
+  // same number does not inherit a stale order.
+  memoryStore.notices = memoryStore.notices.filter(
+    (n) => n.case_number !== removed.case_number && n.notice?.case_number !== removed.case_number
+  );
+  persist();
+
+  if (pgAvailable && pool) {
+    pool.query('DELETE FROM cases WHERE case_number = $1', [removed.case_number]).catch(() => {});
+  }
+
+  return { success: true };
 }
 
 // ----------------------------------------------------------------------------
@@ -879,6 +1050,10 @@ export async function recordVaspResponse(
     statutory_code: 'SEC_94_BNSS_COMPLIANCE_RESPONSE'
   });
 
+  // Durable: the exchange's acknowledgement / reported action and the linked
+  // case's new status (FROZEN / FREEZE_REFUSED) must both survive a restart.
+  persist();
+
   return { success: true, notice: stored };
 }
 
@@ -1057,6 +1232,10 @@ export async function saveFreezeNotice(
       ? `Asset freeze compliance confirmed under Sec 94(1) BNSS by ${actingOfficer.name} (${actingOfficer.role}).`
       : 'Statutory Sec 94 BNSS freeze approved and digitally signed by Gazetted Officer.'
   });
+
+  // Durable: the draft/issued/acknowledged notice, its Ed25519 signature, and
+  // the linked case's NOTICE_SERVED status must all survive a restart.
+  persist();
 
   return { success: true, notice: stored };
 }
