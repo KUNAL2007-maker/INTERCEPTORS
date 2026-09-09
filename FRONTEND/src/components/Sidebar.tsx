@@ -48,6 +48,12 @@ const ICONS: Record<ViewKey, React.ReactNode> = {
       <path d="M9.4 10.6l5.2-1.8M9.1 11.3l3.9 3.9M15.3 9.4l-.9 5.2" stroke="currentColor" strokeWidth="1.2" />
     </svg>
   ),
+  monitor: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="12" r="2" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M8.5 8.5a5 5 0 000 7M15.5 8.5a5 5 0 010 7M5.8 5.8a9 9 0 000 12.4M18.2 5.8a9 9 0 010 12.4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  ),
   transfers: (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
       <path d="M4 7h13l-3-3M20 17H7l3 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />

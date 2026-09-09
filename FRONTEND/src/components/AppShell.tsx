@@ -9,6 +9,7 @@ import { CommandDashboard } from "./views/CommandDashboard";
 import { TransfersView } from "./views/TransfersView";
 import { GraphView } from "./views/GraphView";
 import { CrimeCanvasView } from "./views/CrimeCanvasView";
+import { MonitorView } from "./views/MonitorView";
 import { TraceWalletView } from "./views/TraceWalletView";
 import { InvestigatorChat } from "./views/InvestigatorChat";
 import { LegalNoticesView } from "./views/LegalNoticesView";
@@ -134,6 +135,7 @@ export function AppShell() {
             />
           )}
           {active === "canvas" && <CrimeCanvasView onGoToTrace={() => handleSetView("trace")} />}
+          {active === "monitor" && <MonitorView />}
           {active === "trace" && (
             <TraceWalletView
               onDone={() => handleSetView("dashboard")}

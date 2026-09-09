@@ -22,6 +22,7 @@ export type ViewKey =
   | 'transfers'
   | 'graph'
   | 'canvas'
+  | 'monitor'
   | 'trace'
   | 'chat'
   | 'notices'
@@ -87,6 +88,12 @@ const VIEW_DEFS: Record<ViewKey, ViewDefinition> = {
     group: 'Analysis',
     requires: [PERMISSIONS.WALLET_GRAPH_READ],
   },
+  monitor: {
+    label: 'Live Monitor',
+    hint: 'Real-time alerts on watched wallets',
+    group: 'Analysis',
+    requires: [PERMISSIONS.WALLET_MONITOR],
+  },
   transfers: {
     label: 'Transfer Ledger',
     hint: 'Transaction-level detail',
@@ -150,7 +157,7 @@ export const ROLE_VIEWS: Record<RoleName, ViewKey[]> = {
 
   // Field officer: works the cases assigned to them, drafts the requisition.
   // Cannot sign it - that gate is POL-05 and lives with a gazetted officer.
-  INVESTIGATING_OFFICER: ['dashboard', 'cases', 'trace', 'graph', 'canvas', 'transfers', 'notices', 'chat'],
+  INVESTIGATING_OFFICER: ['dashboard', 'cases', 'trace', 'graph', 'canvas', 'monitor', 'transfers', 'notices', 'chat'],
 
   // Supervisor triages and allocates. Deliberately not given the trace or
   // notice screens: allocation and oversight is the job, and putting the
@@ -158,7 +165,7 @@ export const ROLE_VIEWS: Record<RoleName, ViewKey[]> = {
   CYBERCRIME_SUPERVISOR: ['dashboard', 'cases', 'graph', 'canvas', 'audit_logs'],
 
   // Gazetted officer: reviews the draft and signs the freeze order.
-  SENIOR_INVESTIGATOR: ['dashboard', 'notices', 'cases', 'trace', 'graph', 'canvas', 'transfers', 'audit_logs'],
+  SENIOR_INVESTIGATOR: ['dashboard', 'notices', 'cases', 'trace', 'graph', 'canvas', 'monitor', 'transfers', 'audit_logs'],
 
   VASP_COMPLIANCE_OFFICER: ['exchange_portal'],
 
@@ -175,7 +182,7 @@ export const ROLE_VIEWS: Record<RoleName, ViewKey[]> = {
   // Legacy aliases are never looked up directly (normalizeRole maps them
   // first) but the Record type requires them. Point them at the canonical
   // list so an accidental direct lookup cannot widen access.
-  NORMAL_INVESTIGATOR: ['dashboard', 'cases', 'trace', 'graph', 'canvas', 'transfers', 'notices', 'chat'],
+  NORMAL_INVESTIGATOR: ['dashboard', 'cases', 'trace', 'graph', 'canvas', 'monitor', 'transfers', 'notices', 'chat'],
   WORKSPACE_ADMIN: ['dashboard', 'cases', 'graph', 'canvas', 'audit_logs'],
   SUPER_ADMIN: ['system_admin', 'audit_logs'],
   EXCHANGE_NODAL_OFFICER: ['exchange_portal'],
