@@ -14,7 +14,7 @@ import {
 } from "@/lib/domain";
 import { normalizeRole } from "@/lib/rbac-abac";
 
-type FilterStatus = "ALL" | "PENDING_TRACING" | "TRACED" | "NOTICE_SERVED" | "FROZEN";
+type FilterStatus = "ALL" | "PENDING_TRACING" | "TRACED" | "NOTICE_SERVED" | "FROZEN" | "FREEZE_REFUSED";
 
 export function CasesView({
   onGoToTrace,
@@ -45,64 +45,72 @@ export function CasesView({
 
   const [certModalCase, setCertModalCase] = useState<StoredCase | null>(null);
   const [certCopied, setCertCopied] = useState(false);
+  // Real SHA-256 hashes computed via Web Crypto API, keyed by case_number.
+  const [dossierHashes, setDossierHashes] = useState<Record<string, string>>({});
 
-  const generateDossierHash = (c: StoredCase) => {
-    const input = `${c.case_number}:${c.suspect_wallet_address}:${c.loss_amount_inr || 0}:SIH2026:BSA65B`;
-    let h1 = 0xdeadbeef, h2 = 0x41c6ce57, h3 = 0x9e3779b9, h4 = 0x85ebca6b;
-    for (let i = 0; i < input.length; i++) {
-      const ch = input.charCodeAt(i);
-      h1 = Math.imul(h1 ^ ch, 2654435761);
-      h2 = Math.imul(h2 ^ ch, 1597334677);
-      h3 = Math.imul(h3 ^ ch, 2246822507);
-      h4 = Math.imul(h4 ^ ch, 3266489909);
+  useEffect(() => {
+    async function computeHashes() {
+      const enc = new TextEncoder();
+      const results: Record<string, string> = {};
+      for (const c of cases) {
+        const input = `${c.case_number}:${c.suspect_wallet_address}:${c.loss_amount_inr || 0}:${c.blockchain_network || "Ethereum"}:BSA65B`;
+        const buf = await crypto.subtle.digest("SHA-256", enc.encode(input));
+        results[c.case_number] = Array.from(new Uint8Array(buf))
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
+      }
+      setDossierHashes(results);
     }
-    const toHex = (n: number) => (n >>> 0).toString(16).padStart(8, "0");
-    const part1 = toHex(h1) + toHex(h2) + toHex(h3) + toHex(h4);
-    const part2 = toHex(Math.imul(h1, 31)) + toHex(Math.imul(h2, 37)) + toHex(Math.imul(h3, 41)) + toHex(Math.imul(h4, 43));
-    return (part1 + part2).toLowerCase();
-  };
+    if (cases.length > 0) void computeHashes();
+  }, [cases]);
 
-  const buildCertText = (c: StoredCase) => {
-    const hash = generateDossierHash(c);
+  const buildCertText = (c: StoredCase, hash: string) => {
+    const ts = new Date().toISOString();
     return `
 ================================================================================
-CERTIFICATE OF ELECTRONIC EVIDENCE UNDER SECTION 63 / 65B 
+CERTIFICATE OF ELECTRONIC EVIDENCE UNDER SECTION 63 / 65B
 BHARATIYA SAKSHYA ADHINIYAM, 2023 (BSA 2023)
 [Formerly Section 65B, Indian Evidence Act, 1872]
 ================================================================================
 
-1. CASE IDENTIFIER: ${c.case_number}
-2. COMPLAINANT: ${c.victim_name || "Rajesh Verma"} (${c.victim_email || "N/A"})
-3. SUSPECT CRYPTO WALLET: ${c.suspect_wallet_address}
-4. ON-CHAIN NETWORK: ${c.blockchain_network || "Ethereum (ERC-20)"}
-5. ESTIMATED LOSS: ₹${Number(c.loss_amount_inr || 0).toLocaleString("en-IN")} (${c.token_symbol || "USDT"})
-6. CRIME TYPOLOGY: ${c.crime_type}
-7. TARGET VASP / EXCHANGE: ${c.target_vasp || "Binance International"}
-8. STATUTORY STATUS: ${c.status}
-9. ASSIGNED INVESTIGATOR: ${c.assigned_investigator_name || "SI Patil"}
+1. CASE IDENTIFIER  : ${c.case_number}
+2. COMPLAINANT      : ${c.victim_name || "—"} (${c.victim_email || "N/A"})
+3. SUSPECT WALLET   : ${c.suspect_wallet_address}
+4. BLOCKCHAIN       : ${c.blockchain_network || "Ethereum (ERC-20)"}
+5. REPORTED LOSS    : INR ${Number(c.loss_amount_inr || 0).toLocaleString("en-IN")} (${c.token_symbol || "USDT"})
+6. CRIME TYPOLOGY   : ${c.crime_type}
+7. TARGET VASP      : ${c.target_vasp || "Not yet identified"}
+8. STATUTORY STATUS : ${c.status}
+9. ASSIGNED IO      : ${c.assigned_investigator_name || "Unallocated"}
 
-A. SYSTEM & DEVICE PARTICULARS:
-   - Operating Platform: CryptoTrace Enterprise LEA Forensic Cluster
-   - Cryptographic SHA-256 Anchor: ${hash}
-   - Chain-of-Custody Integrity: VERIFIED TAMPER-FREE
-   - Certification Timestamp: ${new Date().toISOString()}
-   - Reviewing Magistrate / Officer: ${user?.name || "Justice K. S. Rao (Judicial Reviewer)"}
-   - Jurisdiction Code: IN-JUDICIAL-00 (Read-Only Evidence Review)
+A. SYSTEM PARTICULARS:
+   Platform          : CryptoTrace Forensic Cluster — Maharashtra Cyber
+   SHA-256 Hash      : ${hash || "computing..."}
+   Certification Time: ${ts}
+   Jurisdiction      : ${c.jurisdiction_code || "MH-CYBER-01"}
 
-B. STATUTORY CERTIFICATION:
-   I, the undersigned Judicial Reviewer, hereby certify that:
-   (a) The electronic records, multi-hop blockchain flow topology, and Section 94 BNSS
-       statutory freeze directives were produced by computerized law enforcement systems
-       operating during lawful cybercrime investigation.
-   (b) The cryptographic hash chain of custody (SHA-256: ${hash.slice(0, 16)}...)
-       remained untampered throughout the evidentiary ingestion window.
-   (c) No unauthorized alterations, overwrites, or deletions occurred during judicial review.
+B. STATUTORY CERTIFICATION (Section 65B BSA 2023):
+   I, the undersigned, being the person responsible for the management and
+   operation of the CryptoTrace Forensic Cluster, hereby certify that:
+   (a) The electronic records above were produced by the computer system
+       during the regular course of official cybercrime investigation.
+   (b) The computer system was operating properly throughout the period
+       during which these records were generated and has not been modified.
+   (c) The information is derived from data fed into the system in the
+       ordinary course of lawful law-enforcement activity.
 
-C. ADMISSIBILITY ATTESTATION:
-   This electronic evidence record satisfies all statutory criteria of admissibility
-   in a Court of Law under Section 63 and Section 65B of the Bharatiya Sakshya Adhiniyam, 2023.
+   Certifying Officer : ${c.assigned_investigator_name || "Investigating Officer (as assigned)"}
+   Unit               : Maharashtra State Cyber Police Station
 
-[DIGITALLY VERIFIED - ELECTRONIC JUDICIAL SEAL - BSA 2023]
+   NOTE: This certificate is tendered for admission as evidence under
+   Sec 63/65B BSA 2023. It is issued by the system custodian and received
+   by the court — it is not authored by the presiding judge.
+
+C. ADMISSIBILITY:
+   This record satisfies all statutory criteria under Section 63 and
+   Section 65B of the Bharatiya Sakshya Adhiniyam, 2023.
+
+[ELECTRONICALLY GENERATED — CRYPTOTRACE FORENSIC CLUSTER — BSA 2023]
 `.trim();
   };
 
@@ -149,12 +157,13 @@ C. ADMISSIBILITY ATTESTATION:
     user?.role === "WORKSPACE_ADMIN" ||
     Boolean(user?.is_gazetted);
 
-  const handleAssignIO = async (caseNumber: string, ioId: number, ioName: string) => {
+  const handleAssignIO = async (caseNumber: string, ioId: number) => {
+    // Server derives assigned_investigator_name from the officer account — do not send it from the client.
     try {
       const res = await fetch('/api/cases', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ case_number: caseNumber, assigned_investigator_id: ioId, assigned_investigator_name: ioName })
+        body: JSON.stringify({ case_number: caseNumber, assigned_investigator_id: ioId })
       });
       if (res.ok) {
         await loadCases();
@@ -201,6 +210,7 @@ C. ADMISSIBILITY ATTESTATION:
       traced: cases.filter((c) => c.status === "TRACED").length,
       noticeServed: cases.filter((c) => c.status === "NOTICE_SERVED").length,
       frozen: cases.filter((c) => c.status === "FROZEN").length,
+      freezeRefused: cases.filter((c) => c.status === "FREEZE_REFUSED").length,
     };
   }, [cases]);
 
@@ -250,61 +260,43 @@ C. ADMISSIBILITY ATTESTATION:
 
   return (
     <Page width="wide">
-      {/* Header Banner */}
+      {/* Header */}
       <div
-        className="rounded-2xl border p-5 mb-6 shadow-lg"
-        style={{
-          background: "linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(59, 130, 246, 0.04))",
-          borderColor: "rgba(16, 185, 129, 0.25)",
-        }}
+        className="rounded border p-5 mb-6"
+        style={{ background: "var(--panel)", borderColor: "var(--border)" }}
       >
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
-            <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold shadow-md"
-              style={{ background: "#10b981", color: "#000" }}
-            >
-              📑
+          <div>
+            <div className="text-[11px] uppercase tracking-widest font-semibold mb-1" style={{ color: "var(--muted)" }}>
+              {isCourtReviewer ? "IN-JUDICIAL-00 · HIGH COURT REVIEW" : user?.jurisdiction_code || "MH-CYBER-01"}
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg font-bold text-white tracking-tight">
-                  {isCourtReviewer
-                    ? "Judicial Evidence Dossier Chamber · Section 63/65B BSA"
-                    : "NCRP Cyber Crime Complaints & Case Management"}
-                </h1>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold">
-                  {isCourtReviewer
-                    ? "IN-JUDICIAL-00 · HIGH COURT REVIEW"
-                    : user?.role === "SUPER_ADMIN"
-                    ? "PAN-INDIA CENTRAL GATEWAY"
-                    : user?.jurisdiction_code || "MH-CYBER-01"}
-                </span>
-              </div>
-              <p className="text-xs text-muted mt-0.5">
-                {isCourtReviewer
-                  ? "Read-only judicial inspection of cryptographic evidence dossiers, SHA-256 integrity anchors & Section 65B certificates"
-                  : `Logged in as ${user?.name} (${user?.role}) • ${
-                      user?.is_gazetted
-                        ? "Gazetted Officer (Sec 94 BNSS Statutory Trace & Freeze Authority)"
-                        : "Field Investigator (Assigned Cases)"
-                    }`}
-              </p>
-            </div>
+            <h1 className="text-lg font-bold tracking-tight" style={{ color: "var(--text-strong)" }}>
+              {isCourtReviewer
+                ? "Judicial Evidence Dossier Chamber · Section 63/65B BSA"
+                : "NCRP Cyber Crime Complaints & Case Management"}
+            </h1>
+            <p className="text-xs mt-0.5" style={{ color: "var(--muted)" }}>
+              {isCourtReviewer
+                ? "Read-only judicial inspection of cryptographic evidence dossiers, SHA-256 integrity anchors & Section 65B certificates"
+                : `Logged in as ${user?.name} (${user?.role}) · ${
+                    user?.is_gazetted
+                      ? "Gazetted Officer — Sec 94 BNSS Statutory Freeze Authority"
+                      : "Field Investigator — Assigned Cases"
+                  }`}
+            </p>
           </div>
 
           {!isCourtReviewer ? (
             <button
               onClick={() => setShowIngestModal(true)}
-              className="px-4 py-2.5 rounded-xl text-xs font-bold text-black transition hover:opacity-90 shadow-glow"
-              style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}
+              className="px-4 py-2.5 rounded border text-xs font-bold transition hover:opacity-80"
+              style={{ background: "#10b981", color: "#000", borderColor: "#059669" }}
             >
               + Ingest 1930 Phone Complaint
             </button>
           ) : (
-            <div className="px-3.5 py-2 rounded-xl bg-slate-500/20 text-slate-300 border border-slate-500/30 text-xs font-bold flex items-center gap-2 shadow-sm">
-              <span className="text-amber-400 font-mono text-sm">⚖️</span>
-              <span>READ ONLY EVIDENCE REVIEW MODE</span>
+            <div className="px-3.5 py-2 rounded border text-xs font-semibold" style={{ color: "var(--muted)", borderColor: "var(--border)", background: "var(--chip)" }}>
+              BSA SEC 65B — READ-ONLY EVIDENCE REVIEW MODE
             </div>
           )}
         </div>
@@ -350,6 +342,7 @@ C. ADMISSIBILITY ATTESTATION:
               ["TRACED", `Traced (${counts.traced})`],
               ["NOTICE_SERVED", `Notice Served (${counts.noticeServed})`],
               ["FROZEN", `Frozen (${counts.frozen})`],
+              ["FREEZE_REFUSED", `Refused (${counts.freezeRefused})`],
             ] as const
           ).map(([key, label]) => (
             <button
@@ -466,22 +459,21 @@ C. ADMISSIBILITY ATTESTATION:
 
               {/* For Court Reviewer: SHA-256 Cryptographic Evidence Integrity Box */}
               {isCourtReviewer && (
-                <div className="mb-3.5 p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/[0.05] text-xs">
+                <div className="mb-3.5 p-3.5 rounded border text-xs" style={{ borderColor: "var(--border)", background: "var(--chip)" }}>
                   <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
-                    <span className="text-[11px] font-bold text-amber-300 flex items-center gap-1.5">
-                      <span>🔒</span>
-                      <span>BSA 2023 Section 65B Cryptographic Evidence Hash</span>
+                    <span className="text-[11px] font-bold" style={{ color: "var(--text-strong)" }}>
+                      BSA 2023 Section 65B — Cryptographic Evidence Hash
                     </span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold">
-                      ✓ CHAIN-OF-CUSTODY CERTIFIED
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded border font-semibold text-emerald-300 border-emerald-500/30 bg-emerald-500/10">
+                      CHAIN-OF-CUSTODY CERTIFIED
                     </span>
                   </div>
-                  <div className="font-mono text-[11px] text-amber-200/95 break-all bg-black/40 px-2.5 py-1.5 rounded border border-white/5">
-                    SHA-256: {generateDossierHash(c)}
+                  <div className="font-mono text-[11px] break-all px-2.5 py-1.5 rounded border border-white/5 bg-black/40" style={{ color: "var(--muted)" }}>
+                    SHA-256: {dossierHashes[c.case_number] || "computing…"}
                   </div>
-                  <div className="text-[10.5px] text-muted mt-1.5 flex items-center justify-between flex-wrap gap-2">
-                    <span>Certified Tamper-Proof &bull; Anchor: SHA-256 &bull; Admissible Electronic Record under Sec 63 BSA 2023</span>
-                    <span className="text-slate-400 font-mono text-[10px]">Verified: {new Date().toISOString().split("T")[0]}</span>
+                  <div className="text-[10.5px] mt-1.5 flex items-center justify-between flex-wrap gap-2" style={{ color: "var(--muted-2)" }}>
+                    <span>Anchor: SHA-256 · Admissible under Sec 63 BSA 2023</span>
+                    <span className="font-mono text-[10px]">Verified: {new Date().toISOString().split("T")[0]}</span>
                   </div>
                 </div>
               )}
@@ -492,20 +484,19 @@ C. ADMISSIBILITY ATTESTATION:
                   <span>IO:</span>
                   {isSupervisor ? (
                     <select
-                      value={c.assigned_investigator_id || 3}
+                      value={c.assigned_investigator_id ?? ""}
                       onChange={(e) => {
                         const val = Number(e.target.value);
-                        handleAssignIO(c.case_number, val, val === 3 ? "SI Patil" : val === 12 ? "Inspector Mehra" : "SI Kulkarni");
+                        if (val) handleAssignIO(c.case_number, val);
                       }}
                       className="rounded border px-2 py-0.5 text-xs bg-[var(--chip)] text-white focus:outline-none"
                       style={{ borderColor: "var(--border)" }}
                     >
+                      <option value="">— Unallocated —</option>
                       <option value={3}>SI Patil (id: 3)</option>
-                      <option value={12}>Inspector Mehra (id: 12)</option>
-                      <option value={14}>SI Kulkarni (id: 14)</option>
                     </select>
                   ) : (
-                    <strong className="text-white">{c.assigned_investigator_name || user?.name || "SI Patil"}</strong>
+                    <strong className="text-white">{c.assigned_investigator_name || "Unallocated"}</strong>
                   )}
                   {isSupervisor && (
                     <select
@@ -525,29 +516,18 @@ C. ADMISSIBILITY ATTESTATION:
                 <div className="flex flex-wrap items-center gap-2">
                   {isCourtReviewer ? (
                     <>
-                      <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 text-xs font-mono font-semibold">
-                        ⚖️ BSA SEC 65B READ-ONLY
+                      <span className="px-2.5 py-1 rounded border text-xs font-mono font-semibold" style={{ color: "var(--muted)", borderColor: "var(--border)", background: "var(--chip)" }}>
+                        BSA SEC 65B — READ-ONLY
                       </span>
                       <button
                         onClick={() => {
                           setCertModalCase(c);
                           setCertCopied(false);
                         }}
-                        className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-black bg-gradient-to-r from-yellow-400 to-amber-400 hover:from-yellow-300 hover:to-amber-300 transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+                        className="px-3.5 py-1.5 rounded border text-xs font-semibold transition hover:opacity-80"
+                        style={{ background: "var(--chip)", color: "var(--text-strong)", borderColor: "var(--border)" }}
                       >
-                        <span>📜</span>
-                        <span>Export Sec 65B BSA Certificate</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          setActiveCase(c);
-                          void runTrace(c.suspect_wallet_address, c);
-                          onGoToGraph();
-                        }}
-                        className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/25 transition flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <span>📊</span>
-                        <span>Inspect Flow Graph</span>
+                        Export Sec 65B BSA Certificate
                       </button>
                     </>
                   ) : (
@@ -557,25 +537,23 @@ C. ADMISSIBILITY ATTESTATION:
                           <button
                             onClick={() => handleTraceClick(c)}
                             disabled={isTracingThis}
-                            className="px-4 py-2 rounded-xl text-xs font-bold text-black transition hover:opacity-90 shadow-glow disabled:opacity-50 flex items-center gap-1.5"
-                            style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}
+                            className="px-4 py-2 rounded border text-xs font-bold transition hover:opacity-80 disabled:opacity-50"
+                            style={{ background: "#10b981", color: "#000", borderColor: "#059669" }}
                           >
-                            <span>⚡</span>
-                            <span>{isTracingThis ? "Tracing Suspect Wallet..." : "Initiate Trace on Suspect Wallet"}</span>
+                            {isTracingThis ? "Tracing Suspect Wallet…" : "Initiate Trace on Suspect Wallet"}
                           </button>
                         ) : (
                           !isForwarded ? (
                             <button
                               onClick={() => handleTraceClick(c)}
-                              className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/40 hover:bg-amber-500/25 transition flex items-center gap-1.5"
+                              className="px-3.5 py-2 rounded border text-xs font-semibold transition hover:opacity-80"
+                              style={{ background: "var(--chip)", color: "#fcd34d", borderColor: "#92400e" }}
                             >
-                              <span>🔒</span>
-                              <span>Forward to ACP Sharma for BFS Trace</span>
+                              Forward to Gazetted Officer for BFS Trace
                             </button>
                           ) : (
-                            <span className="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 text-xs flex items-center gap-1.5 font-semibold">
-                              <span>✓</span>
-                              <span>Queued for ACP Sharma Trace Approval</span>
+                            <span className="px-3 py-1.5 rounded border text-xs font-semibold" style={{ background: "var(--chip)", color: "#6ee7b7", borderColor: "#065f46" }}>
+                              Queued for Gazetted Officer Trace Approval
                             </span>
                           )
                         )
@@ -589,10 +567,10 @@ C. ADMISSIBILITY ATTESTATION:
                               void runTrace(c.suspect_wallet_address, c);
                               onGoToGraph();
                             }}
-                            className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/25 transition flex items-center gap-1.5"
+                            className="px-3.5 py-1.5 rounded border text-xs font-semibold transition hover:opacity-80"
+                            style={{ background: "var(--chip)", color: "#67e8f9", borderColor: "#164e63" }}
                           >
-                            <span>📊</span>
-                            <span>View Money Flow Graph</span>
+                            View Money Flow Graph
                           </button>
 
                           <button
@@ -600,10 +578,10 @@ C. ADMISSIBILITY ATTESTATION:
                               setActiveCase(c);
                               onGoToNotices();
                             }}
-                            className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/40 hover:bg-amber-500/25 transition flex items-center gap-1.5"
+                            className="px-3.5 py-1.5 rounded border text-xs font-semibold transition hover:opacity-80"
+                            style={{ background: "var(--chip)", color: "#fcd34d", borderColor: "#78350f" }}
                           >
-                            <span>⚖️</span>
-                            <span>Issue Sec 94 BNSS Notice</span>
+                            Issue Sec 94 BNSS Notice
                           </button>
                         </>
                       )}
@@ -614,10 +592,23 @@ C. ADMISSIBILITY ATTESTATION:
                             setActiveCase(c);
                             onGoToNotices();
                           }}
-                          className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/25 transition flex items-center gap-1.5"
+                          className="px-3.5 py-1.5 rounded border text-xs font-semibold transition hover:opacity-80"
+                          style={{ background: "var(--chip)", color: "#6ee7b7", borderColor: "#065f46" }}
                         >
-                          <span>🔒</span>
-                          <span>{c.status === "FROZEN" ? "View Seizure & Escrow Details" : "Track Served Freeze Requisition"}</span>
+                          {c.status === "FROZEN" ? "View Seizure & Escrow Details" : "Track Served Freeze Requisition"}
+                        </button>
+                      )}
+
+                      {c.status === "FREEZE_REFUSED" && (
+                        <button
+                          onClick={() => {
+                            setActiveCase(c);
+                            onGoToNotices();
+                          }}
+                          className="px-3.5 py-1.5 rounded border text-xs font-semibold transition hover:opacity-80"
+                          style={{ background: "var(--chip)", color: "#fca5a5", borderColor: "#7f1d1d" }}
+                        >
+                          Review Exchange Refusal Report
                         </button>
                       )}
                     </>
@@ -626,11 +617,11 @@ C. ADMISSIBILITY ATTESTATION:
                   {normRole !== "VICTIM" && (
                     <button
                       onClick={() => handleOpenAuditHistory(c.case_number)}
-                      className="px-3 py-1.5 rounded-xl text-xs font-medium border border-white/10 hover:border-white/20 bg-white/5 text-slate-300 hover:text-white transition flex items-center gap-1.5"
+                      className="px-3 py-1.5 rounded border text-xs font-medium transition hover:opacity-80"
+                      style={{ background: "var(--chip)", color: "var(--muted)", borderColor: "var(--border)" }}
                       title="View immutable Section 65B audit history for this case"
                     >
-                      <span>📜</span>
-                      <span>Audit Trail</span>
+                      Audit Trail
                     </button>
                   )}
                 </div>
@@ -640,11 +631,10 @@ C. ADMISSIBILITY ATTESTATION:
         })}
 
         {filteredCases.length === 0 && (
-          <div className="rounded-2xl border p-12 text-center" style={{ background: "var(--panel)", borderColor: "var(--border)" }}>
-            <div className="text-3xl mb-2">📁</div>
-            <div className="text-sm font-bold text-white">No complaint records found</div>
-            <p className="text-xs text-muted mt-1 max-w-sm mx-auto">
-              No cases matching your current filter criteria. Use "+ Ingest 1930 Phone Complaint" to register a newly reported victim incident.
+          <div className="rounded border p-12 text-center" style={{ background: "var(--panel)", borderColor: "var(--border)" }}>
+            <div className="text-sm font-bold" style={{ color: "var(--text-strong)" }}>No complaint records found</div>
+            <p className="text-xs mt-1 max-w-sm mx-auto" style={{ color: "var(--muted)" }}>
+              No cases matching your current filter criteria. Use &ldquo;+ Ingest 1930 Phone Complaint&rdquo; to register a newly reported victim incident.
             </p>
           </div>
         )}
@@ -673,24 +663,21 @@ C. ADMISSIBILITY ATTESTATION:
               Registers fraud allegation directly into Maharashtra Cyber attribution queue.
             </p>
 
-            {/* Prominent 1-Click Autofill Demo Case Button */}
-            <div className="mb-4 p-3.5 rounded-xl border border-cyan-500/40 bg-gradient-to-r from-cyan-950/40 to-blue-950/40 flex items-center justify-between gap-3 shadow-md">
+            {/* Evaluator fast-track autofill */}
+            <div className="mb-4 p-3.5 rounded border flex items-center justify-between gap-3" style={{ borderColor: "var(--border)", background: "var(--chip)" }}>
               <div className="min-w-0">
-                <div className="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
-                  <span>✨</span>
-                  <span>Evaluator Fast-Track Scenario</span>
-                </div>
-                <div className="text-[11px] text-cyan-200/80 truncate">
-                  Autofill ₹3,50,000 USDT task scam on Ethereum (0x71C7...)
+                <div className="text-xs font-bold" style={{ color: "var(--text-strong)" }}>Evaluator Fast-Track Scenario</div>
+                <div className="text-[11px] truncate" style={{ color: "var(--muted)" }}>
+                  Autofill ₹3,50,000 USDT task scam on Ethereum (0x71C7…)
                 </div>
               </div>
               <button
                 type="button"
                 onClick={handleAutofillDemoCase}
-                className="px-3.5 py-1.5 rounded-lg text-xs font-bold text-black bg-gradient-to-r from-cyan-400 to-blue-400 hover:from-cyan-300 hover:to-blue-300 transition shadow-md shrink-0 flex items-center gap-1.5 cursor-pointer"
+                className="px-3.5 py-1.5 rounded border text-xs font-semibold transition hover:opacity-80 shrink-0"
+                style={{ background: "var(--panel)", color: "var(--text-strong)", borderColor: "var(--border)" }}
               >
-                <span>✨</span>
-                <span>Autofill Demo Case</span>
+                Autofill Demo Case
               </button>
             </div>
 
@@ -784,10 +771,10 @@ C. ADMISSIBILITY ATTESTATION:
                 <button
                   type="submit"
                   disabled={ingesting}
-                  className="w-full py-2.5 rounded-xl text-xs font-bold text-black transition disabled:opacity-50"
-                  style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}
+                  className="w-full py-2.5 rounded border text-xs font-bold transition hover:opacity-80 disabled:opacity-50"
+                  style={{ background: "#10b981", color: "#000", borderColor: "#059669" }}
                 >
-                  {ingesting ? "Ingesting..." : "Ingest Case & Alert Attribution Engine"}
+                  {ingesting ? "Ingesting…" : "Ingest Case & Alert Attribution Engine"}
                 </button>
               </div>
             </form>
@@ -807,12 +794,9 @@ C. ADMISSIBILITY ATTESTATION:
             }}
           >
             <div className="flex items-center justify-between border-b pb-3 mb-4" style={{ borderColor: "var(--border)" }}>
-              <div className="flex items-center gap-2">
-                <span className="text-xl">📜</span>
-                <div>
-                  <h2 className="text-base font-bold text-white">Immutable Case Audit History</h2>
-                  <p className="text-xs text-muted font-mono">{auditModalCase} &bull; BSA 2023 Section 63/65B Tamper-Evident Trail</p>
-                </div>
+              <div>
+                <h2 className="text-base font-bold" style={{ color: "var(--text-strong)" }}>Immutable Case Audit History</h2>
+                <p className="text-xs font-mono" style={{ color: "var(--muted)" }}>{auditModalCase} · BSA 2023 Section 63/65B Tamper-Evident Trail</p>
               </div>
               <button
                 onClick={() => setAuditModalCase(null)}
@@ -883,12 +867,9 @@ C. ADMISSIBILITY ATTESTATION:
             }}
           >
             <div className="flex items-center justify-between border-b pb-3 mb-3" style={{ borderColor: "var(--border)" }}>
-              <div className="flex items-center gap-2">
-                <span className="text-xl">📜</span>
-                <div>
-                  <h2 className="text-base font-bold text-white">Section 65B BSA Electronic Evidence Certificate</h2>
-                  <p className="text-xs text-muted font-mono">{certModalCase.case_number} &bull; Bharatiya Sakshya Adhiniyam, 2023</p>
-                </div>
+              <div>
+                <h2 className="text-base font-bold" style={{ color: "var(--text-strong)" }}>Section 65B BSA Electronic Evidence Certificate</h2>
+                <p className="text-xs font-mono" style={{ color: "var(--muted)" }}>{certModalCase.case_number} · Bharatiya Sakshya Adhiniyam, 2023</p>
               </div>
               <button
                 onClick={() => setCertModalCase(null)}
@@ -906,7 +887,7 @@ C. ADMISSIBILITY ATTESTATION:
                 color: "#cbd5e1",
               }}
             >
-              <pre className="whitespace-pre-wrap">{buildCertText(certModalCase)}</pre>
+              <pre className="whitespace-pre-wrap">{buildCertText(certModalCase, dossierHashes[certModalCase.case_number] || "")}</pre>
             </div>
 
             <div className="pt-4 border-t mt-4 flex items-center justify-between gap-3" style={{ borderColor: "var(--border)" }}>
@@ -916,15 +897,14 @@ C. ADMISSIBILITY ATTESTATION:
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
-                    navigator.clipboard.writeText(buildCertText(certModalCase));
+                    navigator.clipboard.writeText(buildCertText(certModalCase, dossierHashes[certModalCase.case_number] || ""));
                     setCertCopied(true);
                     setTimeout(() => setCertCopied(false), 3000);
                   }}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-black transition flex items-center gap-1.5 cursor-pointer shadow-md"
-                  style={{ background: "linear-gradient(135deg, #eab308, #f59e0b)" }}
+                  className="px-4 py-2 rounded border text-xs font-semibold transition hover:opacity-80"
+                  style={{ background: "var(--chip)", color: "var(--text-strong)", borderColor: "var(--border)" }}
                 >
-                  <span>📋</span>
-                  <span>{certCopied ? "Copied to Clipboard! ✓" : "Copy Sec 65B Certificate"}</span>
+                  {certCopied ? "Copied to Clipboard" : "Copy Sec 65B Certificate"}
                 </button>
                 <button
                   onClick={() => setCertModalCase(null)}
@@ -945,26 +925,32 @@ function StatusBadge({ status }: { status: string }) {
   switch (status) {
     case "PENDING_TRACING":
       return (
-        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold animate-pulse">
-          ● PENDING TRACE
+        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold">
+          PENDING TRACE
         </span>
       );
     case "TRACED":
       return (
         <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-semibold">
-          ✓ TRACED
+          TRACED
         </span>
       );
     case "NOTICE_SERVED":
       return (
         <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 font-semibold">
-          ⚖️ NOTICE SERVED
+          NOTICE SERVED
         </span>
       );
     case "FROZEN":
       return (
         <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold">
-          🔒 ASSETS FROZEN
+          ASSETS FROZEN
+        </span>
+      );
+    case "FREEZE_REFUSED":
+      return (
+        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40 font-semibold">
+          FREEZE REFUSED
         </span>
       );
     default:

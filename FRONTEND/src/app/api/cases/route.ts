@@ -10,7 +10,7 @@ import {
   getEnvironment
 } from '@/lib/db';
 import { extractUserClaims } from '@/lib/auth-crypto';
-import { evaluateABAC, normalizeRole } from '@/lib/rbac-abac';
+import { evaluateABAC, normalizeRole, hasPermission, PERMISSIONS } from '@/lib/rbac-abac';
 
 export async function GET(req: Request) {
   const claims = extractUserClaims(req);
@@ -255,8 +255,9 @@ export async function POST(req: Request) {
       classification: isVictim ? 'RESTRICTED' : (body.classification || 'CONFIDENTIAL'),
       status: body.status || 'PENDING_TRACING',
       priority: body.priority || 'HIGH',
-      assigned_investigator_id: body.assigned_investigator_id !== undefined ? body.assigned_investigator_id : 3,
-      assigned_investigator_name: body.assigned_investigator_name || 'SI Patil'
+      // Unallocated on creation - the supervisor allocates.
+      assigned_investigator_id: null,
+      assigned_investigator_name: undefined
     });
 
     recordAuditLog({
@@ -333,6 +334,77 @@ export async function PATCH(req: Request) {
     const existing = getCaseByIdOrNumber(targetId);
     if (!existing) {
       return NextResponse.json({ error: 'Case not found' }, { status: 404 });
+    }
+
+    // 1b. Full ABAC evaluation against the specific case. Without this the
+    // jurisdiction boundary (POL-04) and clearance (POL-07) were enforced on
+    // reads but not on writes, so a supervisor in one state could allocate an
+    // officer to another state's case.
+    const isAssignment = body.assigned_investigator_id !== undefined;
+    const abacAction = isAssignment
+      ? 'assign_io'
+      : body.priority !== undefined
+      ? 'change_priority'
+      : 'update';
+    const caseAbac = evaluateABAC(user, existing, abacAction, getEnvironment());
+    if (caseAbac.decision === 'DENY') {
+      recordAuditLog({
+        user_id: user.id,
+        user_name: user.name,
+        user_role: user.role,
+        action: 'UPDATE_CASE',
+        resource_type: 'CASE_DOSSIER',
+        resource_id: existing.case_number,
+        decision: 'DENIED',
+        reason: caseAbac.reason,
+        statutory_code: caseAbac.policyId || undefined
+      });
+      return NextResponse.json({ error: caseAbac.reason, policy: caseAbac.policyId }, { status: 403 });
+    }
+
+    // 1c. Allocation requires the case:assign_io permission and a real target.
+    if (isAssignment) {
+      if (!hasPermission(user.role, PERMISSIONS.CASE_ASSIGN_IO)) {
+        recordAuditLog({
+          user_id: user.id,
+          user_name: user.name,
+          user_role: user.role,
+          action: 'ASSIGN_IO',
+          resource_type: 'CASE_DOSSIER',
+          resource_id: existing.case_number,
+          decision: 'DENIED',
+          reason: 'Role does not hold case:assign_io. Allocation is a supervisory function.'
+        });
+        return NextResponse.json(
+          { error: 'Access Denied: Case allocation requires supervisory authority.' },
+          { status: 403 }
+        );
+      }
+
+      const targetOfficer = getUserById(body.assigned_investigator_id);
+      if (!targetOfficer) {
+        return NextResponse.json(
+          { error: 'Validation Error: No such officer on this platform.' },
+          { status: 400 }
+        );
+      }
+      if (normalizeRole(targetOfficer.role) !== 'INVESTIGATING_OFFICER') {
+        return NextResponse.json(
+          { error: `Validation Error: ${targetOfficer.name} is not an Investigating Officer and cannot be allocated a case.` },
+          { status: 400 }
+        );
+      }
+      if (targetOfficer.jurisdiction_code !== existing.jurisdiction_code) {
+        return NextResponse.json(
+          {
+            error: `Validation Error: ${targetOfficer.name} (${targetOfficer.jurisdiction_code}) is outside the jurisdiction of this case (${existing.jurisdiction_code}).`
+          },
+          { status: 400 }
+        );
+      }
+      // Derive the name from the account rather than trusting the client, so
+      // the audit trail cannot be made to record a different officer.
+      body.assigned_investigator_name = targetOfficer.name;
     }
 
     // 2. Investigating Officer boundaries:

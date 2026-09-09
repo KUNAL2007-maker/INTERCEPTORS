@@ -216,3 +216,164 @@ export function pricesAreLive(table: PriceTable): boolean {
   // matching that to the cent is not a case worth distinguishing.
   return table.ETH.usd !== FALLBACK_PRICES.ETH.usd;
 }
+
+// ---------------------------------------------------------------------------
+// Historical (court-admissible) pricing — Alchemy Prices API
+// ---------------------------------------------------------------------------
+//
+// Why a second pricing path exists: an FIR and a seizure order need TWO
+// different numbers. The BNSS seizure figure is what the asset is worth *today*
+// (spot, above). The FIR "incident loss" under IPC/BNS is what the stolen crypto
+// was worth *at the moment of the crime* — which for a volatile asset can differ
+// by an order of magnitude. Presenting today's value as the loss, or inventing
+// either, is exactly the kind of number this app refuses to produce.
+//
+// Source: Alchemy Prices API `tokens/historical` — the 1-hour candle at the
+// transaction's block (base URL and shape documented in
+// docs/philosophy/HAFIZ_GUIDES/ALCHEMY_ENCYCLOPEDIA/06_DATA_APIS_AND_SERVICES_ENCYCLOPEDIA.md).
+// The key is read from the environment ONLY; the reference implementation this
+// is ported from committed a live key, which is treated as burned. This module
+// must NOT import from blockchain.ts (blockchain.ts imports this one — that would
+// be a cycle), so the key accessor is duplicated here rather than shared.
+function alchemyHistoricalKey(): string | undefined {
+  return process.env.ALCHEMY_API_KEY;
+}
+
+const ALCHEMY_PRICES_BASE = "https://api.g.alchemy.com/prices/v1";
+
+/** One hour in ms — the candle granularity requested, and the cache bucket. */
+const HOUR_MS = 60 * 60_000;
+
+export type HistoricalPrice = { usd: number; source: "alchemy-historical" | "spot-fallback" };
+
+// Cache keyed by `${symbol}:${hourStartMs}`. A trace typically values many
+// transfers falling in the same hour and asset, so this collapses them to a
+// single call; in-flight requests are deduped alongside so a fan-out doesn't
+// fire duplicate lookups for the same bucket.
+const histCache = new Map<string, HistoricalPrice>();
+const histInFlight = new Map<string, Promise<HistoricalPrice>>();
+
+// Runaway backstop, same spirit as MONTHLY_CALL_BUDGET: the hour-bucket cache is
+// the real bound, this only catches a pathological loop. Per-process, resets on
+// restart — acceptable for the same reason the spot budget is.
+const HISTORICAL_DAILY_BUDGET = 5_000;
+let histDayKey = "";
+let histDayCalls = 0;
+function histBudgetAvailable(): boolean {
+  const now = new Date();
+  const key = `${now.getUTCFullYear()}-${now.getUTCMonth()}-${now.getUTCDate()}`;
+  if (key !== histDayKey) {
+    histDayKey = key;
+    histDayCalls = 0;
+  }
+  return histDayCalls < HISTORICAL_DAILY_BUDGET;
+}
+
+/** Current spot USD for a symbol, from the live table or the static fallback. */
+async function spotUsd(symbol: TokenSymbol): Promise<number> {
+  try {
+    const table = await getPrices();
+    return table[symbol].usd;
+  } catch {
+    return FALLBACK_PRICES[symbol].usd;
+  }
+}
+
+/**
+ * USD value of one token AT a past instant — the court "incident" price.
+ *
+ * Never throws and never blocks a trace: a missing key, budget exhaustion, an
+ * unusable timestamp, an HTTP error or an unrecognised response shape all
+ * degrade to current spot with `source: "spot-fallback"`, so the caller can
+ * always state honestly whether the figure is a real historical candle or a
+ * spot stand-in.
+ *
+ * Stablecoins short-circuit to $1 (pegged) without spending a call — their
+ * incident and current values are identical by construction.
+ */
+export async function getHistoricalPrice(
+  symbol: TokenSymbol,
+  timestampMs: number
+): Promise<HistoricalPrice> {
+  // Pegged assets: incident value == current value == $1. Not derived from a
+  // historical candle, so it is honestly reported as a spot-fallback.
+  if (symbol === "USDT" || symbol === "USDC") {
+    return { usd: 1, source: "spot-fallback" };
+  }
+
+  // A transfer with no usable timestamp (some providers omit it) can't be priced
+  // historically — fall straight back to spot rather than spend a doomed call.
+  if (!Number.isFinite(timestampMs) || timestampMs <= 0) {
+    return { usd: await spotUsd(symbol), source: "spot-fallback" };
+  }
+
+  const key = alchemyHistoricalKey();
+  if (!key) {
+    return { usd: await spotUsd(symbol), source: "spot-fallback" };
+  }
+
+  const hourStart = Math.floor(timestampMs / HOUR_MS) * HOUR_MS;
+  const cacheKey = `${symbol}:${hourStart}`;
+  const cached = histCache.get(cacheKey);
+  if (cached) return cached;
+  const pending = histInFlight.get(cacheKey);
+  if (pending) return pending;
+
+  if (!histBudgetAvailable()) {
+    return { usd: await spotUsd(symbol), source: "spot-fallback" };
+  }
+
+  const req = (async (): Promise<HistoricalPrice> => {
+    try {
+      histDayCalls++;
+      const res = await fetch(`${ALCHEMY_PRICES_BASE}/${key}/tokens/historical`, {
+        method: "POST",
+        headers: { "content-type": "application/json", accept: "application/json" },
+        body: JSON.stringify({
+          symbol,
+          startTime: new Date(hourStart).toISOString(),
+          endTime: new Date(hourStart + HOUR_MS).toISOString(),
+          interval: "1h",
+        }),
+        cache: "no-store",
+        // TLS verification stays ON (Node default). Short timeout: this is an
+        // additive court figure, never worth stalling a trace for.
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!res.ok) throw new Error(`Alchemy prices HTTP ${res.status}`);
+      // Alchemy returns `data: [{ value, timestamp }]`; tolerate a `prices` alias
+      // so a minor response-shape drift degrades to spot rather than misreads.
+      const body = (await res.json()) as {
+        data?: Array<{ value?: string | number }>;
+        prices?: Array<{ value?: string | number }>;
+      };
+      const row = (body?.data ?? body?.prices ?? [])[0];
+      const raw = row?.value;
+      const usd = typeof raw === "string" ? Number(raw) : typeof raw === "number" ? raw : NaN;
+      if (!Number.isFinite(usd) || usd <= 0) throw new Error("no usable historical candle");
+      const result: HistoricalPrice = { usd, source: "alchemy-historical" };
+      histCache.set(cacheKey, result);
+      return result;
+    } catch (err) {
+      console.warn("[prices] historical lookup failed:", (err as Error).message);
+      // Do NOT cache the fallback: a transient failure shouldn't pin this hour to
+      // spot for the rest of the process. Spot is returned for THIS call only.
+      return { usd: await spotUsd(symbol), source: "spot-fallback" };
+    } finally {
+      histInFlight.delete(cacheKey);
+    }
+  })();
+
+  histInFlight.set(cacheKey, req);
+  return req;
+}
+
+/** Diagnostics for the trace route's log line — counters only, no secrets. */
+export function historicalQuotaSnapshot() {
+  return {
+    historicalCalls: histDayCalls,
+    historicalBudget: HISTORICAL_DAILY_BUDGET,
+    bucketsCached: histCache.size,
+    configured: Boolean(alchemyHistoricalKey()),
+  };
+}

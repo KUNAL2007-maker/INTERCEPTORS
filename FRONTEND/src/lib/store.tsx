@@ -24,6 +24,8 @@ import {
   type CryptoEvidence,
   type CryptoFinding,
   type LegalNotice,
+  type NoticeSignature,
+  type NoticeVaspResponse,
   type TrackDecision,
 } from "@/lib/investigation";
 import type { StoredCase } from "@/lib/db";
@@ -42,8 +44,16 @@ export type StoredNotice = {
   notice: LegalNotice;
   case_number?: string;
   target_vasp?: string;
+  vasp_id?: number;
   drafted_by_name?: string;
   approved_by_name?: string;
+  /**
+   * Server-applied Ed25519 signature. Read-only on the client - it arrives with
+   * the notice or it does not exist, and its absence is what "unsigned" means.
+   */
+  signature?: NoticeSignature;
+  /** The addressed exchange's acknowledgement and reported action, if any. */
+  vasp_response?: NoticeVaspResponse;
 };
 
 type TraceStore = {
@@ -75,7 +85,8 @@ type TraceStore = {
   setActiveCase: (c: StoredCase | null) => void;
   loadCases: () => Promise<StoredCase[]>;
   generateNotice: (targetVaspName: string, targetCaseNumber?: string) => string | null;
-  setNoticeStatus: (id: string, status: NoticeStatus) => void;
+  issueNotice: (id: string) => Promise<{ success: boolean; error?: string }>;
+  refreshNotices: () => Promise<void>;
   removeNotice: (id: string) => void;
   refreshTrace: () => Promise<void>;
   ingestNcrpComplaint: (complaintData?: any) => Promise<any>;
@@ -336,55 +347,102 @@ export function TraceStoreProvider({ children }: { children: ReactNode }) {
         : caseMeta;
 
       const notice = section91Notice(evidence, metaToUse, targetVaspName);
-      const isGazettedOrSuper = Boolean(user?.is_gazetted) || user?.role === "SUPER_ADMIN";
-      const defaultStatus: NoticeStatus = isGazettedOrSuper ? "Issued" : "Draft";
+
+      // Always drafted. Whether this becomes an issued, signed order is the
+      // server's call under POL-05, and the client no longer guesses at it - the
+      // old `is_gazetted ? "Issued" : "Draft"` shortcut meant the screen showed
+      // an issued order a moment before the server had decided whether the
+      // officer was allowed to issue one.
+      const draftId = `NOTICE-${Date.now()}`;
       const newNotice: StoredNotice = {
-        id: `NOTICE-${Date.now()}`,
-        status: defaultStatus,
+        id: draftId,
+        status: "Draft",
         createdAt: Date.now(),
         notice,
         case_number: cNumber,
         target_vasp: targetVaspName,
-        drafted_by_name: user?.fullName || user?.name || "Officer Sharma",
+        drafted_by_name: user?.fullName || user?.name || undefined,
       };
 
       setNotices((prev) => [newNotice, ...prev]);
 
-      // Save to server
-      postJSON("/api/notices", {
-        id: newNotice.id,
+      postJSON<any>("/api/notices", {
+        id: draftId,
         case_number: cNumber,
         target_vasp: targetVaspName,
-        status: defaultStatus,
-        drafted_by_name: user?.fullName || user?.name || "Officer Sharma",
+        status: "Draft",
+        drafted_by_name: user?.fullName || user?.name,
         notice,
-      }).then(() => {
-        void loadCases();
-      }).catch(() => {});
+      })
+        .then((res) => {
+          if (res?.notice) {
+            const fromServer = normalizeStoredNotice(res.notice);
+            setNotices((prev) => prev.map((n) => (n.id === draftId ? fromServer : n)));
+          }
+          void loadCases();
+        })
+        .catch(() => {});
 
-      return newNotice.id;
+      return draftId;
     },
     [evidence, caseMeta, activeCase, user, loadCases]
   );
 
-  const setNoticeStatus = useCallback((id: string, newStatus: NoticeStatus) => {
-    setNotices((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, status: newStatus } : n))
-    );
+  /**
+   * Draft -> Issued. This is the moment the server signs, so the reconciled
+   * notice that comes back is the only place a signature ever enters client
+   * state.
+   *
+   * "Acknowledged" is deliberately not reachable from here. That transition
+   * belongs to the exchange, is recorded through recordVaspResponse, and used to
+   * be settable by any police user clicking a tab - which recorded the exchange
+   * as having replied when it had not.
+   */
+  const issueNotice = useCallback(
+    async (id: string): Promise<{ success: boolean; error?: string }> => {
+      const target = notices.find((n) => n.id === id);
+      if (!target) return { success: false, error: "That requisition is no longer in this session." };
 
-    const targetNotice = notices.find((n) => n.id === id);
+      try {
+        const res = await postJSON<any>("/api/notices", {
+          id,
+          status: "Issued",
+          case_number: target.case_number || target.notice?.case?.ncrp_ack_no,
+          target_vasp: target.target_vasp || target.notice?.to_vasp,
+          drafted_by_name: target.drafted_by_name,
+          notice: target.notice,
+        });
 
-    postJSON("/api/notices", {
-      id,
-      status: newStatus,
-      action: newStatus === "Acknowledged" ? "acknowledge" : undefined,
-      case_number: activeCase?.case_number || targetNotice?.case_number || targetNotice?.notice?.case?.ncrp_ack_no,
-      notice: targetNotice?.notice,
-    }).then(() => {
-      void loadCases();
-    }).catch(() => {});
-  }, [activeCase, notices, loadCases]);
+        if (res?.error || !res?.notice) {
+          return { success: false, error: res?.error || "The server did not accept the issuance." };
+        }
 
+        const fromServer = normalizeStoredNotice(res.notice);
+        setNotices((prev) => prev.map((n) => (n.id === id ? fromServer : n)));
+        void loadCases();
+        return { success: true };
+      } catch (err: any) {
+        return { success: false, error: err?.message || "Could not reach the notice service." };
+      }
+    },
+    [notices, loadCases]
+  );
+
+  /** Re-read notices from the server, e.g. after an exchange has replied. */
+  const refreshNotices = useCallback(async () => {
+    try {
+      const res = await fetch("/api/notices");
+      if (!res.ok) return;
+      const data = await res.json();
+      const raw = Array.isArray(data) ? data : Array.isArray(data?.notices) ? data.notices : [];
+      setNotices(raw.map((n: any) => normalizeStoredNotice(n)));
+    } catch {}
+  }, []);
+
+  /**
+   * Drops a notice from this session's view only. Issued orders are statutory
+   * records and the server keeps them; nothing here deletes anything.
+   */
   const removeNotice = useCallback((id: string) => {
     setNotices((prev) => prev.filter((n) => n.id !== id));
   }, []);
@@ -483,7 +541,8 @@ export function TraceStoreProvider({ children }: { children: ReactNode }) {
         setActiveCase,
         loadCases,
         generateNotice,
-        setNoticeStatus,
+        issueNotice,
+        refreshNotices,
         removeNotice,
         refreshTrace,
         ingestNcrpComplaint,

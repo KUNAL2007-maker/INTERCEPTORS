@@ -7,7 +7,37 @@
 import crypto from 'crypto';
 import type { AppUser, RoleName, ClearanceLevel } from './rbac-abac';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'sih-2026-i4c-cryptotrace-jwt-hmac-sha256-secret-key-9988';
+/**
+ * Signing secret.
+ *
+ * The previous fallback was a literal committed to the repository, which means
+ * anyone with the source could mint a token for any role - including a gazetted
+ * officer - and every RBAC check downstream would honour it. A committed secret
+ * is not a secret.
+ *
+ * So: in production JWT_SECRET is mandatory and the module refuses to load
+ * without it. In development a random secret is generated per process, which
+ * keeps local runs working while making it impossible to ship a known key. The
+ * cost is that restarting the dev server invalidates open sessions, which is
+ * the right trade.
+ */
+const JWT_SECRET = (() => {
+  const fromEnv = process.env.JWT_SECRET;
+  if (fromEnv && fromEnv.length >= 32) return fromEnv;
+
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'JWT_SECRET is not set (or is shorter than 32 characters). Refusing to start: without it, session tokens could be forged by anyone holding a copy of this source.'
+    );
+  }
+
+  if (fromEnv) {
+    // eslint-disable-next-line no-console
+    console.warn('[auth] JWT_SECRET is shorter than 32 characters and is being ignored. Using a per-process random secret.');
+  }
+  return crypto.randomBytes(48).toString('hex');
+})();
+
 const TOKEN_EXPIRY_SECONDS = 60 * 60 * 24; // 24 hours
 
 export type JWTPayload = {
@@ -105,6 +135,14 @@ export function verifyJWT(token: string): JWTPayload | null {
     if (parts.length !== 3) return null;
 
     const [encodedHeader, encodedPayload, signature] = parts;
+
+    // Pin the algorithm. Without this check a token presented with
+    // {"alg":"none"} or a swapped algorithm is still run through the HMAC path,
+    // and the classic JWT confusion attacks depend on the verifier trusting
+    // whatever the token claims about how it was signed.
+    const header = JSON.parse(base64UrlDecode(encodedHeader));
+    if (!header || header.alg !== 'HS256' || (header.typ && header.typ !== 'JWT')) return null;
+
     const data = `${encodedHeader}.${encodedPayload}`;
 
     const expectedSignature = crypto

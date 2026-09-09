@@ -72,8 +72,10 @@ export async function POST(req: Request) {
       classification: isVictim ? 'RESTRICTED' : 'CONFIDENTIAL',
       status: 'PENDING_TRACING',
       priority: 'HIGH',
-      assigned_investigator_id: 3,
-      assigned_investigator_name: 'SI Patil',
+      // Left unallocated on purpose. The complaint enters the unit queue and
+      // the supervisor allocates it to an officer; auto-assigning here would
+      // skip a step the platform exists to record.
+      assigned_investigator_id: null,
       tx_hashes: body.tx_hash ? [body.tx_hash] : (body.tx_hashes || []),
       notes: body.notes || body.incident_description || ''
     });

@@ -70,6 +70,18 @@ export type WalletTransfer = {
   hop?: number;
   layer_type?: LayerType;
   note?: string;
+  /**
+   * USD value of this transfer AT THE TIME IT HAPPENED — the 1-hour candle at the
+   * transaction's block, not today's spot. This is the court-admissible figure for
+   * the FIR "incident loss" under IPC/BNS: what the stolen crypto was worth when
+   * the crime occurred, which can differ enormously from its value now. `value_usd`
+   * (spot) remains the basis for the BNSS seizure figure — the value of the asset
+   * to be frozen today. Populated only when an Alchemy key is configured; absent
+   * otherwise, and never fabricated.
+   */
+  value_usd_historical?: number;
+  /** `value_usd_historical` converted to INR at the incident, for the FIR. */
+  value_inr_incident?: number;
 };
 
 // One wallet — a graph node, carrying its attribution and computed risk.
@@ -126,6 +138,19 @@ export type TraceResult = {
   degraded?: boolean;
   /** Human-readable notes about what was missed or substituted, for the UI. */
   warnings?: string[];
+  /**
+   * Dual court valuation of the traced flow, when an Alchemy key made historical
+   * candles available. `incident_inr` is the loss at the time of the crime (FIR /
+   * IPC-BNS); `current_inr` is today's value of the same flow (BNSS seizure). The
+   * two diverge with the market, and stating which is which is what keeps the
+   * figure defensible. `price_source` records how the figure was derived so it is
+   * never presented as more certain than it is.
+   */
+  valuation?: {
+    incident_inr: number;
+    current_inr: number;
+    price_source: "alchemy-historical" | "spot-fallback";
+  };
 };
 
 // ── Chat / agent panel types (I4C forensic panel) ───────────────────────────

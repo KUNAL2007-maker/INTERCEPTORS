@@ -2,15 +2,112 @@
 
 import { useMemo } from "react";
 import { useAuth } from "./AuthProvider";
-import type { ViewKey } from "./AppShell";
-import { normalizeRole, type RoleName } from "@/lib/rbac-abac";
+import { viewsForRole, type NavGroup, type ViewKey } from "@/lib/access";
+import { normalizeRole } from "@/lib/rbac-abac";
 
-type NavItem = {
-  key: ViewKey;
-  label: string;
-  hint: string;
-  badge?: string;
-  icon: React.ReactNode;
+/**
+ * Navigation is derived entirely from `viewsForRole`, the same allow-list the
+ * view gate uses. There is no per-role nav array here and no default branch:
+ * a role sees an entry if and only if it may open that view.
+ */
+
+const ICONS: Record<ViewKey, React.ReactNode> = {
+  dashboard: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M3 12h4l3-8 4 16 3-8h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  cases: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M14 2v6h6M16 13H8M16 17H8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  ),
+  trace: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M16.5 16.5L21 21" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  ),
+  graph: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="5" cy="6" r="2" stroke="currentColor" strokeWidth="1.6" />
+      <circle cx="19" cy="6" r="2" stroke="currentColor" strokeWidth="1.6" />
+      <circle cx="12" cy="13" r="2" stroke="currentColor" strokeWidth="1.6" />
+      <circle cx="6" cy="19" r="2" stroke="currentColor" strokeWidth="1.6" />
+      <circle cx="18" cy="19" r="2" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M6.5 7.5L11 12M17.5 7.5L13 12M11 14L7 18M13 14l4 4" stroke="currentColor" strokeWidth="1.3" />
+    </svg>
+  ),
+  canvas: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="3" y="4" width="18" height="16" rx="1.5" stroke="currentColor" strokeWidth="1.6" />
+      <circle cx="8" cy="10" r="1.5" stroke="currentColor" strokeWidth="1.4" />
+      <circle cx="16" cy="8" r="1.5" stroke="currentColor" strokeWidth="1.4" />
+      <circle cx="14" cy="16" r="1.5" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M9.4 10.6l5.2-1.8M9.1 11.3l3.9 3.9M15.3 9.4l-.9 5.2" stroke="currentColor" strokeWidth="1.2" />
+    </svg>
+  ),
+  transfers: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M4 7h13l-3-3M20 17H7l3 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  chat: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M4 6h16v10H8l-4 3V6z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M8 11h8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  ),
+  notices: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M7 3h8l4 4v14H7V3z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M15 3v5h4M10 12h5M10 16h5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  ),
+  audit_logs: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M12 3v18M3 8l9-5 9 5M6 13l-3 4h6l-3-4zM18 13l-3 4h6l-3-4z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  victim_portal: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  exchange_portal: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M3 21h18M5 21V7l7-4 7 4v14M10 11v5M14 11v5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  national_coordination: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M12 3v18M3 12h18" stroke="currentColor" strokeWidth="1.3" />
+      <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.3" />
+    </svg>
+  ),
+  system_admin: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  ),
+};
+
+const GROUP_ORDER: NavGroup[] = ["Case Work", "Analysis", "Statutory", "Oversight", "Administration"];
+
+/** Role designation, derived from the role rather than the individual holder. */
+const ROLE_DESIGNATION: Record<string, string> = {
+  VICTIM: "Complainant · NCRP 1930",
+  INVESTIGATING_OFFICER: "Investigating Officer",
+  CYBERCRIME_SUPERVISOR: "Cybercrime Unit Supervisor",
+  SENIOR_INVESTIGATOR: "Gazetted Officer · Sec 94 BNSS",
+  VASP_COMPLIANCE_OFFICER: "VASP Compliance Desk",
+  COURT_REVIEWER: "Judicial Reviewer · Read Only",
+  NATIONAL_COORDINATION_ANALYST: "National Coordination · I4C",
+  SYSTEM_ADMIN: "System Administrator",
 };
 
 export function Sidebar({
@@ -25,450 +122,153 @@ export function Sidebar({
   onClose?: () => void;
 }) {
   const { user } = useAuth();
-  const rawRole = user?.role;
   const role = user ? normalizeRole(user.role) : null;
 
-  const navItems = useMemo<NavItem[]>(() => {
-    // 1. Citizen Fraud Victim Navigation
-    if (role === "VICTIM") {
-      return [
-        {
-          key: "victim_portal",
-          label: "My Complaints",
-          hint: "Recovery & status tracker",
-          badge: "Citizen",
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-              <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          ),
-        },
-      ];
+  const grouped = useMemo(() => {
+    const items = viewsForRole(user?.role);
+    const byGroup = new Map<NavGroup, typeof items>();
+    for (const item of items) {
+      const list = byGroup.get(item.group) || [];
+      list.push(item);
+      byGroup.set(item.group, list);
     }
+    // Only render a group heading when the role has more than one group,
+    // otherwise the heading is noise above a single item.
+    return {
+      showHeadings: byGroup.size > 1,
+      groups: GROUP_ORDER.filter((g) => byGroup.has(g)).map((g) => ({ group: g, items: byGroup.get(g)! })),
+    };
+  }, [user?.role]);
 
-    // 2. High Court Judicial Auditor / Court Reviewer Navigation (Strictly Read-Only)
-    if (role === "COURT_REVIEWER" || rawRole === "AUDITOR") {
-      return [
-        {
-          key: "cases",
-          label: "Evidence Dossiers",
-          hint: "Read-only case files & hashes",
-          badge: "Read Only",
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          ),
-        },
-        {
-          key: "audit_logs",
-          label: "BSA Audit Trail & Cert",
-          hint: "Sec 63/65B Logs & Cert",
-          badge: "Judicial",
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M12 3v18M3 8l9-5 9 5M6 13l-3 4h6l-3-4zM18 13l-3 4h6l-3-4z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          ),
-        },
-        {
-          key: "graph",
-          label: "Money Flow Review",
-          hint: "Forensic canvas (Read Only)",
-          badge: "Read Only",
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <circle cx="5" cy="6" r="2" stroke="currentColor" strokeWidth="1.6" />
-              <circle cx="19" cy="6" r="2" stroke="currentColor" strokeWidth="1.6" />
-              <circle cx="12" cy="13" r="2" stroke="currentColor" strokeWidth="1.6" />
-              <circle cx="6" cy="19" r="2" stroke="currentColor" strokeWidth="1.6" />
-              <circle cx="18" cy="19" r="2" stroke="currentColor" strokeWidth="1.6" />
-              <path d="M6.5 7.5L11 12M17.5 7.5L13 12M11 14L7 18M13 14l4 4" stroke="currentColor" strokeWidth="1.4" />
-            </svg>
-          ),
-        }
-      ];
-    }
-
-    // 3. VASP Compliance Officer Navigation (Exchange Desk)
-    if (role === "VASP_COMPLIANCE_OFFICER" || rawRole === "EXCHANGE_NODAL_OFFICER") {
-      return [
-        {
-          key: "exchange_portal",
-          label: "Inbound Sec 94 BNSS",
-          hint: "Freezes & KYC orders",
-          badge: "VASP Desk",
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M3 21h18M5 21V7l7-4 7 4v14M9 10v4M15 10v4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          ),
-        }
-      ];
-    }
-
-    // 4. National Coordination Analyst Navigation (I4C Hub)
-    if (role === "NATIONAL_COORDINATION_ANALYST") {
-      return [
-        {
-          key: "national_coordination",
-          label: "National Intel Hub",
-          hint: "Cross-jurisdiction links",
-          badge: "I4C Hub",
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" />
-              <path d="M12 3v18M3 12h18" stroke="currentColor" strokeWidth="1.4" />
-              <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.4" />
-            </svg>
-          ),
-        }
-      ];
-    }
-
-    // 5. System Administrator Navigation
-    if (role === "SYSTEM_ADMIN" || rawRole === "SUPER_ADMIN") {
-      return [
-        {
-          key: "system_admin",
-          label: "User & System Admin",
-          hint: "Users & platform health",
-          badge: "Admin",
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.6" />
-              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" strokeWidth="1.6" />
-            </svg>
-          ),
-        },
-        {
-          key: "audit_logs",
-          label: "Security Audit Logs",
-          hint: "Platform access logs",
-          badge: "Security",
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M12 3v18M3 8l9-5 9 5M6 13l-3 4h6l-3-4zM18 13l-3 4h6l-3-4z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          ),
-        }
-      ];
-    }
-
-    // 6. Cybercrime Supervisor Navigation (SP Deshmukh)
-    if (role === "CYBERCRIME_SUPERVISOR") {
-      return [
-        {
-          key: "dashboard",
-          label: "Unit Triage & Allocation",
-          hint: "SP Deshmukh • Case Triage & IO Assignment",
-          badge: "Supervisor",
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M3 12h4l3-8 4 16 3-8h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          ),
-        },
-        {
-          key: "audit_logs",
-          label: "Unit Audit Trail",
-          hint: "BSA 2023 Sec 63/65B",
-          badge: "Supervisory",
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M12 3v18M3 8l9-5 9 5M6 13l-3 4h6l-3-4zM18 13l-3 4h6l-3-4z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          ),
-        },
-      ];
-    }
-
-    // 7. Senior Investigator Navigation (ACP Sharma - Gazetted)
-    if (role === "SENIOR_INVESTIGATOR") {
-      return [
-        {
-          key: "dashboard",
-          label: "Traced Cases & Sign-Off",
-          hint: "ACP Sharma • Review & Sign-Off",
-          badge: "Gazetted",
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M3 12h4l3-8 4 16 3-8h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          ),
-        },
-        {
-          key: "graph",
-          label: "Money Flow Graph",
-          hint: "Trace topology review",
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <circle cx="5" cy="6" r="2" stroke="currentColor" strokeWidth="1.6" />
-              <circle cx="19" cy="6" r="2" stroke="currentColor" strokeWidth="1.6" />
-              <circle cx="12" cy="13" r="2" stroke="currentColor" strokeWidth="1.6" />
-              <circle cx="6" cy="19" r="2" stroke="currentColor" strokeWidth="1.6" />
-              <circle cx="18" cy="19" r="2" stroke="currentColor" strokeWidth="1.6" />
-              <path d="M6.5 7.5L11 12M17.5 7.5L13 12M11 14L7 18M13 14l4 4" stroke="currentColor" strokeWidth="1.4" />
-            </svg>
-          ),
-        },
-        {
-          key: "notices",
-          label: "Sign Sec 94 BNSS Order",
-          hint: "Digital statutory sign-off",
-          badge: "Sec 94 BNSS",
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M7 3h8l4 4v14H7V3z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-              <path d="M15 3v5h4M9 12h6M9 16h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-            </svg>
-          ),
-        },
-        {
-          key: "audit_logs",
-          label: "Unit Audit Trail",
-          hint: "BSA 2023 Sec 63/65B",
-          badge: "Supervisory",
-          icon: (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M12 3v18M3 8l9-5 9 5M6 13l-3 4h6l-3-4zM18 13l-3 4h6l-3-4z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          ),
-        },
-      ];
-    }
-
-    // 8. Investigating Officer Navigation (SI Patil - Field IO)
-    return [
-      {
-        key: "dashboard",
-        label: "Assigned Cases & Trace",
-        hint: "SI Patil • Active dockets",
-        badge: "Assigned",
-        icon: (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path d="M3 12h4l3-8 4 16 3-8h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        ),
-      },
-      {
-        key: "graph",
-        label: "Money Flow Graph",
-        hint: "Blockchain trace topology",
-        icon: (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <circle cx="5" cy="6" r="2" stroke="currentColor" strokeWidth="1.6" />
-            <circle cx="19" cy="6" r="2" stroke="currentColor" strokeWidth="1.6" />
-            <circle cx="12" cy="13" r="2" stroke="currentColor" strokeWidth="1.6" />
-            <circle cx="6" cy="19" r="2" stroke="currentColor" strokeWidth="1.6" />
-            <circle cx="18" cy="19" r="2" stroke="currentColor" strokeWidth="1.6" />
-            <path d="M6.5 7.5L11 12M17.5 7.5L13 12M11 14L7 18M13 14l4 4" stroke="currentColor" strokeWidth="1.4" />
-          </svg>
-        ),
-      },
-      {
-        key: "chat",
-        label: "AI Forensics Copilot",
-        hint: "4 forensic agents",
-        icon: (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path d="M4 6h16v10H8l-4 3V6z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-            <circle cx="9" cy="11" r="1" fill="currentColor" />
-            <circle cx="12" cy="11" r="1" fill="currentColor" />
-            <circle cx="15" cy="11" r="1" fill="currentColor" />
-          </svg>
-        ),
-      },
-      {
-        key: "notices",
-        label: "Prepare Draft Notice",
-        hint: "Sec 94 BNSS Draft Only",
-        badge: "Draft Only",
-        icon: (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path d="M7 3h8l4 4v14H7V3z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-            <path d="M15 3v5h4M9 12h6M9 16h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-          </svg>
-        ),
-      },
-    ];
-  }, [role, rawRole]);
-
-  // Role Pill Configuration
-  const roleBadge = useMemo(() => {
-    switch (role) {
-      case "VICTIM":
-        return { label: "CITIZEN COMPLAINANT · NCRP 1930", bg: "bg-cyan-500/10 text-cyan-300 border-cyan-500/25" };
-      case "COURT_REVIEWER":
-        return { label: "JUDICIAL EVIDENCE REVIEWER (READ ONLY)", bg: "bg-slate-500/10 text-slate-300 border-slate-500/25" };
-      case "VASP_COMPLIANCE_OFFICER":
-        return { label: "VASP COMPLIANCE DESK · EXTERNAL", bg: "bg-amber-500/10 text-amber-300 border-amber-500/25" };
-      case "INVESTIGATING_OFFICER":
-        return { label: "SI PATIL (FIELD INVESTIGATOR)", bg: "bg-amber-500/10 text-amber-300 border-amber-500/25" };
-      case "CYBERCRIME_SUPERVISOR":
-        return { label: "SP DESHMUKH (UNIT SUPERVISOR)", bg: "bg-purple-500/10 text-purple-300 border-purple-500/25" };
-      case "SENIOR_INVESTIGATOR":
-        return { label: "ACP SHARMA (GAZETTED · SEC 94 BNSS)", bg: "bg-emerald-500/10 text-emerald-300 border-emerald-500/25" };
-      case "NATIONAL_COORDINATION_ANALYST":
-        return { label: "NATIONAL COORDINATION ANALYST", bg: "bg-sky-500/10 text-sky-300 border-sky-500/25" };
-      case "SYSTEM_ADMIN":
-        return { label: "SYSTEM ADMINISTRATOR · INFRASTRUCTURE", bg: "bg-rose-500/10 text-rose-300 border-rose-500/25" };
-      default:
-        return { label: "LAW ENFORCEMENT PROTOTYPE", bg: "bg-emerald-500/10 text-emerald-300 border-emerald-500/25" };
-    }
-  }, [role]);
+  const designation = (role && ROLE_DESIGNATION[role]) || "Authorised User";
+  const readOnly = role === "COURT_REVIEWER";
 
   return (
     <aside
       id="app-nav"
       aria-label="Main navigation"
-      className={`fixed inset-y-0 left-0 z-50 flex h-[100dvh] w-[272px] shrink-0 flex-col border-r transition-transform duration-300 lg:static lg:z-auto lg:h-full lg:w-64 lg:translate-x-0 lg:transition-none 2xl:w-72 ${
+      className={`fixed inset-y-0 left-0 z-50 flex h-[100dvh] w-[264px] shrink-0 flex-col border-r transition-transform duration-200 lg:static lg:z-auto lg:h-full lg:w-64 lg:translate-x-0 lg:transition-none ${
         open ? "translate-x-0" : "-translate-x-full"
       }`}
-      style={{
-        background: "var(--panel)",
-        borderColor: "var(--border)",
-      }}
+      style={{ background: "var(--panel)", borderColor: "var(--border)" }}
     >
-      {/* Brand & Badge Header */}
-      <div className="flex h-16 shrink-0 items-center justify-between border-b px-4" style={{ borderColor: "var(--border)" }}>
-        <div className="flex items-center gap-2.5">
-          <div className="grid h-8 w-8 place-items-center rounded-lg bg-sky-500/10 text-sky-400 font-bold text-sm border border-sky-500/20 shadow-sm">
-            CT
+      <div className="flex h-14 shrink-0 items-center justify-between border-b px-4" style={{ borderColor: "var(--border)" }}>
+        <div className="min-w-0">
+          <div className="text-[13px] font-semibold tracking-tight" style={{ color: "var(--text-strong)" }}>
+            CryptoTrace
           </div>
-          <div>
-            <div className="text-xs font-bold tracking-tight" style={{ color: "var(--text-strong)" }}>
-              CryptoTrace
-            </div>
-            <div className="text-[10px] text-muted">I4C / NCRP Platform</div>
-          </div>
+          <div className="text-[10px] text-muted truncate">Crypto Fraud Attribution · I4C</div>
         </div>
         {onClose && (
           <button
             onClick={onClose}
             aria-label="Close navigation"
-            className="grid h-8 w-8 place-items-center rounded-lg text-muted hover:bg-[var(--hover)] lg:hidden"
+            className="grid h-7 w-7 place-items-center rounded border text-muted hover:text-white lg:hidden"
+            style={{ borderColor: "var(--border)" }}
           >
-            ✕
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
           </button>
         )}
       </div>
 
-      {/* Role Pill */}
+      {/* Role designation. Describes the office, not the person holding it. */}
       <div className="px-3 pt-3">
-        <div className={`rounded-lg border px-2.5 py-1 text-[9.5px] font-mono font-bold tracking-wider uppercase text-center ${roleBadge.bg}`}>
-          {roleBadge.label}
+        <div
+          className="rounded border px-2.5 py-1.5 text-[10px] font-medium uppercase tracking-wider text-center"
+          style={{
+            borderColor: readOnly ? "rgba(148,163,184,0.35)" : "var(--border)",
+            background: "var(--chip)",
+            color: "var(--text-muted, #94a3b8)",
+          }}
+        >
+          {designation}
         </div>
       </div>
 
-      {/* Navigation Links */}
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-3 scroll-stable">
-        {navItems.map((item) => {
-          const active = view === item.key;
-          return (
-            <button
-              key={item.key}
-              onClick={() => {
-                onChange(item.key);
-                if (onClose) onClose();
-              }}
-              className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs font-medium transition ${
-                active
-                  ? "bg-sky-500/15 text-sky-400 border border-sky-500/30 shadow-sm"
-                  : "text-muted hover:bg-[var(--hover)] hover:text-white"
-              }`}
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <span className={`shrink-0 ${active ? "text-sky-400" : "text-muted"}`}>
-                  {item.icon}
-                </span>
-                <div className="min-w-0">
-                  <div className={`truncate leading-tight ${active ? "font-bold text-white" : ""}`}>
-                    {item.label}
-                  </div>
-                  <div className="text-[10px] text-muted-2 truncate leading-tight mt-0.5">
-                    {item.hint}
-                  </div>
-                </div>
+      <nav className="flex-1 overflow-y-auto px-3 py-3 scroll-stable">
+        {grouped.groups.map(({ group, items }) => (
+          <div key={group} className="mb-4 last:mb-0">
+            {grouped.showHeadings && (
+              <div className="px-1 pb-1.5 text-[9.5px] font-semibold uppercase tracking-[0.14em] text-muted-2">
+                {group}
               </div>
-              {item.badge && (
-                <span className={`ml-2 shrink-0 rounded px-1.5 py-0.5 text-[9px] font-mono font-bold ${
-                  item.badge === "Read Only"
-                    ? "bg-rose-500/20 text-rose-400 border border-rose-500/30"
-                    : "bg-[var(--chip)] text-muted"
-                }`}>
-                  {item.badge}
-                </span>
-              )}
-            </button>
-          );
-        })}
+            )}
+            <div className="space-y-0.5">
+              {items.map((item) => {
+                const active = view === item.key;
+                return (
+                  <button
+                    key={item.key}
+                    onClick={() => {
+                      onChange(item.key);
+                      if (onClose) onClose();
+                    }}
+                    aria-current={active ? "page" : undefined}
+                    className={`flex w-full items-start gap-2.5 rounded border px-2.5 py-2 text-left transition ${
+                      active
+                        ? "border-sky-500/40 bg-sky-500/10"
+                        : "border-transparent text-muted hover:bg-[var(--hover)]"
+                    }`}
+                  >
+                    <span className={`mt-0.5 shrink-0 ${active ? "text-sky-400" : "text-muted-2"}`}>
+                      {ICONS[item.key]}
+                    </span>
+                    <span className="min-w-0">
+                      <span
+                        className={`block truncate text-[12px] leading-tight ${
+                          active ? "font-semibold text-white" : "font-medium"
+                        }`}
+                      >
+                        {item.label}
+                      </span>
+                      <span className="mt-0.5 block truncate text-[10px] leading-tight text-muted-2">
+                        {item.hint}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
 
-      {/* Footer Officer Chip */}
       <div className="border-t p-3" style={{ borderColor: "var(--border)" }}>
-        <OfficerChip />
+        <OfficerChip designation={designation} />
       </div>
     </aside>
   );
 }
 
-function OfficerChip() {
+function OfficerChip({ designation }: { designation: string }) {
   const { user, signOut } = useAuth();
   if (!user) return null;
-  const normRole = normalizeRole(user.role);
 
-  const roleLabel =
-    normRole === "VICTIM"
-      ? "Citizen Complainant"
-      : normRole === "COURT_REVIEWER"
-      ? "Judicial Reviewer (Read Only)"
-      : normRole === "VASP_COMPLIANCE_OFFICER"
-      ? "VASP Compliance Desk"
-      : normRole === "NATIONAL_COORDINATION_ANALYST"
-      ? "National Coordination Analyst"
-      : normRole === "SYSTEM_ADMIN"
-      ? "System Administrator"
-      : normRole === "CYBERCRIME_SUPERVISOR"
-      ? "Cybercrime Supervisor"
-      : user.is_gazetted
-      ? "Gazetted Senior Police Officer"
-      : "Field Investigating Officer";
+  const initials = (user.name || user.fullName || "U").trim().slice(0, 2).toUpperCase();
 
   return (
-    <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[var(--chip)] border" style={{ borderColor: "var(--border)" }}>
+    <div className="flex items-center gap-2.5 rounded border p-2.5" style={{ borderColor: "var(--border)", background: "var(--chip)" }}>
       <div
-        className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center font-bold text-xs shadow-sm"
-        style={{
-          background:
-            normRole === "VICTIM"
-              ? "linear-gradient(135deg, #06b6d4, #0891b2)"
-              : normRole === "COURT_REVIEWER"
-              ? "linear-gradient(135deg, #64748b, #475569)"
-              : normRole === "NATIONAL_COORDINATION_ANALYST"
-              ? "linear-gradient(135deg, #38bdf8, #0284c7)"
-              : normRole === "SYSTEM_ADMIN"
-              ? "linear-gradient(135deg, #f43f5e, #e11d48)"
-              : user.is_gazetted
-              ? "linear-gradient(135deg, #10b981, #059669)"
-              : "linear-gradient(135deg, #f59e0b, #d97706)",
-          color: "#fff"
-        }}
+        className="grid h-8 w-8 shrink-0 place-items-center rounded border text-[11px] font-semibold"
+        style={{ borderColor: "var(--border)", background: "var(--surface-sunken)", color: "var(--text-strong)" }}
       >
-        {user.name ? user.name.slice(0, 2).toUpperCase() : "IO"}
+        {initials}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-[12px] font-semibold text-white truncate">{user.name || user.fullName}</div>
-        <div className="text-[10px] text-muted truncate">{roleLabel}</div>
+        <div className="truncate text-[12px] font-medium text-white">{user.name || user.fullName}</div>
+        <div className="truncate text-[10px] text-muted">{designation}</div>
       </div>
       <button
         onClick={() => signOut()}
-        title="Sign Out"
-        className="p-1 rounded-md text-muted hover:text-red-400 hover:bg-red-500/10 transition text-xs"
+        title="Sign out"
+        aria-label="Sign out"
+        className="rounded p-1 text-muted transition hover:text-white"
       >
-        ✕
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <path d="M15 4h3a2 2 0 012 2v12a2 2 0 01-2 2h-3M10 8l-4 4 4 4M6 12h9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
       </button>
     </div>
   );

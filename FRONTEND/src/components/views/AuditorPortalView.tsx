@@ -11,6 +11,21 @@ export function AuditorPortalView() {
   const [loading, setLoading] = useState(true);
   const [selectedCase, setSelectedCase] = useState("MH-CYBER-2026-0842");
   const [certificateCopied, setCertificateCopied] = useState(false);
+  const [certHash, setCertHash] = useState<string>("computing...");
+
+  useEffect(() => {
+    async function computeCertHash() {
+      const enc = new TextEncoder();
+      const input = `${selectedCase}:CryptoTrace-LEA-Cluster:BSA65B:${new Date().toISOString().split("T")[0]}`;
+      const buf = await crypto.subtle.digest("SHA-256", enc.encode(input));
+      setCertHash(
+        Array.from(new Uint8Array(buf))
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("")
+      );
+    }
+    void computeCertHash();
+  }, [selectedCase]);
 
   useEffect(() => {
     async function fetchLogs() {
@@ -31,38 +46,44 @@ export function AuditorPortalView() {
 
   const sampleEvidenceCertificate = `
 ================================================================================
-CERTIFICATE OF ELECTRONIC EVIDENCE UNDER SECTION 63 / 65B 
+CERTIFICATE OF ELECTRONIC EVIDENCE UNDER SECTION 63 / 65B
 BHARATIYA SAKSHYA ADHINIYAM, 2023 (BSA 2023)
 [Formerly Section 65B, Indian Evidence Act, 1872]
 ================================================================================
 
-1. CASE IDENTIFIER: ${selectedCase}
-2. INVESTIGATING POLICE UNIT: Maharashtra State Cyber Police Station (BKC, Mumbai)
-3. TARGET VASP / EXCHANGE: Binance International & WazirX India
-4. FORENSIC ARTIFACT: Multi-Hop Blockchain Money Flow & Section 94 BNSS Order
+1. CASE IDENTIFIER        : ${selectedCase}
+2. INVESTIGATING UNIT     : Maharashtra State Cyber Police Station (BKC, Mumbai)
+3. TARGET VASP / EXCHANGE : Binance International & WazirX India
+4. FORENSIC ARTIFACT      : Multi-Hop Blockchain Money Flow & Sec 94 BNSS Order
 
 A. SYSTEM & DEVICE PARTICULARS:
-   - Operating Platform: CryptoTrace Enterprise LEA Cluster (Gov Cloud)
-   - SHA-256 Ledger Anchor: 8f4e2b8109d93cf02b9e6f3a14e9124317f2e15c32890ac82e4431f9b37c6d12
-   - Verification Timestamp: ${new Date().toISOString()}
-   - Inspection Officer: ${user?.name || "Justice K. S. Rao (Judicial Auditor)"}
-   - Jurisdiction Code: IN-JUDICIAL-00
+   Operating Platform  : CryptoTrace Forensic Cluster (Government Cloud Tier-II)
+   SHA-256 Ledger Anchor: ${certHash}
+   Verification Timestamp: ${new Date().toISOString()}
+   Reviewing Officer   : ${user?.name || "Judicial Auditor (IN-JUDICIAL-00)"}
+   Jurisdiction Code   : IN-JUDICIAL-00
 
 B. STATUTORY CERTIFICATION:
-   I, the undersigned, hereby certify that:
-   (a) The computerized multi-chain blockchain graph attribution outputs were 
-       produced during the regular course of official cyber forensics.
-   (b) The cryptographic hash chain of custody remained tamper-free throughout 
-       the evidentiary extraction window.
-   (c) At all material times, the cryptographic audit trail system was operating 
-       normally with continuous logging of access requests.
+   I, the undersigned, being the person responsible for the management and
+   operation of the CryptoTrace Forensic Cluster used to produce the electronic
+   records in Case ${selectedCase}, do hereby certify that:
+   (a) The computer outputs (multi-chain blockchain graph attribution) were
+       produced by the computer during a period when it was used in the
+       ordinary course of the activities of Maharashtra Cyber Cell.
+   (b) Throughout the material period, the computer was operating properly;
+       or if not, any respect in which it was not operating properly or was
+       out of operation for any part of that period did not affect the
+       production of the document or the accuracy of its contents.
+   (c) The information contained in the electronic record reproduces or is
+       derived from such information supplied to the computer in the
+       ordinary course of such activities.
 
 C. ADMISSIBILITY ATTESTATION:
-   This electronic evidence record satisfies all legal requirements of 
-   admissibility in a Court of Law under Section 63 and Section 65B of the 
-   Bharatiya Sakshya Adhiniyam, 2023.
+   This certificate is furnished in terms of Section 63 and Section 65B of
+   the Bharatiya Sakshya Adhiniyam, 2023 (formerly Section 65B, IEA 1872)
+   and renders the attached electronic records admissible in evidence.
 
-[DIGITALLY VERIFIED - ELECTRONIC JUDICIAL SEAL]
+[SYSTEM CUSTODIAN CERTIFICATE — NOT A JUDICIAL ORDER]
 `.trim();
 
   const handleCopyCert = () => {
@@ -75,38 +96,35 @@ C. ADMISSIBILITY ATTESTATION:
     <Page width="wide">
       {/* Judicial Header Banner */}
       <div
-        className="rounded-2xl border p-5 mb-6 shadow-lg"
-        style={{
-          background: "linear-gradient(135deg, rgba(234, 179, 8, 0.08), rgba(245, 158, 11, 0.04))",
-          borderColor: "rgba(234, 179, 8, 0.3)"
-        }}
+        className="rounded border p-5 mb-6"
+        style={{ background: "var(--panel)", borderColor: "var(--border)" }}
       >
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
             <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold"
-              style={{ background: "#eab308", color: "#000" }}
+              className="w-10 h-10 rounded border flex items-center justify-center text-xs font-bold font-mono"
+              style={{ background: "var(--chip)", borderColor: "var(--border)", color: "var(--text-strong)" }}
             >
-              ⚖️
+              65B
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-lg font-bold text-white tracking-tight">
-                  Judicial Audit & Evidence Verification Chamber
+                <h1 className="text-lg font-bold tracking-tight" style={{ color: "var(--text-strong)" }}>
+                  Judicial Audit &amp; Evidence Verification Chamber
                 </h1>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 font-semibold">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded border font-semibold" style={{ background: "var(--chip)", borderColor: "var(--border)", color: "var(--muted)" }}>
                   BSA SEC 65B READ-ONLY
                 </span>
               </div>
-              <p className="text-xs text-muted mt-0.5">
-                Session: <strong className="text-white">{user?.name || "Justice K. S. Rao"}</strong> &bull; Judicial Auditor &bull; IN-JUDICIAL-00 &bull; Read-Only Evidence Integrity Mode
+              <p className="text-xs mt-0.5" style={{ color: "var(--muted)" }}>
+                Session: <strong style={{ color: "var(--text-strong)" }}>{user?.name || "Judicial Auditor"}</strong> &bull; Judicial Auditor &bull; IN-JUDICIAL-00 &bull; Read-Only Evidence Integrity Mode
               </p>
             </div>
           </div>
 
           <div className="text-right">
-            <span className="text-[11px] font-mono px-2.5 py-1 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30">
-              🔒 Mutations Prohibited under ABAC Policy POL-02
+            <span className="text-[11px] font-mono px-2.5 py-1 rounded border" style={{ background: "var(--chip)", borderColor: "var(--border)", color: "var(--muted)" }}>
+              Mutations Prohibited &mdash; ABAC Policy POL-02
             </span>
           </div>
         </div>
@@ -180,7 +198,7 @@ C. ADMISSIBILITY ATTESTATION:
                 <select
                   value={selectedCase}
                   onChange={(e) => setSelectedCase(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none"
+                  className="w-full px-3 py-2 rounded text-xs border focus:outline-none"
                   style={{
                     background: "var(--surface-sunken)",
                     borderColor: "var(--border)",
@@ -194,7 +212,7 @@ C. ADMISSIBILITY ATTESTATION:
               </div>
 
               <div
-                className="p-3 rounded-xl border font-mono text-[10px] leading-relaxed max-h-[260px] overflow-y-auto"
+                className="p-3 rounded border font-mono text-[10px] leading-relaxed max-h-[260px] overflow-y-auto"
                 style={{
                   background: "#080b0f",
                   borderColor: "var(--border)",
@@ -206,11 +224,10 @@ C. ADMISSIBILITY ATTESTATION:
 
               <button
                 onClick={handleCopyCert}
-                className="w-full py-2.5 rounded-xl text-xs font-bold text-black transition flex items-center justify-center gap-2"
-                style={{ background: "linear-gradient(135deg, #eab308, #f59e0b)" }}
+                className="w-full py-2 rounded border text-xs font-semibold transition hover:opacity-80"
+                style={{ background: "var(--chip)", borderColor: "var(--border)", color: "var(--text-strong)" }}
               >
-                <span>📜</span>
-                <span>{certificateCopied ? "Certificate Copied to Clipboard!" : "Copy Section 65B BSA Certificate"}</span>
+                {certificateCopied ? "Certificate Copied to Clipboard" : "Copy Section 65B BSA Certificate"}
               </button>
             </div>
           </Card>

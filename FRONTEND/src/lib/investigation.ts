@@ -1356,6 +1356,44 @@ export function ensureLegalNotice(rawNotice?: any, parent?: any): LegalNotice {
   };
 }
 
+/**
+ * The signature block and the exchange's reply, as the client sees them.
+ *
+ * Mirrors OrderSignature / VaspResponse in lib/db.ts rather than importing
+ * them: db.ts pulls in `crypto` and `pg`, and this module is shared with client
+ * components. The shapes are structural, so a drift between the two shows up as
+ * a type error at the API boundary where the server value is normalised.
+ */
+export type NoticeSignature = {
+  algorithm: string;
+  digest: string;
+  key_id: string;
+  public_key: string;
+  payload_hash: string;
+  signature: string;
+  nonce: string;
+  signed_at: string;
+  officer: {
+    uid: string;
+    name: string;
+    designation: string;
+    badge?: string;
+    is_gazetted: boolean;
+  };
+};
+
+export type NoticeVaspResponse = {
+  acknowledged_at?: string;
+  acknowledged_by?: string;
+  ack_latency_minutes?: number;
+  action?: "FREEZE_EXECUTED" | "PARTIAL_FREEZE" | "REFUSED";
+  action_reported_at?: string;
+  executed_by?: string;
+  exchange_ref_no?: string;
+  frozen_amount?: string;
+  reason?: string;
+};
+
 export function normalizeStoredNotice(item: any): {
   id: string;
   status: "Draft" | "Issued" | "Acknowledged";
@@ -1363,8 +1401,11 @@ export function normalizeStoredNotice(item: any): {
   notice: LegalNotice;
   case_number?: string;
   target_vasp?: string;
+  vasp_id?: number;
   drafted_by_name?: string;
   approved_by_name?: string;
+  signature?: NoticeSignature;
+  vasp_response?: NoticeVaspResponse;
 } {
   if (!item || typeof item !== "object") {
     return {
@@ -1397,6 +1438,20 @@ export function normalizeStoredNotice(item: any): {
 
   const notice = ensureLegalNotice(item.notice, item);
 
+  // The signature and the exchange reply are server-owned and pass through
+  // untouched. Nothing on the client may synthesise either: a fabricated
+  // signature block on screen would be indistinguishable from a real one to the
+  // officer reading it, which is the whole point of signing.
+  const signature: NoticeSignature | undefined =
+    item.signature && typeof item.signature === "object" && item.signature.signature
+      ? (item.signature as NoticeSignature)
+      : undefined;
+
+  const vaspResponse: NoticeVaspResponse | undefined =
+    item.vasp_response && typeof item.vasp_response === "object"
+      ? (item.vasp_response as NoticeVaspResponse)
+      : undefined;
+
   return {
     id,
     status,
@@ -1404,8 +1459,11 @@ export function normalizeStoredNotice(item: any): {
     notice,
     case_number: item.case_number || notice.case?.ncrp_ack_no,
     target_vasp: item.target_vasp || notice.to_vasp,
+    vasp_id: typeof item.vasp_id === "number" ? item.vasp_id : undefined,
     drafted_by_name: item.drafted_by_name,
     approved_by_name: item.approved_by_name,
+    signature,
+    vasp_response: vaspResponse,
   };
 }
 

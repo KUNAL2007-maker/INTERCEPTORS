@@ -17,6 +17,14 @@ import {
 } from './rbac-abac';
 import { hashPassword, verifyPassword } from './auth-crypto';
 import { ensureLegalNotice } from './investigation';
+import {
+  signOrder,
+  verifyOrderSignature,
+  officerPublicKey,
+  type OrderSignature,
+  type SignableOrder,
+  type VerificationResult
+} from './order-signing';
 
 export type StoredCase = {
   id: number;
@@ -56,6 +64,40 @@ export type StoredFreezeNotice = {
   approved_by_name?: string;
   created_at: number;
   notice: any;
+  /**
+   * Ed25519 signature over the canonical order payload, applied when a
+   * gazetted officer issues the order. `approved_by_name` above is a display
+   * label and proves nothing; this is the part a court can check.
+   */
+  signature?: OrderSignature;
+  /** What the addressed exchange reported back. See recordVaspResponse. */
+  vasp_response?: VaspResponse;
+};
+
+/**
+ * The exchange's reply to a served requisition.
+ *
+ * Two stages, because that is how Section 94 BNSS service actually works: the
+ * nodal officer first acknowledges receipt (which starts the clock they are
+ * answerable against), and separately reports what their compliance team did
+ * on their own systems. The platform records the reply. It does not freeze
+ * anything, and nothing here touches the chain.
+ */
+export type VaspResponse = {
+  acknowledged_at?: string;
+  acknowledged_by?: string;
+  /** Minutes between the order being issued and the exchange acknowledging. */
+  ack_latency_minutes?: number;
+  action?: 'FREEZE_EXECUTED' | 'PARTIAL_FREEZE' | 'REFUSED';
+  action_reported_at?: string;
+  /** Named individual at the exchange who carried out the action. */
+  executed_by?: string;
+  /** The exchange's own internal reference, so the two records can be tied. */
+  exchange_ref_no?: string;
+  /** Amount actually restrained, where partial. */
+  frozen_amount?: string;
+  /** Mandatory when the action is REFUSED or PARTIAL_FREEZE. */
+  reason?: string;
 };
 
 export type StoredAuditLog = {
@@ -76,53 +118,42 @@ export type StoredAuditLog = {
 export type DatabaseUser = AppUser & {
   password_hash: string;
   salt: string;
-  secondary_hash?: string;
-  secondary_salt?: string;
 };
 
 // ----------------------------------------------------------------------------
 // Official Pre-Seeded User Credentials for 8 Prototype Roles
 // Supports both primary (@example.demo) and backward-compatible legacy emails
 // ----------------------------------------------------------------------------
+// Read once at startup to derive each persona's PBKDF2 hash, then never
+// consulted again - authentication always goes through verifyPassword.
+// Overridable per-role via env so a deployment is not stuck with the
+// prototype passwords that appear in this file.
+//
+// Alias emails (officer.patil@mhcyber.gov.in and friends) resolve to the same
+// account through getUserByEmail; they share the primary password rather than
+// having one of their own.
 const SEED_CREDENTIALS: Record<string, string> = {
-  // New prototype emails
-  'admin@example.demo': 'Admin@123',
-  'senior@example.demo': 'Police@123',
-  'investigator@example.demo': 'Patil@123',
-  'supervisor@example.demo': 'Deshmukh@123',
-  'victim.verma@example.demo': 'Victim@123',
-  'compliance@example.demo': 'Compliance@123',
-  'court@example.demo': 'Judge@123',
-  'national@example.demo': 'National@123',
-
-  // Backward compatibility legacy emails
-  'admin@i4c.gov.in': 'Admin@123',
-  'senior.sharma@mhcyber.gov.in': 'Police@123',
-  'officer.patil@mhcyber.gov.in': 'Patil@123',
-  'sp.deshmukh@mhcyber.gov.in': 'Deshmukh@123',
-  'victim.verma@gmail.com': 'Victim@123',
-  'legal@binance.com': 'Binance@123',
-  'judge.rao@ecourts.gov.in': 'Judge@123'
+  'admin@example.demo': process.env.SEED_PW_ADMIN || 'Admin@123',
+  'senior@example.demo': process.env.SEED_PW_SENIOR || 'Police@123',
+  'investigator@example.demo': process.env.SEED_PW_IO || 'Patil@123',
+  'supervisor@example.demo': process.env.SEED_PW_SUPERVISOR || 'Deshmukh@123',
+  'victim.verma@example.demo': process.env.SEED_PW_VICTIM || 'Victim@123',
+  'compliance@example.demo': process.env.SEED_PW_VASP || 'Compliance@123',
+  'court@example.demo': process.env.SEED_PW_COURT || 'Judge@123',
+  'national@example.demo': process.env.SEED_PW_NATIONAL || 'National@123'
 };
 
 const INITIAL_USERS: DatabaseUser[] = SYSTEM_PERSONAS.map((persona) => {
   const primaryPwd = SEED_CREDENTIALS[persona.email] || 'Secure@123';
-  const { hash, salt } = hashPassword(primaryPwd, `salt_${persona.uid}_sih2026`);
-
-  // Secondary password support (e.g. Binance@123 for compliance desk)
-  let secondary_hash: string | undefined;
-  let secondary_salt: string | undefined;
-  if (persona.role === 'VASP_COMPLIANCE_OFFICER') {
-    const sec = hashPassword('Binance@123', `salt_${persona.uid}_sec`);
-    secondary_hash = sec.hash;
-    secondary_salt = sec.salt;
-  }
+  // Random per-user salt. The previous `salt_${uid}_sih2026` scheme was
+  // derived from public data, so the hashes were precomputable and identical
+  // in every deployment - which defeats the point of salting.
+  const { hash, salt } = hashPassword(primaryPwd);
 
   return {
     ...persona,
     password_hash: hash,
-    salt,
-    ...(secondary_hash ? { secondary_hash, secondary_salt } : {})
+    salt
   };
 });
 
@@ -146,181 +177,105 @@ const memoryStore = {
     { id: 2, name: 'WazirX India', code: 'WAZIRX', contact_email: 'legal@wazirx.com' },
     { id: 3, name: 'CoinDCX', code: 'COINDCX', contact_email: 'nodal@coindcx.com' }
   ],
+  // --------------------------------------------------------------------------
+  // Seed cases. Deliberately three, not six.
+  //
+  // MH-CYBER-2026-0842 is the one case that travels the full workflow:
+  // complaint -> supervisor allocation -> trace -> gazetted signature ->
+  // exchange reply -> victim milestone -> judicial review. It is seeded
+  // UNASSIGNED and PENDING_TRACING because the supervisor's allocation is a
+  // real step, not a formality; pre-assigning it (as three code paths used to)
+  // left the supervisor nothing to do and made the assign control look inert.
+  //
+  // The two remaining records exist only so two specific denials and one
+  // correlation have something real to fire against, and carry no narrative of
+  // their own:
+  //   KA-CYBER-2026-1104 shares the suspect wallet -> national correlation,
+  //                      and POL-04 jurisdiction denial for a Maharashtra IO.
+  //   DL-CYBER-2026-0319 second state, different wallet -> proves correlation
+  //                      is matching on the wallet and not on "any other case".
+  // --------------------------------------------------------------------------
   cases: [
     {
       id: 1,
       case_number: 'MH-CYBER-2026-0842',
-      victim_id: 50,
-      victim_name: 'Anita Deshmukh',
-      victim_email: 'anita.deshmukh@example.demo',
+      victim_id: 5,
+      victim_name: 'Rajesh Verma',
+      victim_email: 'victim.verma@example.demo',
       workspace_id: 1,
       jurisdiction_code: 'MH-CYBER-01',
-      assigned_investigator_id: 3,
-      assigned_investigator_name: 'SI Patil',
+      assigned_investigator_id: null,
+      assigned_investigator_name: undefined,
       suspect_wallet_address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F',
       blockchain_network: 'Ethereum',
       loss_amount_inr: 450000.0,
       token_symbol: 'USDT',
       crime_type: 'Task-based Fake Part-Time Job Scam',
-      incident_date: '2026-08-17',
+      incident_date: '2026-09-05',
       target_vasp: 'Binance International',
       vasp_id: 1,
       classification: 'CONFIDENTIAL',
-      status: 'TRACED',
+      status: 'PENDING_TRACING',
       priority: 'HIGH',
       tx_hashes: ['0x3a1b49e8d3840291f09e81b37492c019d3847291a0293b89c2'],
-      notes: 'Complainant promised high daily returns for rating hotels on Telegram group. Transferred USDT via P2P.',
-      created_at: '2026-08-17T09:15:00.000Z'
+      notes:
+        'Complainant recruited via Telegram group offering paid hotel-review tasks. Transferred USDT in four tranches to the suspect deposit wallet after being shown fabricated earnings.',
+      created_at: '2026-09-05T09:15:00.000Z'
     },
     {
-      id: 4,
-      case_number: 'CRIME-165445',
-      victim_id: 50,
-      victim_name: 'Anita Deshmukh',
-      victim_email: 'anita.deshmukh@example.demo',
-      workspace_id: 1,
-      jurisdiction_code: 'MH-CYBER-01',
-      assigned_investigator_id: 3,
-      assigned_investigator_name: 'SI Patil',
-      suspect_wallet_address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F',
-      blockchain_network: 'Ethereum',
-      loss_amount_inr: 750000.0,
-      token_symbol: 'USDT',
-      crime_type: 'Investment Scam / Phishing Drainer',
-      incident_date: '2026-08-25',
-      target_vasp: 'Binance International',
-      vasp_id: 1,
-      classification: 'CONFIDENTIAL',
-      status: 'TRACED',
-      priority: 'HIGH',
-      tx_hashes: ['0x9d4a8e3c1b7f2a4e6d8c0b2e4f6a8c0d2e4f6a8b0c2d4e6f8a0b2c4d6e8f0a2b'],
-      notes: 'Warrant Case assigned to SI Patil. Suspect wallet confirmed as multi-hop transit node.',
-      created_at: '2026-08-25T10:00:00.000Z'
-    },
-    {
-      id: 5,
-      case_number: 'CRIME-999999',
-      victim_id: 88,
-      victim_name: 'Kavita Sundaram',
-      victim_email: 'kavita.sundaram@example.demo',
-      workspace_id: 4,
-      jurisdiction_code: 'KA-CYBER-03',
-      assigned_investigator_id: 12,
-      assigned_investigator_name: 'Inspector Mehra',
-      suspect_wallet_address: '0x9999999999999999999999999999999999999999',
-      blockchain_network: 'Ethereum',
-      loss_amount_inr: 1200000.0,
-      token_symbol: 'ETH',
-      crime_type: 'Foreign Unit Unauthorized Case',
-      incident_date: '2026-08-28',
-      target_vasp: 'WazirX India',
-      vasp_id: 2,
-      classification: 'RESTRICTED',
-      status: 'UNDER_INVESTIGATION',
-      priority: 'MEDIUM',
-      tx_hashes: ['0x8888888888888888888888888888888888888888888888888888888888888888'],
-      notes: 'Jurisdiction Karnataka Cyber Crime Unit. Not assigned to Maharashtra unit.',
-      created_at: '2026-08-28T14:30:00.000Z'
-    },
-    {
-      id: 6,
+      id: 2,
       case_number: 'KA-CYBER-2026-1104',
       victim_id: 89,
       victim_name: 'Sunil Rao',
       victim_email: 'sunil.rao@example.demo',
       workspace_id: 4,
       jurisdiction_code: 'KA-CYBER-03',
-      assigned_investigator_id: 14,
-      assigned_investigator_name: 'Inspector Gowda',
+      assigned_investigator_id: null,
       suspect_wallet_address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F',
       blockchain_network: 'Ethereum',
       loss_amount_inr: 1800000.0,
       token_symbol: 'USDT',
-      crime_type: 'Cross-State Syndicate Phishing',
+      crime_type: 'Task-based Fake Part-Time Job Scam',
       incident_date: '2026-08-22',
       target_vasp: 'Binance International',
       vasp_id: 1,
       classification: 'CONFIDENTIAL',
-      status: 'TRACED',
-      priority: 'CRITICAL',
-      tx_hashes: ['0x77aa1192837461902837461928374619283746111bb'],
-      notes: 'Potential Cross-Jurisdictional Link: Suspect wallet matches active cluster in Maharashtra Case MH-CYBER-2026-0842.',
+      status: 'PENDING_TRACING',
+      priority: 'HIGH',
+      tx_hashes: [],
+      notes: 'Karnataka intake. Same suspect deposit wallet as the Maharashtra complaint.',
       created_at: '2026-08-22T16:00:00.000Z'
     },
     {
-      id: 2,
+      id: 3,
       case_number: 'DL-CYBER-2026-0319',
       victim_id: 99,
       victim_name: 'Aakash Sharma',
       victim_email: 'aakash.sharma@example.demo',
       workspace_id: 2,
       jurisdiction_code: 'DL-CYBER-02',
-      assigned_investigator_id: 12,
-      assigned_investigator_name: 'Inspector Mehra',
+      assigned_investigator_id: null,
       suspect_wallet_address: '0x1928aBc849102c98Dfe10293bC8419280918234A',
       blockchain_network: 'Polygon',
-      loss_amount_inr: 8500000.0,
+      loss_amount_inr: 850000.0,
       token_symbol: 'MATIC',
-      crime_type: 'Fake Crypto Exchange Phishing',
+      crime_type: 'Fake Exchange Phishing',
       incident_date: '2026-08-20',
       target_vasp: 'WazirX India',
       vasp_id: 2,
       classification: 'RESTRICTED',
       status: 'PENDING_TRACING',
       priority: 'MEDIUM',
-      tx_hashes: ['0x992a8371902bc9182a01948572b9182019a84712bb14'],
-      notes: 'Phishing website mimicking Indian crypto exchange lured victim into entering seed phrase.',
+      tx_hashes: [],
+      notes: 'Delhi intake. Unrelated wallet; present so wallet correlation can be shown to discriminate.',
       created_at: '2026-08-20T11:30:00.000Z'
-    },
-    {
-      id: 3,
-      case_number: 'IN-I4C-2026-9901',
-      victim_id: 50,
-      victim_name: 'Anita Deshmukh',
-      victim_email: 'anita.deshmukh@example.demo',
-      workspace_id: 3,
-      jurisdiction_code: 'IN-I4C-00',
-      assigned_investigator_id: 1,
-      assigned_investigator_name: 'Central Cyber Cell',
-      suspect_wallet_address: '0x55aa33bb110022cc44dd99ee88ff77aa66bb55cc',
-      blockchain_network: 'TRON',
-      loss_amount_inr: 125000000.0,
-      token_symbol: 'USDT',
-      crime_type: 'Cross-Border Syndicate Laundering',
-      incident_date: '2026-08-10',
-      target_vasp: 'Binance International',
-      vasp_id: 1,
-      classification: 'TOP_SECRET',
-      status: 'NOTICE_SERVED',
-      priority: 'CRITICAL',
-      freeze_notice_id: 'NOTICE-2026-0842-BN',
-      tx_hashes: ['0xcc77192837461902837461928374619283746111aa'],
-      notes: 'International organized cyber crime syndicate laundering funds across bridge into Tron USDT.',
-      created_at: '2026-08-10T14:20:00.000Z'
     }
   ] as StoredCase[],
-  notices: [
-    {
-      id: 'NOTICE-2026-0842-BN',
-      case_id: 3,
-      case_number: 'IN-I4C-2026-9901',
-      target_vasp: 'Binance International',
-      vasp_id: 1,
-      status: 'Issued',
-      drafted_by_name: 'ACP Sharma (Gazetted Officer)',
-      approved_by_name: 'ACP Sharma (Gazetted Officer)',
-      created_at: 1788710000000,
-      notice: ensureLegalNotice({
-        ref: 'BNSS-2026-0842-BN',
-        case_number: 'IN-I4C-2026-9901',
-        to_vasp: 'Binance International',
-        to_email: 'compliance@binance.com',
-        amountInr: 125000000.0,
-        amountUsd: 1500000,
-        targetAddresses: ['0x55aa33bb110022cc44dd99ee88ff77aa66bb55cc']
-      })
-    }
-  ] as StoredFreezeNotice[],
+  // No seeded notices. The Section 94 BNSS order is produced during the
+  // walkthrough by the officer who drafts it and signed by the gazetted
+  // officer who approves it - a pre-signed order in the seed would show a
+  // signature nobody in the demo actually applied.
+  notices: [] as StoredFreezeNotice[],
   audit_logs: [] as StoredAuditLog[],
   traces: [] as any[]
 };
@@ -413,24 +368,19 @@ export function authenticateUser(
     return { success: false, error: 'Account has been disabled by System Administrator.' };
   }
 
-  let isMatch = verifyPassword(password, dbUser.password_hash, dbUser.salt);
-  if (!isMatch && dbUser.secondary_hash && dbUser.secondary_salt) {
-    isMatch = verifyPassword(password, dbUser.secondary_hash, dbUser.secondary_salt);
-  }
+  const isMatch = verifyPassword(password, dbUser.password_hash, dbUser.salt);
 
-  // Fallback direct check against SEED_CREDENTIALS for robust test execution
-  if (!isMatch) {
-    const rawExpected = SEED_CREDENTIALS[email.trim().toLowerCase()] || SEED_CREDENTIALS[dbUser.email.toLowerCase()];
-    if (rawExpected && rawExpected === password) {
-      isMatch = true;
-    }
-  }
+  // There is deliberately no plaintext comparison against SEED_CREDENTIALS
+  // here. A fallback that accepts the raw seed password whenever the PBKDF2
+  // check fails is an authentication bypass: it makes the hash decorative and
+  // means any change to the hashing parameters silently stops being enforced.
+  // SEED_CREDENTIALS is used once, at startup, to derive the stored hashes.
 
   if (!isMatch) {
     return { success: false, error: 'Invalid email or password.' };
   }
 
-  const { password_hash, salt, secondary_hash, secondary_salt, ...safeUser } = dbUser;
+  const { password_hash, salt, ...safeUser } = dbUser;
   memoryStore.currentUser = safeUser;
   return { success: true, user: safeUser };
 }
@@ -449,7 +399,7 @@ export function switchPersona(roleOrUid: string): AppUser {
     memoryStore.users.find((p) => p.uid === roleOrUid) ||
     memoryStore.users.find((p) => String(p.id) === roleOrUid);
   if (target) {
-    const { password_hash, salt, secondary_hash, secondary_salt, ...safeUser } = target;
+    const { password_hash, salt, ...safeUser } = target;
     memoryStore.currentUser = safeUser;
     return safeUser;
   }
@@ -469,7 +419,7 @@ export function setEmergencyLockdown(active: boolean) {
 // System Admin User Management Functions
 // ----------------------------------------------------------------------------
 export function getSystemUsers(): AppUser[] {
-  return memoryStore.users.map(({ password_hash, salt, secondary_hash, secondary_salt, ...u }) => u);
+  return memoryStore.users.map(({ password_hash, salt, ...u }) => u);
 }
 
 export function createSystemUser(userData: {
@@ -484,7 +434,9 @@ export function createSystemUser(userData: {
 }): AppUser {
   const nextId = Math.max(...memoryStore.users.map((u) => u.id), 0) + 1;
   const pwd = userData.password || 'Secure@123';
-  const { hash, salt } = hashPassword(pwd, `salt_user_${nextId}`);
+  // Random salt. `salt_user_${id}` was derived from a predictable value, so the
+  // hash for a given password was the same in every deployment.
+  const { hash, salt } = hashPassword(pwd);
 
   const newUser: DatabaseUser = {
     id: nextId,
@@ -527,7 +479,9 @@ export function resetUserPassword(userId: number | string, newPassword?: string)
   const user = memoryStore.users.find((u) => String(u.id) === String(userId) || u.uid === String(userId));
   if (!user) return false;
   const pwd = newPassword || 'Secure@123';
-  const { hash, salt } = hashPassword(pwd, `salt_reset_${user.id}`);
+  // Fresh random salt on every reset, so a reset never reproduces a hash an
+  // attacker could have precomputed from the user id.
+  const { hash, salt } = hashPassword(pwd);
   user.password_hash = hash;
   user.salt = salt;
   return true;
@@ -599,15 +553,20 @@ export function getCaseByIdOrNumber(caseIdOrNumber: string | number): StoredCase
 
 export async function createCase(newCase: Partial<StoredCase>): Promise<StoredCase> {
   const caseObj: StoredCase = {
-    id: memoryStore.cases.length + 1,
+    // Max + 1, not length + 1: with unshift/delete in play, length-based ids
+    // collide with existing rows and two cases end up sharing an id.
+    id: Math.max(0, ...memoryStore.cases.map((c) => c.id)) + 1,
     case_number: newCase.case_number || `CRIME-${Date.now().toString().slice(-6)}`,
     victim_id: newCase.victim_id || 5,
     victim_name: newCase.victim_name || (newCase.victim_id === 5 ? 'Rajesh Verma' : 'Complainant'),
     victim_email: newCase.victim_email || (newCase.victim_id === 5 ? 'victim.verma@example.demo' : undefined),
     workspace_id: newCase.workspace_id || 1,
     jurisdiction_code: newCase.jurisdiction_code || 'MH-CYBER-01',
-    assigned_investigator_id: newCase.assigned_investigator_id !== undefined ? newCase.assigned_investigator_id : 3,
-    assigned_investigator_name: newCase.assigned_investigator_name || 'SI Patil',
+    // A new complaint arrives unallocated. Allocation is the supervisor's
+    // decision under the unit workflow, so defaulting it to an officer here
+    // would silently perform a step the platform is meant to record.
+    assigned_investigator_id: newCase.assigned_investigator_id ?? null,
+    assigned_investigator_name: newCase.assigned_investigator_name,
     suspect_wallet_address: newCase.suspect_wallet_address || '',
     blockchain_network: newCase.blockchain_network || 'Ethereum',
     loss_amount_inr: Number(newCase.loss_amount_inr) || 0,
@@ -704,6 +663,209 @@ export async function getNoticesForUser(user: SubjectAttributes): Promise<Stored
   });
 }
 
+/**
+ * Reduce a stored notice to just the fields the signature covers.
+ *
+ * Kept deliberately small. Every field here is one whose alteration should
+ * invalidate the order - the case it concerns, the wallets restrained, the sum,
+ * the statute, the exchange it is addressed to. Presentation (rendered text,
+ * covering paragraphs, contact emails) is excluded on purpose: re-rendering the
+ * document must not break a valid signature.
+ *
+ * Both signing and verification go through this function, so the two can never
+ * drift apart.
+ */
+function signableFromNotice(n: StoredFreezeNotice, linkedCase?: StoredCase | null): SignableOrder {
+  const notice = n.notice || {};
+  const addresses: string[] =
+    Array.isArray(notice.targetAddresses) && notice.targetAddresses.length > 0
+      ? notice.targetAddresses
+      : linkedCase?.suspect_wallet_address
+      ? [linkedCase.suspect_wallet_address]
+      : [];
+
+  return {
+    ref: notice.ref || n.id,
+    case_number: n.case_number || linkedCase?.case_number || '',
+    target_addresses: addresses,
+    blockchain_network: linkedCase?.blockchain_network || notice.walletTrail?.[0]?.chain || 'Ethereum',
+    amount_inr: Number(notice.amountInr ?? linkedCase?.loss_amount_inr ?? 0),
+    statute: notice.statute || 'Section 94 BNSS, 2023',
+    target_vasp: n.target_vasp
+  };
+}
+
+/**
+ * The public half of an officer's signing key, so a verifier can repeat the
+ * check outside this platform instead of taking its word for it.
+ */
+export function officerSigningKey(officerUid: string) {
+  return officerPublicKey(officerUid);
+}
+
+/**
+ * Verify a stored order. Exposed so both the exchange desk and the court can
+ * check the order in front of them rather than being asked to trust a badge on
+ * a screen.
+ */
+export function verifyStoredNotice(noticeId: string): { found: boolean; result?: VerificationResult; notice?: StoredFreezeNotice } {
+  const stored = memoryStore.notices.find((n) => n.id === noticeId);
+  if (!stored) return { found: false };
+  const linkedCase = stored.case_number ? getCaseByIdOrNumber(stored.case_number) : null;
+  return {
+    found: true,
+    notice: stored,
+    result: verifyOrderSignature(signableFromNotice(stored, linkedCase), stored.signature)
+  };
+}
+
+/**
+ * Record what the exchange reported back about a served requisition.
+ *
+ * Two stages, matching real Section 94 BNSS service. The order is served on the
+ * exchange's nodal officer out of band; the exchange freezes on its OWN systems
+ * and replies. This function records that reply. It does not freeze anything.
+ *
+ * Only the addressed exchange may write here - a police account cannot record a
+ * response on the exchange's behalf, because a fabricated compliance reply is
+ * exactly the kind of record that would collapse under cross-examination.
+ */
+export async function recordVaspResponse(
+  noticeId: string,
+  stage: 'acknowledge' | 'report_action',
+  payload: Partial<VaspResponse>,
+  actingOfficer: AppUser
+): Promise<{ success: boolean; notice?: StoredFreezeNotice; error?: string }> {
+  const normRole = normalizeRole(actingOfficer.role);
+  if (normRole !== 'VASP_COMPLIANCE_OFFICER' && actingOfficer.role !== 'EXCHANGE_NODAL_OFFICER') {
+    return {
+      success: false,
+      error: 'Access Denied: Only the addressed exchange can record a compliance response. Law enforcement cannot reply on a VASP\'s behalf.'
+    };
+  }
+
+  const idx = memoryStore.notices.findIndex((n) => n.id === noticeId);
+  if (idx < 0) return { success: false, error: 'No such requisition on this desk.' };
+  const stored = memoryStore.notices[idx];
+
+  if (actingOfficer.vasp_id && stored.vasp_id && actingOfficer.vasp_id !== stored.vasp_id) {
+    recordAuditLog({
+      user_id: actingOfficer.id,
+      user_name: actingOfficer.name,
+      user_role: actingOfficer.role,
+      action: 'VASP_RESPONSE_CROSS_ORG',
+      resource_type: 'FREEZE_NOTICE',
+      resource_id: noticeId,
+      decision: 'DENIED',
+      reason: `VASP isolation: exchange #${actingOfficer.vasp_id} attempted to answer a requisition addressed to exchange #${stored.vasp_id}.`
+    });
+    return { success: false, error: 'Access Denied: This requisition is addressed to a different exchange.' };
+  }
+
+  if (stored.status === 'Draft') {
+    return { success: false, error: 'This requisition has not been issued yet. There is nothing to respond to.' };
+  }
+
+  // An exchange should not be answering an order it cannot verify. Checking
+  // here means a tampered order cannot collect a compliance response that
+  // would later look like the exchange had accepted it.
+  const linkedCase = stored.case_number ? getCaseByIdOrNumber(stored.case_number) : null;
+  const verification = verifyOrderSignature(signableFromNotice(stored, linkedCase), stored.signature);
+  if (!verification.valid) {
+    recordAuditLog({
+      user_id: actingOfficer.id,
+      user_name: actingOfficer.name,
+      user_role: actingOfficer.role,
+      action: 'VASP_RESPONSE_ON_UNVERIFIED_ORDER',
+      resource_type: 'FREEZE_NOTICE',
+      resource_id: noticeId,
+      decision: 'DENIED',
+      reason: verification.reason,
+      statutory_code: 'SEC_94_BNSS_SIGNATURE_INVALID'
+    });
+    return {
+      success: false,
+      error: `This requisition cannot be acted upon: ${verification.reason}`
+    };
+  }
+
+  const existing = stored.vasp_response || {};
+  const now = new Date().toISOString();
+
+  if (stage === 'acknowledge') {
+    if (existing.acknowledged_at) {
+      return { success: false, error: 'Receipt of this requisition has already been acknowledged.' };
+    }
+    const issuedAt = stored.signature?.signed_at ? new Date(stored.signature.signed_at).getTime() : stored.created_at;
+    stored.vasp_response = {
+      ...existing,
+      acknowledged_at: now,
+      acknowledged_by: payload.acknowledged_by || actingOfficer.name,
+      ack_latency_minutes: Math.max(0, Math.round((Date.now() - issuedAt) / 60000))
+    };
+    stored.status = 'Acknowledged';
+  } else {
+    if (!existing.acknowledged_at) {
+      return { success: false, error: 'Acknowledge receipt of the requisition before reporting action taken.' };
+    }
+    const action = payload.action;
+    if (action !== 'FREEZE_EXECUTED' && action !== 'PARTIAL_FREEZE' && action !== 'REFUSED') {
+      return { success: false, error: 'Report the action taken: freeze executed, partial freeze, or refused.' };
+    }
+    // A refusal or a partial freeze without a stated reason is not a usable
+    // record - the investigator has to be able to say why in court.
+    if ((action === 'REFUSED' || action === 'PARTIAL_FREEZE') && !String(payload.reason || '').trim()) {
+      return { success: false, error: 'A reason is required when a freeze is refused or only partially executed.' };
+    }
+    if (!String(payload.exchange_ref_no || '').trim()) {
+      return { success: false, error: 'Your exchange reference number is required so the two records can be tied together.' };
+    }
+    if (!String(payload.executed_by || '').trim()) {
+      return { success: false, error: 'Name the person at your organisation who carried out this action.' };
+    }
+
+    stored.vasp_response = {
+      ...existing,
+      action,
+      action_reported_at: now,
+      executed_by: String(payload.executed_by).trim(),
+      exchange_ref_no: String(payload.exchange_ref_no).trim(),
+      frozen_amount: payload.frozen_amount,
+      reason: payload.reason ? String(payload.reason).trim() : undefined
+    };
+
+    // Case status follows what the exchange actually reported, not the fact
+    // that a reply arrived. A refusal must not read as a freeze.
+    if (linkedCase) {
+      linkedCase.status = action === 'REFUSED' ? 'FREEZE_REFUSED' : 'FROZEN';
+      if (pgAvailable && pool) {
+        pool
+          .query('UPDATE cases SET status = $1 WHERE case_number = $2', [linkedCase.status, linkedCase.case_number])
+          .catch(() => {});
+      }
+    }
+  }
+
+  memoryStore.notices[idx] = stored;
+
+  recordAuditLog({
+    user_id: actingOfficer.id,
+    user_name: actingOfficer.name,
+    user_role: actingOfficer.role,
+    action: stage === 'acknowledge' ? 'VASP_ACKNOWLEDGE_RECEIPT' : 'VASP_REPORT_ACTION_TAKEN',
+    resource_type: 'FREEZE_NOTICE',
+    resource_id: noticeId,
+    decision: 'GRANTED',
+    reason:
+      stage === 'acknowledge'
+        ? `${actingOfficer.name} acknowledged receipt of requisition ${noticeId} on behalf of ${stored.target_vasp} (${stored.vasp_response?.ack_latency_minutes} min after issue).`
+        : `${stored.target_vasp} reported ${stored.vasp_response?.action} on requisition ${noticeId}, ref ${stored.vasp_response?.exchange_ref_no}, executed by ${stored.vasp_response?.executed_by}.`,
+    statutory_code: 'SEC_94_BNSS_COMPLIANCE_RESPONSE'
+  });
+
+  return { success: true, notice: stored };
+}
+
 export async function saveFreezeNotice(
   noticeData: Partial<StoredFreezeNotice>,
   actingOfficer: AppUser
@@ -743,9 +905,13 @@ export async function saveFreezeNotice(
 
   // If issuing or approving a freeze order, enforce Section 94 BNSS statutory check
   if (!isDraft && !isAck) {
+    // The real case is passed, not a literal `{ status: 'TRACED' }`. With the
+    // status hardcoded, POL-05's "cannot approve a freeze on an untraced
+    // allegation" precondition could never fire - it was being handed the
+    // answer it was meant to be testing.
     const abacResult = evaluateABAC(
       actingOfficer,
-      { status: 'TRACED', vasp_id: noticeData.vasp_id },
+      linkedCase || { status: 'PENDING_TRACING', vasp_id: noticeData.vasp_id },
       'freeze_approve',
       memoryStore.environment
     );
@@ -779,12 +945,26 @@ export async function saveFreezeNotice(
     suspect_wallet_address: linkedCase?.suspect_wallet_address
   });
 
+  const resolvedCaseNumber =
+    noticeData.case_number ?? existingNotice?.case_number ?? linkedCase?.case_number;
+  const resolvedVasp = noticeData.target_vasp || existingNotice?.target_vasp || linkedCase?.target_vasp;
+
+  // A notice that cannot name its case or its addressee is not serviceable and
+  // must not be invented into existence. The previous defaults here silently
+  // pinned every malformed notice to MH-CYBER-2026-0842 / Binance.
+  if (!isDraft && (!resolvedCaseNumber || !resolvedVasp)) {
+    return {
+      success: false,
+      error: 'Cannot issue a requisition without a case number and an addressed exchange.'
+    };
+  }
+
   const stored: StoredFreezeNotice = {
     id: noticeData.id || existingNotice?.id || `NOTICE-${Date.now()}`,
     case_id: noticeData.case_id ?? existingNotice?.case_id ?? (linkedCase?.id as any),
-    case_number: noticeData.case_number ?? existingNotice?.case_number ?? linkedCase?.case_number ?? 'MH-CYBER-2026-0842',
-    target_vasp: noticeData.target_vasp || existingNotice?.target_vasp || linkedCase?.target_vasp || 'Binance International',
-    vasp_id: noticeData.vasp_id ?? existingNotice?.vasp_id ?? linkedCase?.vasp_id ?? 1,
+    case_number: resolvedCaseNumber,
+    target_vasp: resolvedVasp || '',
+    vasp_id: noticeData.vasp_id ?? existingNotice?.vasp_id ?? linkedCase?.vasp_id,
     status: isDraft ? 'Draft' : (noticeData.status || existingNotice?.status || 'Issued'),
     drafted_by_name: noticeData.drafted_by_name || existingNotice?.drafted_by_name || actingOfficer.name,
     approved_by_name: isDraft
@@ -793,8 +973,30 @@ export async function saveFreezeNotice(
       ? noticeData.approved_by_name || existingNotice?.approved_by_name || actingOfficer.name
       : actingOfficer.name,
     created_at: existingNotice?.created_at || Date.now(),
-    notice: resolvedNotice
+    notice: resolvedNotice,
+    // An acknowledgement must not re-sign: the signature belongs to the officer
+    // who issued, and the exchange replying to it cannot alter what was signed.
+    signature: existingNotice?.signature,
+    vasp_response: existingNotice?.vasp_response
   };
+
+  // ── Digital signature, Section 94 BNSS ────────────────────────────────────
+  // Applied at the moment of issue, by the gazetted officer who issued. This is
+  // the only step that makes the order more than a formatted document: the
+  // exchange and the court can both recompute it without trusting this server.
+  if (!isDraft && !isAck) {
+    try {
+      stored.signature = signOrder(signableFromNotice(stored, linkedCase), {
+        uid: String(actingOfficer.id),
+        name: actingOfficer.name,
+        role: actingOfficer.role,
+        badge: (actingOfficer as any).badge_number,
+        is_gazetted: Boolean(actingOfficer.is_gazetted)
+      });
+    } catch (err: any) {
+      return { success: false, error: `Order could not be signed: ${err?.message || 'signing failed'}` };
+    }
+  }
 
   if (existingIdx >= 0) {
     memoryStore.notices[existingIdx] = stored;
@@ -803,9 +1005,11 @@ export async function saveFreezeNotice(
   }
 
   if (targetCaseKey && linkedCase) {
-    if (stored.status === 'Acknowledged') {
-      linkedCase.status = 'FROZEN';
-    } else if (stored.status === 'Issued') {
+    // Acknowledgement no longer drives the case to FROZEN. An exchange
+    // acknowledging receipt has confirmed it holds the order, nothing more;
+    // the case only becomes FROZEN when the exchange reports it acted, which
+    // arrives through recordVaspResponse.
+    if (stored.status === 'Issued' && linkedCase.status !== 'FROZEN') {
       linkedCase.status = 'NOTICE_SERVED';
     }
     linkedCase.target_vasp = stored.target_vasp || linkedCase.target_vasp;

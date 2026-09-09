@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getNoticesForUser, saveFreezeNotice, getCurrentUser, getUserById, recordAuditLog } from '@/lib/db';
+import { getNoticesForUser, saveFreezeNotice, recordVaspResponse, getUserById, recordAuditLog } from '@/lib/db';
 import { extractUserClaims } from '@/lib/auth-crypto';
 import { normalizeRole } from '@/lib/rbac-abac';
 
@@ -49,7 +49,17 @@ export async function POST(req: Request) {
 
     const body = await req.json().catch(() => ({}));
     const isDraft = body.status === 'Draft' || body.action === 'draft';
-    const isAck = body.status === 'Acknowledged' || body.action === 'acknowledge';
+    // The exchange's two reply stages. Anything from the VASP desk goes down a
+    // separate path (recordVaspResponse) rather than through saveFreezeNotice,
+    // because an exchange replying must not be able to rewrite the order it is
+    // replying to.
+    const vaspStage: 'acknowledge' | 'report_action' | null =
+      body.action === 'acknowledge' || body.status === 'Acknowledged'
+        ? 'acknowledge'
+        : body.action === 'report_action'
+        ? 'report_action'
+        : null;
+    const isAck = vaspStage !== null;
 
     // ── 1. Judicial Zero-Write & Victim Protection ──
     if (normRole === 'COURT_REVIEWER' || user.role === 'AUDITOR') {
@@ -177,10 +187,29 @@ export async function POST(req: Request) {
       );
     }
 
+    // ── 4. Exchange replies take the response path, not the notice path ──────
+    if (vaspStage) {
+      const noticeId = body.id || body.notice_id;
+      if (!noticeId) {
+        return NextResponse.json({ error: 'Which requisition are you responding to? A notice id is required.' }, { status: 400 });
+      }
+      const response = await recordVaspResponse(noticeId, vaspStage, body, user);
+      if (!response.success) {
+        // 400 for "you filled the form wrong", 403 for "you are not allowed".
+        const isAuthz = /Access Denied/i.test(response.error || '');
+        return NextResponse.json({ error: response.error }, { status: isAuthz ? 403 : 400 });
+      }
+      return NextResponse.json({ success: true, notice: response.notice });
+    }
+
     const result = await saveFreezeNotice(body, user);
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error, statutory_code: result.statutory_code }, { status: 403 });
+      const isValidation = /without a case number/i.test(result.error || '') || /could not be signed/i.test(result.error || '');
+      return NextResponse.json(
+        { error: result.error, statutory_code: result.statutory_code },
+        { status: isValidation ? 400 : 403 }
+      );
     }
 
     return NextResponse.json({ success: true, notice: result.notice });

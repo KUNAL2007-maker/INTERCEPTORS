@@ -27,7 +27,7 @@ import {
   shortWallet,
   VASPS,
 } from "./domain";
-import { FALLBACK_PRICES, getPrices, pricesAreLive, type PriceTable } from "./prices";
+import { FALLBACK_PRICES, getHistoricalPrice, getPrices, pricesAreLive, type PriceTable } from "./prices";
 
 export const MAX_HOPS = 5;
 const BREADTH_PER_NODE = 6; // top-N outgoing transfers followed per wallet (live)
@@ -66,6 +66,14 @@ const NATIVE_SYMBOL: Partial<Record<Chain, TokenSymbol>> = {
   POLYGON: "MATIC",
 };
 
+// Alchemy JSON-RPC hosts per EVM chain. The request URL is assembled as
+// `${host}/${alchemyKey()}` at call time, so the key never lives in a constant
+// or a committed string. Only the EVM chains our `Chain` type models appear.
+const ALCHEMY_NETWORKS: Partial<Record<Chain, string>> = {
+  ETHEREUM: "https://eth-mainnet.g.alchemy.com/v2",
+  POLYGON: "https://polygon-mainnet.g.alchemy.com/v2",
+};
+
 // ── Environment / key detection ─────────────────────────────────────────────
 function etherscanKey() {
   return process.env.ETHERSCAN_API_KEY;
@@ -73,10 +81,16 @@ function etherscanKey() {
 function trongridKey() {
   return process.env.TRONGRID_API_KEY;
 }
+// Alchemy: env var ONLY. The reference implementation this lane is ported from
+// committed a live key in plaintext (now public, therefore compromised); the key
+// is read from nowhere but the environment here, and never logged.
+function alchemyKey() {
+  return process.env.ALCHEMY_API_KEY;
+}
 // mempool.space needs no key. A live trace is attempted only when at least one
 // keyed provider is configured; otherwise we stay on the mock dataset.
 export function hasLiveProviders(): boolean {
-  return Boolean(etherscanKey() || trongridKey());
+  return Boolean(etherscanKey() || trongridKey() || alchemyKey());
 }
 
 // ── VASP / mixer attribution ────────────────────────────────────────────────
@@ -119,7 +133,7 @@ type RawTransfer = Omit<WalletTransfer, "id" | "hop" | "layer_type">;
 // Each provider gets its own lane: requests within a lane are serialised with a
 // minimum gap, lanes run independently of each other.
 
-type Lane = "etherscan" | "trongrid" | "mempool";
+type Lane = "etherscan" | "trongrid" | "mempool" | "alchemy";
 
 /**
  * Minimum gap between requests in a lane, derived from the documented free-tier
@@ -138,6 +152,9 @@ const MIN_INTERVAL_MS: Record<Lane, number> = {
   etherscan: 400,
   trongrid: 200,
   mempool: 300,
+  // Alchemy's free tier is 300 compute units/second and getAssetTransfers costs
+  // ~150 CU, so two calls/second (500 ms) stays comfortably inside the ceiling.
+  alchemy: 500,
 };
 
 /**
@@ -153,10 +170,14 @@ const DAILY_BUDGET: Record<Lane, number> = {
   etherscan: 90_000,
   trongrid: 90_000,
   mempool: 20_000,
+  // Alchemy meters by compute unit, not call count, so this is a runaway
+  // backstop rather than the real ceiling. A trace expands <=40 wallets, i.e.
+  // <=40 getAssetTransfers calls, so 40,000/day is generous headroom.
+  alchemy: 40_000,
 };
 
 let dayKey = "";
-const dayCalls: Record<Lane, number> = { etherscan: 0, trongrid: 0, mempool: 0 };
+const dayCalls: Record<Lane, number> = { etherscan: 0, trongrid: 0, mempool: 0, alchemy: 0 };
 
 function rollDay() {
   const key = new Date().toISOString().slice(0, 10);
@@ -165,6 +186,7 @@ function rollDay() {
     dayCalls.etherscan = 0;
     dayCalls.trongrid = 0;
     dayCalls.mempool = 0;
+    dayCalls.alchemy = 0;
   }
 }
 
@@ -181,6 +203,7 @@ export function quotaSnapshot() {
     etherscan: `${dayCalls.etherscan}/${DAILY_BUDGET.etherscan}`,
     trongrid: `${dayCalls.trongrid}/${DAILY_BUDGET.trongrid}`,
     mempool: `${dayCalls.mempool}/${DAILY_BUDGET.mempool}`,
+    alchemy: `${dayCalls.alchemy}/${DAILY_BUDGET.alchemy}`,
   };
 }
 
@@ -203,8 +226,9 @@ const laneTail: Record<Lane, Promise<unknown>> = {
   etherscan: Promise.resolve(),
   trongrid: Promise.resolve(),
   mempool: Promise.resolve(),
+  alchemy: Promise.resolve(),
 };
-const laneLastAt: Record<Lane, number> = { etherscan: 0, trongrid: 0, mempool: 0 };
+const laneLastAt: Record<Lane, number> = { etherscan: 0, trongrid: 0, mempool: 0, alchemy: 0 };
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -276,6 +300,26 @@ async function fetchJson(url: string, headers?: Record<string, string>): Promise
   });
   // 429 is the honest signal; some gateways use 503 when shedding load. Both are
   // worth another attempt, unlike a 4xx that means the request itself is wrong.
+  if (res.status === 429 || res.status === 503) {
+    throw new RateLimited(`HTTP ${res.status}`);
+  }
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+/**
+ * POST variant of fetchJson for JSON-RPC providers (Alchemy). Same rate-limit
+ * handling; TLS verification stays ON (Node's default). The reference code this
+ * is ported from used verify=False — that is deliberately NOT carried over.
+ */
+async function postJson(url: string, body: unknown, headers?: Record<string, string>): Promise<any> {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json", ...(headers ?? {}) },
+    body: JSON.stringify(body),
+    cache: "no-store",
+    signal: AbortSignal.timeout(12_000),
+  });
   if (res.status === 429 || res.status === 503) {
     throw new RateLimited(`HTTP ${res.status}`);
   }
@@ -431,6 +475,109 @@ async function etherscanOutgoing(
   return out;
 }
 
+// Alchemy reports each transfer's token as an on-chain symbol string; map the
+// ones we can price onto our TokenSymbol. Wrapped variants track the underlying
+// 1:1 for valuation, so WETH/WBTC/WMATIC fold into ETH/BTC/MATIC. A token we
+// can't price is skipped rather than valued at zero, which would distort both
+// the flow totals and any risk scoring built on top of them.
+const ALCHEMY_ASSET_MAP: Record<string, TokenSymbol> = {
+  ETH: "ETH",
+  WETH: "ETH",
+  MATIC: "MATIC",
+  POL: "MATIC",
+  WMATIC: "MATIC",
+  USDT: "USDT",
+  USDC: "USDC",
+  WBTC: "BTC",
+};
+
+/**
+ * Alchemy `alchemy_getAssetTransfers` — a single POST returns a wallet's whole
+ * outgoing history (native + ERC-20) with per-transfer block timestamps, in
+ * place of Etherscan's two calls (txlist + tokentx). Preferred for EVM chains
+ * when ALCHEMY_API_KEY is set.
+ *
+ *   - `withMetadata:true` attaches `metadata.blockTimestamp` (ISO), retained for
+ *     the court-admissible historical-valuation pass (Capability 3).
+ *   - `excludeZeroValue:true` drops dust and failed-call noise.
+ *   - `category:["external","erc20"]` = native value moves + token moves; NFT
+ *     and internal-trace categories are intentionally out of scope.
+ *
+ * Errors are swallowed to `note(ctx, …)` exactly like the other providers, so a
+ * failure degrades the trace instead of throwing to the caller.
+ */
+async function alchemyOutgoing(
+  address: string,
+  chain: Chain,
+  ctx: TraceCtx
+): Promise<RawTransfer[]> {
+  const key = alchemyKey();
+  const net = ALCHEMY_NETWORKS[chain];
+  if (!key || !net) return [];
+  const url = `${net}/${key}`;
+  const { prices } = ctx;
+  const out: RawTransfer[] = [];
+
+  try {
+    const body = await withRetry("alchemy", `${chain} assetTransfers ${shortWallet(address)}`, () =>
+      postJson(url, {
+        id: 1,
+        jsonrpc: "2.0",
+        method: "alchemy_getAssetTransfers",
+        params: [
+          {
+            fromAddress: address,
+            category: ["external", "erc20"],
+            withMetadata: true,
+            excludeZeroValue: true,
+            order: "desc",
+            maxCount: "0x64", // 100
+            fromBlock: "0x0",
+            toBlock: "latest",
+          },
+        ],
+      })
+    );
+
+    // Alchemy usually signals a rate limit as HTTP 429 (handled in postJson) but
+    // can also return HTTP 200 with an `error` body. Treat throughput/capacity
+    // messages as retryable; anything else is a hard error worth surfacing.
+    if (body?.error) {
+      const m = String(body.error.message ?? body.error).toLowerCase();
+      if (m.includes("rate") || m.includes("capacity") || m.includes("throughput") || m.includes("limit")) {
+        throw new RateLimited(`alchemy: ${body.error.message ?? m}`);
+      }
+      throw new Error(`alchemy getAssetTransfers: ${body.error.message ?? m}`);
+    }
+
+    const rows = body?.result?.transfers ?? [];
+    for (const t of rows) {
+      if ((t.from ?? "").toLowerCase() !== address.toLowerCase()) continue;
+      if (!t.to) continue; // contract creation etc. — no recipient to follow
+      const symbol = ALCHEMY_ASSET_MAP[String(t.asset ?? "").toUpperCase()];
+      if (!symbol) continue; // unpriceable token — skip rather than distort totals
+      const value = Number(t.value);
+      if (!Number.isFinite(value) || value <= 0) continue;
+      const parsedTs = t.metadata?.blockTimestamp ? Date.parse(t.metadata.blockTimestamp) : NaN;
+      out.push({
+        tx_hash: t.hash,
+        from_address: t.from,
+        to_address: t.to,
+        chain,
+        token_symbol: symbol,
+        value,
+        value_usd: value * prices[symbol].usd,
+        timestamp: Number.isFinite(parsedTs) ? parsedTs : 0,
+        block: t.blockNum ? parseInt(t.blockNum, 16) : undefined,
+      });
+    }
+  } catch (err) {
+    note(ctx, `alchemy ${chain} ${shortWallet(address)}: ${(err as Error).message}`);
+  }
+
+  return out;
+}
+
 async function trongridOutgoing(address: string, ctx: TraceCtx): Promise<RawTransfer[]> {
   const key = trongridKey();
   const out: RawTransfer[] = [];
@@ -501,9 +648,14 @@ async function fetchOutgoing(address: string, chain: Chain, ctx: TraceCtx): Prom
   switch (chain) {
     case "ETHEREUM":
     case "POLYGON":
-      // Both go through Etherscan V2, but each with its OWN chainid — routing
-      // Polygon to the Ethereum endpoint was the bug this replaces.
-      return etherscanOutgoing(address, chain, ctx);
+      // Prefer Alchemy's single-call transfer history when its key is present
+      // (it is also where the block timestamps for historical valuation come
+      // from); otherwise Etherscan V2, each with its OWN chainid — routing
+      // Polygon to the Ethereum endpoint was the bug the V2 switch replaced. No
+      // Alchemy key ⇒ exactly the previous behaviour.
+      return alchemyKey()
+        ? alchemyOutgoing(address, chain, ctx)
+        : etherscanOutgoing(address, chain, ctx);
     case "TRON":
       return trongridOutgoing(address, ctx);
     case "BITCOIN":
@@ -658,7 +810,7 @@ async function liveTrace(
   }
 
   finalizeNodeStats(nodeMap, transfers);
-  return {
+  const result: TraceResult = {
     seed,
     seed_chain: chain,
     nodes: Array.from(nodeMap.values()),
@@ -669,6 +821,56 @@ async function liveTrace(
     case: caseMeta,
     degraded: ctx.degraded,
     warnings: ctx.warnings,
+  };
+  // Court valuation post-pass (Capability 3): fills the historical/incident
+  // figures from Alchemy's 1-hour candles. Additive and best-effort — it no-ops
+  // without an Alchemy key or on a degraded trace, and never throws.
+  await attachHistoricalValuation(result, ctx);
+  return result;
+}
+
+/**
+ * Court-admissible historical valuation.
+ *
+ * Spot `value_usd` on each transfer stays the operational/seizure figure; this
+ * adds the "value at the time of the crime" alongside it, so an FIR can state the
+ * incident loss and a BNSS seizure order the current value, each labelled. Runs
+ * only when an Alchemy key is configured and the trace is complete — a degraded
+ * (partial) trace omits the valuation entirely rather than publish an incomplete
+ * court figure. Best-effort per transfer: getHistoricalPrice never throws and
+ * degrades to spot, so a failed candle lookup just marks the source honestly.
+ */
+async function attachHistoricalValuation(trace: TraceResult, ctx: TraceCtx): Promise<void> {
+  if (!alchemyKey() || ctx.degraded || trace.transfers.length === 0) return;
+
+  // Live USD→INR, read off the USDT row (peg ≈ 1, so inr/usd is the rate); falls
+  // back to the same constant the price table uses when it is unavailable.
+  const usdt = ctx.prices.USDT;
+  const fx = usdt && usdt.usd > 0 ? usdt.inr / usdt.usd : 88;
+
+  const seed = trace.seed.toLowerCase();
+  let incidentInr = 0;
+  let currentInr = 0;
+  let anyHistorical = false;
+
+  for (const t of trace.transfers) {
+    const hp = await getHistoricalPrice(t.token_symbol, t.timestamp);
+    t.value_usd_historical = t.value * hp.usd;
+    t.value_inr_incident = t.value_usd_historical * fx;
+    if (hp.source === "alchemy-historical") anyHistorical = true;
+
+    // The loss is what left the reported wallet — the first hop. Summing every
+    // hop would count the same stolen funds again at each wallet they pass through.
+    if (t.from_address.toLowerCase() === seed) {
+      incidentInr += t.value_inr_incident;
+      currentInr += t.value_usd * fx;
+    }
+  }
+
+  trace.valuation = {
+    incident_inr: incidentInr,
+    current_inr: currentInr,
+    price_source: anyHistorical ? "alchemy-historical" : "spot-fallback",
   };
 }
 

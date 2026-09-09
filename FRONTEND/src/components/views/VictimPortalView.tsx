@@ -123,32 +123,29 @@ export function VictimPortalView() {
     <Page width="wide">
       {/* Citizen Complainant Top Banner */}
       <div
-        className="rounded-2xl border p-5 mb-6 shadow-lg"
-        style={{
-          background: "linear-gradient(135deg, rgba(6, 182, 212, 0.08), rgba(59, 130, 246, 0.04))",
-          borderColor: "rgba(6, 182, 212, 0.3)",
-        }}
+        className="rounded border p-5 mb-6"
+        style={{ background: "var(--panel)", borderColor: "var(--border)" }}
       >
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
             <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold shadow-md"
-              style={{ background: "#06b6d4", color: "#000" }}
+              className="w-10 h-10 rounded border flex items-center justify-center text-xs font-bold font-mono"
+              style={{ background: "var(--chip)", borderColor: "var(--border)", color: "var(--text-strong)" }}
             >
-              🛡️
+              NCRP
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-lg font-bold text-white tracking-tight">
-                  Citizen Cyber Fraud Victim Portal · NCRP 1930 Gateway
+                <h1 className="text-lg font-bold tracking-tight" style={{ color: "var(--text-strong)" }}>
+                  Citizen Cyber Fraud Victim Portal &mdash; NCRP 1930 Gateway
                 </h1>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-semibold">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded border font-semibold" style={{ background: "var(--chip)", borderColor: "var(--border)", color: "var(--muted)" }}>
                   PRIVACY-ISOLATED CITIZEN DESK
                 </span>
               </div>
-              <p className="text-xs text-muted mt-0.5">
-                Logged in as <strong className="text-white">{user?.name || "Rajesh Verma"}</strong> ·{" "}
-                <span>{user?.email || "victim.verma@gmail.com"}</span> · Mobile: +91 98765 43210
+              <p className="text-xs mt-0.5" style={{ color: "var(--muted)" }}>
+                Logged in as <strong style={{ color: "var(--text-strong)" }}>{user?.name || "Rajesh Verma"}</strong> &bull;{" "}
+                <span>{user?.email || "victim.verma@gmail.com"}</span> &bull; Mobile: +91 98765 43210
               </p>
             </div>
           </div>
@@ -158,9 +155,10 @@ export function VictimPortalView() {
               onClick={handleManualRefresh}
               disabled={refreshingStatus}
               title="Poll latest investigation milestone from Maharashtra Cyber Desk"
-              className="px-3.5 py-2.5 rounded-xl text-xs font-semibold border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-200 transition flex items-center gap-1.5"
+              className="px-3.5 py-2 rounded border text-xs font-semibold transition hover:opacity-80 flex items-center gap-1.5"
+              style={{ background: "var(--chip)", borderColor: "var(--border)", color: "var(--muted)" }}
             >
-              <span className={refreshingStatus ? "animate-spin" : ""}>↻</span>
+              <span>{refreshingStatus ? "..." : "↻"}</span>
               <span>{refreshingStatus ? "Refreshing..." : "Refresh Status"}</span>
             </button>
             <button
@@ -168,18 +166,17 @@ export function VictimPortalView() {
                 handleAutofillDemoCase();
                 setShowFileModal(true);
               }}
-              className="px-3.5 py-2.5 rounded-xl text-xs font-semibold border border-cyan-500/40 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-200 transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+              className="px-3.5 py-2 rounded border text-xs font-semibold transition hover:opacity-80 flex items-center gap-1.5"
+              style={{ background: "var(--chip)", borderColor: "var(--border)", color: "var(--muted)" }}
             >
-              <span>✨</span>
-              <span>Autofill Demo Case (0x71C7...)</span>
+              Autofill Demo Case (0x71C7...)
             </button>
             <button
               onClick={() => setShowFileModal(true)}
-              className="px-4 py-2.5 rounded-xl text-xs font-bold text-black transition hover:opacity-90 shadow-glow flex items-center gap-1.5"
-              style={{ background: "linear-gradient(135deg, #06b6d4, #3b82f6)" }}
+              className="px-4 py-2 rounded border text-xs font-bold transition hover:opacity-80"
+              style={{ background: "#10b981", borderColor: "#059669", color: "#000" }}
             >
-              <span>+</span>
-              <span>Register New Fraud Complaint</span>
+              + Register New Fraud Complaint
             </button>
           </div>
         </div>
@@ -187,9 +184,8 @@ export function VictimPortalView() {
 
       {/* Success Alert on New Ingestion */}
       {filedSuccessCase && (
-        <div className="mb-6 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4 text-xs text-emerald-300 flex items-center justify-between shadow-md">
+        <div className="mb-6 rounded border border-emerald-500/40 bg-emerald-500/10 p-4 text-xs text-emerald-300 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <span className="text-base">✅</span>
             <div>
               <strong className="block text-white font-semibold">
                 Complaint Registered Successfully! Acknowledgment ID: {filedSuccessCase.case_number}
@@ -204,7 +200,8 @@ export function VictimPortalView() {
           <div className="flex items-center gap-2 ml-4">
             <button
               onClick={() => setShowReceiptModal(true)}
-              className="px-3 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 text-xs font-semibold transition"
+              className="px-3 py-1 rounded border text-xs font-semibold transition hover:opacity-80"
+              style={{ background: "var(--chip)", borderColor: "var(--border)", color: "var(--text-strong)" }}
             >
               View Receipt
             </button>
@@ -212,7 +209,7 @@ export function VictimPortalView() {
               onClick={() => setFiledSuccessCase(null)}
               className="text-muted hover:text-white text-sm px-1.5"
             >
-              ✕
+              &#x2715;
             </button>
           </div>
         </div>
@@ -234,9 +231,9 @@ export function VictimPortalView() {
                 <button
                   key={c.case_number}
                   onClick={() => setSelectedCaseNumber(c.case_number)}
-                  className={`text-left rounded-xl p-3 border transition min-w-[240px] shrink-0 ${
+                  className={`text-left rounded p-3 border transition min-w-[240px] shrink-0 ${
                     active
-                      ? "bg-cyan-500/10 border-cyan-500/50 shadow-md ring-1 ring-cyan-500/30"
+                      ? "border-cyan-500/50 bg-cyan-500/10"
                       : "border-white/10 hover:border-white/20 bg-white/[0.02]"
                   }`}
                 >
@@ -288,9 +285,11 @@ export function VictimPortalView() {
               <div className="text-2xl font-bold text-white truncate">
                 {activeComplaint.target_vasp || (activeComplaint.status === "PENDING_TRACING" ? "Attribution Pending" : "Binance Int.")}
               </div>
-              <div className="text-[11px] text-cyan-400 mt-1">
+              <div className="text-[11px] mt-1" style={{ color: "var(--muted)" }}>
                 {activeComplaint.status === "FROZEN"
-                  ? "✓ Locked in Escrow"
+                  ? "Locked in Escrow"
+                  : activeComplaint.status === "FREEZE_REFUSED"
+                  ? "Exchange Refused Freeze"
                   : activeComplaint.status === "NOTICE_SERVED"
                   ? "Sec 94 BNSS Served"
                   : "Exchange Deposit Identified"}
@@ -301,7 +300,7 @@ export function VictimPortalView() {
               <div className="text-[11px] uppercase tracking-wider text-muted font-medium mb-1">Assigned Cyber Unit</div>
               <div className="text-sm font-bold text-white mt-1">Maharashtra Cyber Unit</div>
               <div className="text-[11px] text-muted mt-0.5">
-                IO: {activeComplaint.assigned_investigator_name || "ACP Sharma · BKC Mumbai"}
+                IO: {activeComplaint.assigned_investigator_name || "Pending Allocation"}
               </div>
             </Card>
           </div>
@@ -342,7 +341,7 @@ export function VictimPortalView() {
                   {/* Step 3: VASP Attribution */}
                   <TimelineStep
                     stepNum={3}
-                    isDone={activeComplaint.status === "TRACED" || activeComplaint.status === "NOTICE_SERVED" || activeComplaint.status === "FROZEN"}
+                    isDone={activeComplaint.status === "TRACED" || activeComplaint.status === "NOTICE_SERVED" || activeComplaint.status === "FROZEN" || activeComplaint.status === "FREEZE_REFUSED"}
                     isActive={activeComplaint.status === "PENDING_TRACING"}
                     title="3. Exchange / VASP Attribution Unmasked"
                     description={
@@ -358,18 +357,18 @@ export function VictimPortalView() {
                   {/* Step 4: Section 94 BNSS Freeze Notice */}
                   <TimelineStep
                     stepNum={4}
-                    isDone={activeComplaint.status === "NOTICE_SERVED" || activeComplaint.status === "FROZEN"}
+                    isDone={activeComplaint.status === "NOTICE_SERVED" || activeComplaint.status === "FROZEN" || activeComplaint.status === "FREEZE_REFUSED"}
                     isActive={activeComplaint.status === "TRACED"}
                     title="4. Statutory Section 94 BNSS Freezing Order Served"
                     description={
-                      activeComplaint.status === "NOTICE_SERVED" || activeComplaint.status === "FROZEN"
-                        ? `Digitally signed by Gazetted Police Officer (ACP Sharma) under Section 94 BNSS / 91 CrPC and served directly to ${activeComplaint.target_vasp || "Binance"} Compliance.`
+                      activeComplaint.status === "NOTICE_SERVED" || activeComplaint.status === "FROZEN" || activeComplaint.status === "FREEZE_REFUSED"
+                        ? `Digitally signed by Gazetted Police Officer under Section 94 BNSS / 91 CrPC and served directly to ${activeComplaint.target_vasp || "Binance"} Compliance.`
                         : activeComplaint.status === "TRACED"
                         ? "Money flow verified. Gazetted Police Officer preparing statutory Section 94 BNSS requisition."
                         : "Requires completion of money flow trace."
                     }
                     timestamp={
-                      activeComplaint.status === "NOTICE_SERVED" || activeComplaint.status === "FROZEN"
+                      activeComplaint.status === "NOTICE_SERVED" || activeComplaint.status === "FROZEN" || activeComplaint.status === "FREEZE_REFUSED"
                         ? "Statutory Notice Served"
                         : activeComplaint.status === "TRACED"
                         ? "Drafting Freezing Order"
@@ -380,19 +379,24 @@ export function VictimPortalView() {
                   {/* Step 5: Exchange Asset Freezing */}
                   <TimelineStep
                     stepNum={5}
-                    isDone={activeComplaint.status === "FROZEN"}
+                    isDone={activeComplaint.status === "FROZEN" || activeComplaint.status === "FREEZE_REFUSED"}
                     isActive={activeComplaint.status === "NOTICE_SERVED"}
-                    title="5. Exchange Asset Freezing & Escrow Confirmed"
+                    isRefused={activeComplaint.status === "FREEZE_REFUSED"}
+                    title="5. Exchange Asset Freezing & Escrow"
                     description={
                       activeComplaint.status === "FROZEN"
-                        ? `${activeComplaint.target_vasp || "Binance"} Nodal Officer confirmed asset lock. Cryptocurrency balance held safely in escrow under police directive.`
+                        ? `${activeComplaint.target_vasp || "Binance"} Nodal Officer confirmed asset lock. Cryptocurrency balance held in escrow under police directive.`
+                        : activeComplaint.status === "FREEZE_REFUSED"
+                        ? `${activeComplaint.target_vasp || "The exchange"} Compliance reported inability to execute freeze. Refusal report forwarded to Investigating Officer for review.`
                         : activeComplaint.status === "NOTICE_SERVED"
-                        ? `Exchange Compliance Nodal Desk processing freezing directive under 45-minute statutory SLA.`
+                        ? "Exchange Compliance Nodal Desk processing freezing directive under 45-minute statutory SLA."
                         : "Awaiting legal notice delivery to exchange compliance desk."
                     }
                     timestamp={
                       activeComplaint.status === "FROZEN"
                         ? "Assets Locked in Escrow"
+                        : activeComplaint.status === "FREEZE_REFUSED"
+                        ? "Freeze Refused by Exchange"
                         : activeComplaint.status === "NOTICE_SERVED"
                         ? "Under Exchange Compliance Review"
                         : "Pending"
@@ -452,10 +456,10 @@ export function VictimPortalView() {
                   <div className="border-t pt-3" style={{ borderColor: "var(--border)" }}>
                     <button
                       onClick={() => setShowReceiptModal(true)}
-                      className="w-full py-2 px-3 rounded-xl text-xs font-semibold border hover:bg-white/5 transition flex items-center justify-center gap-2 text-cyan-300 border-cyan-500/30 bg-cyan-500/10"
+                      className="w-full py-2 px-3 rounded border text-xs font-semibold transition hover:opacity-80 flex items-center justify-center gap-2"
+                      style={{ background: "var(--chip)", borderColor: "var(--border)", color: "var(--text-strong)" }}
                     >
-                      <span>📄</span>
-                      <span>Download Official NCRP Receipt</span>
+                      Download Official NCRP Receipt
                     </button>
                   </div>
 
@@ -486,17 +490,17 @@ export function VictimPortalView() {
         </>
       ) : (
         /* Empty State */
-        <div className="rounded-2xl border p-12 text-center" style={{ background: "var(--panel)", borderColor: "var(--border)" }}>
-          <div className="text-4xl mb-3">🛡️</div>
-          <h2 className="text-base font-bold text-white">No Complaints Registered Yet</h2>
+        <div className="rounded border p-12 text-center" style={{ background: "var(--panel)", borderColor: "var(--border)" }}>
+          <div className="text-xs font-mono uppercase tracking-widest text-muted mb-3">No Complaints Registered</div>
+          <h2 className="text-base font-bold" style={{ color: "var(--text-strong)" }}>No Complaints Registered Yet</h2>
           <p className="text-xs text-muted mt-1 max-w-md mx-auto">
             Have you been defrauded in a cryptocurrency investment scam or task fraud? Register your suspect crypto wallet directly with the state cyber police to initiate automated multi-hop tracing.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3 mt-4">
             <button
               onClick={() => setShowFileModal(true)}
-              className="px-5 py-2.5 rounded-xl text-xs font-bold text-black transition shadow-glow"
-              style={{ background: "linear-gradient(135deg, #06b6d4, #3b82f6)" }}
+              className="px-5 py-2 rounded border text-xs font-bold transition hover:opacity-80"
+              style={{ background: "#10b981", borderColor: "#059669", color: "#000" }}
             >
               + Register Fraud Complaint Now
             </button>
@@ -505,10 +509,10 @@ export function VictimPortalView() {
                 handleAutofillDemoCase();
                 setShowFileModal(true);
               }}
-              className="px-5 py-2.5 rounded-xl text-xs font-bold text-cyan-200 border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 transition flex items-center gap-1.5 shadow-sm"
+              className="px-5 py-2 rounded border text-xs font-bold transition hover:opacity-80"
+              style={{ background: "var(--chip)", borderColor: "var(--border)", color: "var(--muted)" }}
             >
-              <span>✨</span>
-              <span>Autofill Demo Case (0x71C7...)</span>
+              Autofill Demo Case (0x71C7...)
             </button>
           </div>
         </div>
@@ -518,7 +522,7 @@ export function VictimPortalView() {
       {showFileModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
           <div
-            className="w-full max-w-lg rounded-2xl border p-6 shadow-2xl relative"
+            className="w-full max-w-lg rounded border p-6 relative"
             style={{
               background: "#0d1117",
               borderColor: "var(--border)",
@@ -529,11 +533,10 @@ export function VictimPortalView() {
               onClick={() => setShowFileModal(false)}
               className="absolute right-4 top-4 text-muted hover:text-white text-lg"
             >
-              ✕
+              &#x2715;
             </button>
 
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-xl">🛡️</span>
               <h2 className="text-base font-bold text-white">Register Fraudulent Crypto Wallet</h2>
             </div>
             <p className="text-xs text-muted mb-4">
@@ -541,23 +544,20 @@ export function VictimPortalView() {
             </p>
 
             {/* Prominent 1-Click Autofill Demo Case Button */}
-            <div className="mb-4 p-3.5 rounded-xl border border-cyan-500/40 bg-gradient-to-r from-cyan-950/40 to-blue-950/40 flex items-center justify-between gap-3 shadow-md">
+            <div className="mb-4 p-3.5 rounded border flex items-center justify-between gap-3" style={{ background: "var(--chip)", borderColor: "var(--border)" }}>
               <div className="min-w-0">
-                <div className="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
-                  <span>✨</span>
-                  <span>Evaluator Fast-Track Scenario</span>
-                </div>
-                <div className="text-[11px] text-cyan-200/80 truncate">
-                  Autofill ₹3,50,000 USDT task scam on Ethereum (0x71C7...)
+                <div className="text-xs font-bold" style={{ color: "var(--text-strong)" }}>Evaluator Fast-Track Scenario</div>
+                <div className="text-[11px] truncate" style={{ color: "var(--muted)" }}>
+                  Autofill Rs.3,50,000 USDT task scam on Ethereum (0x71C7...)
                 </div>
               </div>
               <button
                 type="button"
                 onClick={handleAutofillDemoCase}
-                className="px-3.5 py-1.5 rounded-lg text-xs font-bold text-black bg-gradient-to-r from-cyan-400 to-blue-400 hover:from-cyan-300 hover:to-blue-300 transition shadow-md shrink-0 flex items-center gap-1.5 cursor-pointer"
+                className="px-3.5 py-1.5 rounded border text-xs font-semibold transition hover:opacity-80 shrink-0"
+                style={{ background: "var(--panel)", borderColor: "var(--border)", color: "var(--text-strong)" }}
               >
-                <span>✨</span>
-                <span>Autofill Demo Case</span>
+                Autofill Demo Case
               </button>
             </div>
 
@@ -573,7 +573,7 @@ export function VictimPortalView() {
                     onChange={(e) => setSuspectWallet(e.target.value)}
                     placeholder="0x... (ETH/Polygon) or T... (TRON) or bc1... (BTC)"
                     required
-                    className="w-full px-3.5 py-2.5 rounded-xl text-xs border focus:outline-none focus:ring-1 focus:ring-cyan-500 font-mono"
+                    className="w-full px-3.5 py-2.5 rounded text-xs border focus:outline-none font-mono"
                     style={{
                       background: "var(--surface-sunken)",
                       borderColor: "var(--border)",
@@ -603,7 +603,7 @@ export function VictimPortalView() {
                     onChange={(e) => setLossAmount(e.target.value)}
                     required
                     min="1"
-                    className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none font-mono"
+                    className="w-full px-3 py-2 rounded text-xs border focus:outline-none font-mono"
                     style={{
                       background: "var(--surface-sunken)",
                       borderColor: "var(--border)",
@@ -617,7 +617,7 @@ export function VictimPortalView() {
                   <select
                     value={tokenSymbol}
                     onChange={(e) => setTokenSymbol(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none"
+                    className="w-full px-3 py-2 rounded text-xs border focus:outline-none"
                     style={{
                       background: "var(--surface-sunken)",
                       borderColor: "var(--border)",
@@ -640,7 +640,7 @@ export function VictimPortalView() {
                   <select
                     value={network}
                     onChange={(e) => setNetwork(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none"
+                    className="w-full px-3 py-2 rounded text-xs border focus:outline-none"
                     style={{
                       background: "var(--surface-sunken)",
                       borderColor: "var(--border)",
@@ -660,7 +660,7 @@ export function VictimPortalView() {
                     type="date"
                     value={incidentDate}
                     onChange={(e) => setIncidentDate(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none"
+                    className="w-full px-3 py-2 rounded text-xs border focus:outline-none"
                     style={{
                       background: "var(--surface-sunken)",
                       borderColor: "var(--border)",
@@ -675,7 +675,7 @@ export function VictimPortalView() {
                 <select
                   value={scamPlatform}
                   onChange={(e) => setScamPlatform(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl text-xs border focus:outline-none"
+                  className="w-full px-3.5 py-2 rounded text-xs border focus:outline-none"
                   style={{
                     background: "var(--surface-sunken)",
                     borderColor: "var(--border)",
@@ -701,7 +701,7 @@ export function VictimPortalView() {
                   value={txHash}
                   onChange={(e) => setTxHash(e.target.value)}
                   placeholder="0x... (from your exchange or wallet withdrawal)"
-                  className="w-full px-3.5 py-2 rounded-xl text-xs border focus:outline-none font-mono"
+                  className="w-full px-3.5 py-2 rounded text-xs border focus:outline-none font-mono"
                   style={{
                     background: "var(--surface-sunken)",
                     borderColor: "var(--border)",
@@ -719,7 +719,7 @@ export function VictimPortalView() {
                   onChange={(e) => setIncidentDesc(e.target.value)}
                   rows={2}
                   placeholder="E.g., Contacted via Telegram channel for hotel review job, transferred USDT..."
-                  className="w-full px-3.5 py-2 rounded-xl text-xs border focus:outline-none resize-none"
+                  className="w-full px-3.5 py-2 rounded text-xs border focus:outline-none resize-none"
                   style={{
                     background: "var(--surface-sunken)",
                     borderColor: "var(--border)",
@@ -732,8 +732,8 @@ export function VictimPortalView() {
                 <button
                   type="submit"
                   disabled={filing}
-                  className="w-full py-2.5 rounded-xl text-xs font-bold text-black transition disabled:opacity-50 shadow-glow"
-                  style={{ background: "linear-gradient(135deg, #06b6d4, #3b82f6)" }}
+                  className="w-full py-2.5 rounded border text-xs font-bold transition disabled:opacity-50 hover:opacity-80"
+                  style={{ background: "#10b981", borderColor: "#059669", color: "#000" }}
                 >
                   {filing ? "Submitting to NCRP 1930..." : "Transmit Complaint to State Cyber Police"}
                 </button>
@@ -747,7 +747,7 @@ export function VictimPortalView() {
       {showReceiptModal && activeComplaint && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
           <div
-            className="w-full max-w-lg rounded-2xl border p-6 shadow-2xl relative"
+            className="w-full max-w-lg rounded border p-6 relative"
             style={{
               background: "#0d1117",
               borderColor: "var(--border)",
@@ -758,11 +758,10 @@ export function VictimPortalView() {
               onClick={() => setShowReceiptModal(false)}
               className="absolute right-4 top-4 text-muted hover:text-white text-lg"
             >
-              ✕
+              &#x2715;
             </button>
 
             <div className="text-center pb-4 border-b border-white/10 mb-4">
-              <div className="text-2xl mb-1">🇮🇳</div>
               <h2 className="text-sm font-bold text-white tracking-wide">NATIONAL CYBER CRIME REPORTING PORTAL</h2>
               <div className="text-[11px] text-cyan-300 font-semibold mt-0.5">
                 Government of India · Ministry of Home Affairs (I4C)
@@ -812,14 +811,15 @@ export function VictimPortalView() {
             <div className="mt-5 pt-3 border-t border-white/10 flex justify-between gap-3">
               <button
                 onClick={() => window.print()}
-                className="flex-1 py-2 px-3 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/15 text-white transition text-center"
+                className="flex-1 py-2 px-3 rounded border text-xs font-semibold transition hover:opacity-80"
+                style={{ background: "var(--chip)", borderColor: "var(--border)", color: "var(--text-strong)" }}
               >
-                🖨️ Print Receipt
+                Print Receipt
               </button>
               <button
                 onClick={() => setShowReceiptModal(false)}
-                className="flex-1 py-2 px-3 rounded-xl text-xs font-bold text-black transition text-center"
-                style={{ background: "#06b6d4" }}
+                className="flex-1 py-2 px-3 rounded border text-xs font-bold transition hover:opacity-80"
+                style={{ background: "#10b981", borderColor: "#059669", color: "#000" }}
               >
                 Done
               </button>
@@ -857,6 +857,12 @@ function VictimStatusBadge({ status }: { status: string }) {
           Assets Frozen
         </span>
       );
+    case "FREEZE_REFUSED":
+      return (
+        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40 font-semibold">
+          Freeze Refused
+        </span>
+      );
     default:
       return (
         <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
@@ -875,7 +881,9 @@ function getPhaseName(status: string): { phase: string; subtext: string } {
     case "NOTICE_SERVED":
       return { phase: "Phase 4 / 6", subtext: "Sec 94 BNSS Notice Served" };
     case "FROZEN":
-      return { phase: "Phase 5 / 6", subtext: "✓ Assets Frozen in Escrow" };
+      return { phase: "Phase 5 / 6", subtext: "Assets Frozen in Escrow" };
+    case "FREEZE_REFUSED":
+      return { phase: "Phase 5 / 6", subtext: "Exchange Refused — IO Review" };
     default:
       return { phase: "Phase 2 / 6", subtext: "Under Police Review" };
   }
@@ -885,6 +893,7 @@ function TimelineStep({
   stepNum,
   isDone,
   isActive,
+  isRefused,
   title,
   description,
   timestamp,
@@ -892,34 +901,45 @@ function TimelineStep({
   stepNum: number;
   isDone: boolean;
   isActive: boolean;
+  isRefused?: boolean;
   title: string;
   description: string;
   timestamp: string;
 }) {
+  const dotClass = isRefused
+    ? "bg-red-500 text-white"
+    : isDone
+    ? "bg-emerald-500 text-black"
+    : isActive
+    ? "bg-amber-400 text-black"
+    : "bg-slate-700 text-slate-400";
+
+  const titleClass = isRefused
+    ? "text-red-400"
+    : isDone
+    ? "text-white"
+    : isActive
+    ? "text-amber-300"
+    : "text-slate-400";
+
+  const tsClass = isRefused
+    ? "text-red-500"
+    : isDone
+    ? "text-muted"
+    : isActive
+    ? "text-amber-400"
+    : "text-slate-500";
+
   return (
     <div className="relative">
       <span
-        className={`absolute -left-[27px] top-0 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold ring-4 ring-[#0d1117] ${
-          isDone
-            ? "bg-emerald-500 text-black"
-            : isActive
-            ? "bg-amber-400 text-black animate-pulse"
-            : "bg-slate-700 text-slate-400"
-        }`}
+        className={`absolute -left-[27px] top-0 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold ring-4 ring-[#0d1117] ${dotClass}`}
       >
-        {isDone ? "✓" : isActive ? "●" : stepNum}
+        {isDone ? stepNum : isActive ? "●" : stepNum}
       </span>
-      <div className={`text-xs font-bold ${isDone ? "text-white" : isActive ? "text-amber-300" : "text-slate-400"}`}>
-        {title}
-      </div>
+      <div className={`text-xs font-bold ${titleClass}`}>{title}</div>
       <div className="text-[11px] text-muted mt-0.5">{description}</div>
-      <span
-        className={`text-[10px] font-mono ${
-          isDone ? "text-muted" : isActive ? "text-amber-400" : "text-slate-500"
-        }`}
-      >
-        {timestamp}
-      </span>
+      <span className={`text-[10px] font-mono ${tsClass}`}>{timestamp}</span>
     </div>
   );
 }

@@ -22,8 +22,11 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 app = Flask(__name__)
 app.secret_key = os.urandom(32)
 
-# ── User's Verified Working API Key ───────────────────────────────────────────
-DEFAULT_API_KEY = "alch_kIo4QuIe1KN7vkoZVZuDc"
+# ── Alchemy API key — read from the environment ONLY ──────────────────────────
+# SECURITY: never hard-code a key here. The literal that used to live on this
+# line was committed to a public repo, so it is compromised and must be rotated
+# in the Alchemy dashboard. Set ALCHEMY_API_KEY in the environment instead.
+DEFAULT_API_KEY = os.getenv("ALCHEMY_API_KEY", "")
 
 # ── Network base URLs & Block Explorers ─────────────────────────────────────────
 NETWORKS = {
@@ -387,7 +390,7 @@ def clear_webhook_events():
 if __name__ == "__main__":
     print("\n  ========================================================")
     print("  [*] Alchemy Real Blockchain Monitor (D1 Live Prototype)")
-    print("  [+] API Key Active: alch_kIo4QuIe1KN7vkoZVZuDc")
+    print(f"  [+] API Key: {'set from ALCHEMY_API_KEY' if DEFAULT_API_KEY else 'MISSING — set ALCHEMY_API_KEY'}")
     print("  [>] Dashboard: http://127.0.0.1:5000")
     print("  ========================================================\n")
     app.run(debug=True, port=5000)
