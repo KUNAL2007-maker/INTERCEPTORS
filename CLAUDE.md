@@ -170,8 +170,10 @@ a:/SIH/
   * [x] Reviewed algorithmic specifications in `RESEARCH/SET 2` and `RESEARCH/SET 3`.
   * [x] Consolidated complete 7-role RBAC & ABAC access control engine into single self-contained `AUTH_RBAC_ABAC/` module with dedicated frontend, backend API, 35 automated tests, and documentation.
   * [x] Merged `Chain_Traicer` multi-chain forensic tracing engine into `FRONTEND/` with PostgreSQL persistence (purged Firebase), 7-role RBAC & 7-policy ABAC, 1930/NCRP ingestion gateway, and Sec 94 BNSS freeze notices.
+  * [x] Shipped Python ML sidecar (`FRONTEND/ml-service/`, FastAPI): genuine A\* (`f=g+h`, admissible landmark heuristic) victim→VASP path, real NetworkX GDS features (PageRank, betweenness, Louvain community, clustering, FastRP), and a native XGBoost fraud classifier — blended into `/api/graph` with graceful TypeScript fallback when the sidecar is down. Full-stack Render deploy (`render.yaml`: web + ml services). Committed `27cc607`.
+  * [x] Built quota-safe real-time wallet monitor (`FRONTEND/src/lib/monitor.ts` + `/api/monitor` + SSE `/api/monitor/stream` + `MonitorView`): a server-side cheap-probe loop (~2 calls/tick) escalates to a full multi-hop trace ONLY when a watched address moves funds, is RBAC-gated on `wallet:monitor`, and keeps every call under the per-lane daily budget. Verified live — a complete detect→escalate cycle on the busiest ETH wallet cost 0.1% of the daily quota. Committed `6f9f562`.
 * **🔄 Tasks Working On (In Progress)**:
-  * [ ] Designing traversal algorithm (BFS/DFS with pruning) for multi-hop transaction trails.
+  * [ ] Retrain the XGBoost fraud classifier on labelled real-world graphs (the shipped model is synthetic/demonstration data, labelled as such for court honesty).
 * **📋 Tasks to be Started (Assigned / Backlog)**:
   * [ ] Implement Taint Propagation models (FIFO, Poison, Haircut).
   * [ ] Build address clustering heuristics (co-spend, deposit reuse, change detection).
