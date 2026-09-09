@@ -18,7 +18,7 @@ import { normalizeRole } from '@/lib/rbac-abac';
  * permissions, so checking a signature must not be a mutation.
  */
 export async function GET(req: Request) {
-  const claims = extractUserClaims(req);
+  const claims = await extractUserClaims(req);
   if (!claims) {
     return NextResponse.json({ error: 'Unauthorized: Authentication required.' }, { status: 401 });
   }

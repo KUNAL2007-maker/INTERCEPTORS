@@ -50,6 +50,8 @@ export type StoredCase = {
   created_at: string;
   tx_hashes?: string[];
   freeze_notice_id?: string;
+  escrow_ref?: string;
+  account_uid?: string;
   notes?: string;
 };
 
@@ -208,7 +210,7 @@ const memoryStore = {
       assigned_investigator_name: undefined,
       suspect_wallet_address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F',
       blockchain_network: 'Ethereum',
-      loss_amount_inr: 450000.0,
+      loss_amount_inr: 350000.0,
       token_symbol: 'USDT',
       crime_type: 'Task-based Fake Part-Time Job Scam',
       incident_date: '2026-09-05',
@@ -552,6 +554,20 @@ export function getCaseByIdOrNumber(caseIdOrNumber: string | number): StoredCase
 }
 
 export async function createCase(newCase: Partial<StoredCase>): Promise<StoredCase> {
+  if (newCase.case_number) {
+    const existing = getCaseByIdOrNumber(newCase.case_number);
+    if (existing) {
+      existing.freeze_notice_id = undefined;
+      existing.escrow_ref = undefined;
+      existing.account_uid = undefined;
+      memoryStore.notices = memoryStore.notices.filter(
+        (n) => n.case_number !== newCase.case_number && n.notice?.case_number !== newCase.case_number
+      );
+      Object.assign(existing, newCase);
+      return existing;
+    }
+  }
+
   const caseObj: StoredCase = {
     // Max + 1, not length + 1: with unshift/delete in play, length-based ids
     // collide with existing rows and two cases end up sharing an id.

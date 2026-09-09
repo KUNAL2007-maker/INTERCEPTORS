@@ -98,7 +98,7 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
 ];
 
 export function LoginModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const { signIn } = useAuth();
+  const { signIn, idp, keycloakInfo } = useAuth();
   const [activeTab, setActiveTab] = useState<"quick" | "manual">("quick");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -179,6 +179,39 @@ export function LoginModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
               <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
+        </div>
+
+        {/* Keycloak 24 IAM Connected Banner */}
+        <div
+          className="rounded-xl border p-2.5 mb-3 flex items-center justify-between text-xs font-mono"
+          style={{
+            background: idp === 'KEYCLOAK' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)',
+            borderColor: idp === 'KEYCLOAK' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(245, 158, 11, 0.25)'
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${idp === 'KEYCLOAK' ? 'bg-emerald-400' : 'bg-amber-400'} opacity-75`}></span>
+              <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${idp === 'KEYCLOAK' ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+            </span>
+            <div>
+              <span className="font-bold" style={{ color: idp === 'KEYCLOAK' ? '#10b981' : '#f59e0b' }}>
+                {idp === 'KEYCLOAK' ? 'Keycloak 24.0.5 IAM: Connected' : 'Native Auth Engine (Fallback)'}
+              </span>
+              <span className="text-[10px] text-muted ml-2">
+                Realm: <code className="text-sky-400">sih-lea</code> · Client: <code className="text-sky-400">cryptotrace-frontend</code>
+              </span>
+            </div>
+          </div>
+          <a
+            href="http://localhost:8080/admin/master/console/#/sih-lea/sessions"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[11px] font-semibold text-sky-400 hover:text-sky-300 hover:underline flex items-center gap-1"
+            title="Open Keycloak Admin Sessions"
+          >
+            Keycloak Sessions ↗
+          </a>
         </div>
 
         {/* Tab selection */}

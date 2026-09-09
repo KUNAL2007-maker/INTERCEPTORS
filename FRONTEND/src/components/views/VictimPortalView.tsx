@@ -80,8 +80,10 @@ export function VictimPortalView() {
     setFiling(true);
 
     try {
-      const complaintId = `NCRP-2026-${Math.floor(10000 + Math.random() * 90000)}`;
+      const isDemoWallet = suspectWallet.trim().toLowerCase() === "0x71c7656ec7ab88b098defb751b7401b5f6d8976f";
+      const complaintId = isDemoWallet ? "CRIME-165445" : `NCRP-2026-${Math.floor(10000 + Math.random() * 90000)}`;
       const newCase = await ingestNcrpComplaint({
+        case_number: complaintId,
         complaint_id: complaintId,
         portal: "NCRP_1930_CFCFRMS",
         victim_name: user?.name || "Rajesh Verma",
@@ -450,6 +452,21 @@ export function VictimPortalView() {
                       <code className="text-[11px] break-all text-slate-300 font-mono">
                         {activeComplaint.tx_hashes[0]}
                       </code>
+                    </div>
+                  )}
+
+                  {activeComplaint.status === "FROZEN" && (
+                    <div className="p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-xs">
+                      <div className="flex items-center gap-1.5 font-bold text-emerald-300">
+                        <span>🔒</span>
+                        <span>Assets Frozen in Escrow</span>
+                      </div>
+                      <p className="text-[11px] text-slate-200 mt-1">
+                        VASP Escrow Reference: <strong className="font-mono text-emerald-300">{activeComplaint.escrow_ref || activeComplaint.freeze_notice_id || "ESCROW-BIN-2026-98124"}</strong>
+                      </p>
+                      <p className="text-[10px] text-muted mt-0.5">
+                        Statutory freeze confirmed by {activeComplaint.target_vasp || "Binance"} Compliance under Sec 94(1) BNSS.
+                      </p>
                     </div>
                   )}
 

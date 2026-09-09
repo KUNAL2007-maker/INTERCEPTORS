@@ -225,7 +225,7 @@ C. ADMISSIBILITY:
     try {
       setActiveCase(c);
       await runTrace(c.suspect_wallet_address, c);
-      onGoToTrace(c.suspect_wallet_address);
+      onGoToGraph();
     } catch {
       // Fallback
     } finally {
@@ -497,19 +497,6 @@ C. ADMISSIBILITY:
                     </select>
                   ) : (
                     <strong className="text-white">{c.assigned_investigator_name || "Unallocated"}</strong>
-                  )}
-                  {isSupervisor && (
-                    <select
-                      value={c.priority || "HIGH"}
-                      onChange={(e) => handleChangePriority(c.case_number, e.target.value)}
-                      className="rounded border px-1.5 py-0.5 text-[10px] font-bold bg-[var(--chip)] text-amber-400 focus:outline-none"
-                      style={{ borderColor: "var(--border)" }}
-                    >
-                      <option value="LOW">LOW</option>
-                      <option value="MEDIUM">MEDIUM</option>
-                      <option value="HIGH">HIGH</option>
-                      <option value="CRITICAL">CRITICAL</option>
-                    </select>
                   )}
                 </div>
 

@@ -16,20 +16,40 @@ import {
 } from '@/lib/db';
 import { SYSTEM_PERSONAS, hasPermission, normalizeRole, type RoleName } from '@/lib/rbac-abac';
 import { signJWT, extractUserClaims } from '@/lib/auth-crypto';
+import {
+  checkKeycloakHealth,
+  loginKeycloakDirect,
+  logoutKeycloakSession,
+  PERSONA_KEYCLOAK_CREDENTIALS
+} from '@/lib/keycloak';
 
 export async function GET(req: Request) {
-  const claims = extractUserClaims(req);
+  const claims = await extractUserClaims(req);
   let activeUser = claims ? getUserById(claims.id) : null;
 
   if (!activeUser && claims) {
     activeUser = claims as any;
   }
 
+  const idp = claims?.idp || (claims?.iss?.includes('keycloak') ? 'KEYCLOAK' : (claims ? 'LOCAL_CRYPTO' : null));
+  if (activeUser) {
+    (activeUser as any).idp = idp;
+  }
+
+  const keycloakHealth = await checkKeycloakHealth();
+
   return NextResponse.json({
     authenticated: !!activeUser,
     user: activeUser || null,
+    idp,
     environment: getEnvironment(),
-    personas: SYSTEM_PERSONAS
+    personas: SYSTEM_PERSONAS,
+    keycloak: {
+      ...keycloakHealth,
+      realm: 'sih-lea',
+      clientId: 'cryptotrace-frontend',
+      adminSessionsUrl: 'http://localhost:8080/admin/master/console/#/sih-lea/sessions'
+    }
   });
 }
 
@@ -48,6 +68,51 @@ export async function POST(req: Request) {
         );
       }
 
+      // Check Keycloak 24 IAM if container is running
+      const kcHealth = await checkKeycloakHealth();
+      if (kcHealth.online) {
+        const kcResult = await loginKeycloakDirect(email, password);
+        if (kcResult.success && kcResult.user && kcResult.token) {
+          recordAuditLog({
+            user_id: kcResult.user.id,
+            user_name: kcResult.user.name,
+            user_role: kcResult.user.role,
+            action: 'KEYCLOAK_LOGIN_SUCCESS',
+            resource_type: 'AUTH_SESSION',
+            decision: 'GRANTED',
+            reason: 'Successfully authenticated with Keycloak OIDC direct access grant.'
+          });
+
+          const response = NextResponse.json({
+            success: true,
+            user: kcResult.user,
+            token: kcResult.token,
+            idp: 'KEYCLOAK'
+          });
+
+          response.cookies.set('auth_token', kcResult.token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/',
+            maxAge: kcResult.expiresIn || 60 * 60 * 24
+          });
+
+          if (kcResult.refreshToken) {
+            response.cookies.set('kc_refresh_token', kcResult.refreshToken, {
+              httpOnly: true,
+              secure: process.env.NODE_ENV === 'production',
+              sameSite: 'lax',
+              path: '/',
+              maxAge: 60 * 60 * 24
+            });
+          }
+
+          return response;
+        }
+      }
+
+      // Local Cryptographic Engine Fallback (Native PBKDF2 + HMAC-SHA256)
       const authResult = authenticateUser(email, password);
       if (!authResult.success || !authResult.user) {
         recordAuditLog({
@@ -82,7 +147,8 @@ export async function POST(req: Request) {
       const response = NextResponse.json({
         success: true,
         user,
-        token
+        token,
+        idp: 'LOCAL_CRYPTO'
       });
 
       response.cookies.set('auth_token', token, {
@@ -98,7 +164,7 @@ export async function POST(req: Request) {
 
     // ── 2. User Logout ───────────────────────────────────────────────────
     if (action === 'logout') {
-      const claims = extractUserClaims(req);
+      const claims = await extractUserClaims(req);
       if (claims) {
         recordAuditLog({
           user_id: claims.id,
@@ -109,6 +175,13 @@ export async function POST(req: Request) {
           decision: 'GRANTED',
           reason: 'User explicitly logged out.'
         });
+      }
+
+      // Terminate Keycloak session if refresh token cookie is present
+      const cookieHeader = req.headers.get('cookie') || '';
+      const refreshMatch = cookieHeader.match(/kc_refresh_token=([^;]+)/);
+      if (refreshMatch) {
+        await logoutKeycloakSession(decodeURIComponent(refreshMatch[1]));
       }
 
       const response = NextResponse.json({
@@ -122,12 +195,99 @@ export async function POST(req: Request) {
         maxAge: 0
       });
 
+      response.cookies.set('kc_refresh_token', '', {
+        httpOnly: true,
+        path: '/',
+        maxAge: 0
+      });
+
       return response;
     }
 
-    // ── 3. Emergency Lockdown Toggle (System Admin Only) ────────────────
+    // ── 3. Quick Persona Switcher (For Evaluation & Demo Tests) ─────────
+    if (action === 'switch_persona') {
+      const targetIdentifier = body.roleOrUid || 'senior-sharma';
+      const user = switchPersona(targetIdentifier);
+
+      // When Keycloak is active, issue real Keycloak RS256 token and register Keycloak session
+      const kcHealth = await checkKeycloakHealth();
+      if (kcHealth.online) {
+        const creds =
+          PERSONA_KEYCLOAK_CREDENTIALS[targetIdentifier] ||
+          (user ? PERSONA_KEYCLOAK_CREDENTIALS[user.email] || PERSONA_KEYCLOAK_CREDENTIALS[user.role] : null);
+
+        if (creds) {
+          const kcResult = await loginKeycloakDirect(creds.email, creds.pass);
+          if (kcResult.success && kcResult.user && kcResult.token) {
+            recordAuditLog({
+              user_id: kcResult.user.id,
+              user_name: kcResult.user.name,
+              user_role: kcResult.user.role,
+              action: 'KEYCLOAK_ROLE_SWITCH',
+              resource_type: 'AUTH_SESSION',
+              decision: 'GRANTED',
+              reason: `Switched identity to ${kcResult.user.name} (${kcResult.user.role}) via Keycloak OIDC session.`
+            });
+
+            const response = NextResponse.json({
+              success: true,
+              user: kcResult.user,
+              token: kcResult.token,
+              idp: 'KEYCLOAK'
+            });
+
+            response.cookies.set('auth_token', kcResult.token, {
+              httpOnly: true,
+              secure: process.env.NODE_ENV === 'production',
+              sameSite: 'lax',
+              path: '/',
+              maxAge: kcResult.expiresIn || 60 * 60 * 24
+            });
+
+            if (kcResult.refreshToken) {
+              response.cookies.set('kc_refresh_token', kcResult.refreshToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax',
+                path: '/',
+                maxAge: 60 * 60 * 24
+              });
+            }
+
+            return response;
+          }
+        }
+      }
+
+      // Local Cryptographic Engine Fallback (Native PBKDF2 + HMAC-SHA256)
+      const token = signJWT(user);
+
+      recordAuditLog({
+        user_id: user.id,
+        user_name: user.name,
+        user_role: user.role,
+        action: 'EVALUATION_ROLE_SWITCH',
+        resource_type: 'AUTH_SESSION',
+        decision: 'GRANTED',
+        reason: `Switched identity to ${user.name} (${user.role}) via local fallback.`
+      });
+
+      const response = NextResponse.json({ success: true, user, token, idp: 'LOCAL_CRYPTO' });
+
+      response.cookies.set('auth_token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24
+      });
+
+      return response;
+    }
+
+    // ── 4. Emergency Lockdown Toggle (System Admin Only) ────────────────
     if (action === 'toggle_lockdown') {
-      const claims = extractUserClaims(req);
+      const claims = await extractUserClaims(req);
       if (!claims) {
         return NextResponse.json(
           { error: 'Unauthorized: Authentication required to trigger emergency lockdown.' },
@@ -173,9 +333,9 @@ export async function POST(req: Request) {
       });
     }
 
-    // ── 4. System Administrator: User Management ────────────────────────
+    // ── 5. System Administrator: User Management ────────────────────────
     if (['create_user', 'toggle_user_status', 'assign_role', 'reset_password', 'get_users', 'system_health'].includes(action)) {
-      const claims = extractUserClaims(req);
+      const claims = await extractUserClaims(req);
       if (!claims) {
         return NextResponse.json(
           { error: 'Unauthorized: Administrative authentication required.' },
@@ -294,6 +454,7 @@ export async function POST(req: Request) {
       }
 
       if (action === 'system_health') {
+        const kcHealth = await checkKeycloakHealth();
         return NextResponse.json({
           success: true,
           health: {
@@ -302,7 +463,8 @@ export async function POST(req: Request) {
             memoryUsage: process.memoryUsage(),
             environment: getEnvironment(),
             activeUsers: getSystemUsers().length,
-            nodeVersion: process.version
+            nodeVersion: process.version,
+            keycloak: kcHealth
           }
         });
       }

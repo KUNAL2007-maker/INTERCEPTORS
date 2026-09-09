@@ -25,7 +25,7 @@ import { normalizeRole, hasPermission, PERMISSIONS } from '@/lib/rbac-abac';
  * never mutates anything.
  */
 export async function GET(req: Request) {
-  const claims = extractUserClaims(req);
+  const claims = await extractUserClaims(req);
   if (!claims) {
     return NextResponse.json(
       { error: 'Unauthorized: Authentication required to view the officer directory.' },

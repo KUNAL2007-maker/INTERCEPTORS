@@ -18,6 +18,8 @@ import {
 } from "@/lib/domain";
 import { useTraceStore } from "@/lib/store";
 import { useTheme } from "@/components/ThemeProvider";
+import { useAuth } from "@/components/AuthProvider";
+import { normalizeRole } from "@/lib/rbac-abac";
 import { SeverityBadge } from "../ui/SeverityBadge";
 import { NodeDetailDrawer } from "../NodeDetailDrawer";
 import { Page } from "../ui/Page";
@@ -51,7 +53,10 @@ export function GraphView({
   // Empty-state CTA — the graph only fills once a trace has seeded the store.
   onGoToTrace?: () => void;
 } = {}) {
-  const { trace, status, activeCase } = useTraceStore();
+  const { user } = useAuth();
+  const normRole = user ? normalizeRole(user.role) : null;
+  const isCourtReviewer = normRole === "COURT_REVIEWER" || user?.role === "AUDITOR";
+  const { trace, status, activeCase, generateNotice, notices } = useTraceStore();
   const loading = status === "tracing";
 
   // Lane and typology hues were chosen to read on the dark canvas; as lettering
@@ -277,14 +282,26 @@ export function GraphView({
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {onOpenNotices && (
+            {onOpenNotices && !isCourtReviewer && (
               <button
-                onClick={onOpenNotices}
-                className="text-[11.5px] rounded-md border border-amber-500/40 bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 px-2.5 py-1.5 transition flex items-center gap-1.5"
+                onClick={() => {
+                  if (notices.length === 0 || (activeCase && !notices.some((n) => n.case_number === activeCase.case_number))) {
+                    const vaspName = (CLUSTERS.length > 0 && CLUSTERS[0].label ? CLUSTERS[0].label : activeCase?.target_vasp) || "Binance International";
+                    generateNotice(vaspName, activeCase?.case_number);
+                  }
+                  onOpenNotices();
+                }}
+                className="text-[11.5px] rounded-lg border border-amber-500/40 bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 px-3 py-1.5 font-semibold transition flex items-center gap-1.5 shadow-sm cursor-pointer"
               >
                 <span>⚖️</span>
-                <span>Issue Notice</span>
+                <span>Prepare Draft Notice</span>
               </button>
+            )}
+            {isCourtReviewer && (
+              <span className="text-[11px] font-mono px-2.5 py-1 rounded bg-slate-800 text-slate-300 border border-slate-700 font-semibold flex items-center gap-1.5">
+                <span>⚖️</span>
+                <span>BSA Sec 65B Read-Only Review</span>
+              </span>
             )}
             <div className="flex gap-1">
               {(["all", "high", "medium", "safe"] as FilterKey[]).map((k) => (

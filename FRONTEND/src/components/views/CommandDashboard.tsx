@@ -38,7 +38,7 @@ export function CommandDashboard({
   onGoToChat?: () => void;
 }) {
   const { user } = useAuth();
-  const { cases, loadCases, runTrace, setActiveCase, trace, activeCase } = useTraceStore();
+  const { cases, loadCases, runTrace, setActiveCase, trace, activeCase, generateNotice, notices } = useTraceStore();
   const [tracingCaseId, setTracingCaseId] = useState<string | null>(null);
   const [updatingCase, setUpdatingCase] = useState<string | null>(null);
 
@@ -104,6 +104,7 @@ export function CommandDashboard({
       setActiveCase(c);
       await runTrace(c.suspect_wallet_address, c);
       await loadCases();
+      onGoToGraph?.();
     } catch {
       // Handled
     } finally {
@@ -330,7 +331,7 @@ export function CommandDashboard({
                           <div className="mt-1 text-[11px] text-rose-300">{assignError[c.case_number]}</div>
                         )}
                       </td>
-                      <td className="py-3.5">
+                      <td className="py-3.5 pr-4">
                         <select
                           disabled={isUpdating}
                           value={c.priority || "HIGH"}
@@ -356,6 +357,7 @@ export function CommandDashboard({
             </table>
           </div>
         </div>
+
       </Page>
     );
   }
@@ -668,6 +670,9 @@ export function CommandDashboard({
                         onClick={() => {
                           setActiveCase(c);
                           void runTrace(c.suspect_wallet_address, c);
+                          if (!notices || !notices.some((n) => n.case_number === c.case_number)) {
+                            generateNotice(c.target_vasp || "Binance International", c.case_number);
+                          }
                           onGoToNotices?.();
                         }}
                         className="rounded border px-3.5 py-2 text-xs font-semibold transition hover:opacity-90 cursor-pointer"

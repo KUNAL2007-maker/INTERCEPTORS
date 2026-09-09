@@ -76,7 +76,7 @@ function sanitizeTransfers(raw: unknown): WalletTransfer[] {
 // the shortest path is verified there; otherwise everything runs in-memory.
 export async function POST(req: Request) {
   try {
-    const claims = extractUserClaims(req);
+    const claims = await extractUserClaims(req);
     if (!claims) {
       return NextResponse.json(
         { error: "Unauthorized: Authentication required for fund-flow graph analysis." },

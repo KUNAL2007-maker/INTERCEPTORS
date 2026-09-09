@@ -34,7 +34,7 @@ export function TopBar({
   onOpenNav?: () => void;
 }) {
   const { theme, toggle } = useTheme();
-  const { user, openLoginModal, signOut } = useAuth();
+  const { user, idp, openLoginModal, signOut } = useAuth();
   const { refreshing, trace, status } = useTraceStore();
   const normRole = user ? normalizeRole(user.role) : null;
 
@@ -111,6 +111,46 @@ export function TopBar({
 
         {/* Right controls: User Persona, Live feed & Theme */}
         <div className="ml-auto flex shrink-0 items-center flex-wrap gap-2 sm:gap-3">
+          {/* Keycloak 24 IAM Live Connection Pill */}
+          <div
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-[11px] font-mono shadow-sm transition"
+            style={{
+              background: idp === 'KEYCLOAK' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)',
+              borderColor: idp === 'KEYCLOAK' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)',
+              color: idp === 'KEYCLOAK' ? '#10b981' : '#f59e0b'
+            }}
+            title={
+              idp === 'KEYCLOAK'
+                ? "Identity Provider: Keycloak 24.0.5 (Realm: sih-lea, Client: cryptotrace-frontend, RS256 token active)"
+                : "Identity Provider: Native Cryptographic Engine (HMAC-SHA256 dual-mode fallback)"
+            }
+          >
+            <span className="relative flex h-2 w-2">
+              {idp === 'KEYCLOAK' && (
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              )}
+              <span
+                className={`relative inline-flex rounded-full h-2 w-2 ${
+                  idp === 'KEYCLOAK' ? 'bg-emerald-500' : 'bg-amber-500'
+                }`}
+              ></span>
+            </span>
+            <span className="font-semibold">{idp === 'KEYCLOAK' ? 'Keycloak IAM' : 'Local Auth'}</span>
+            <span className="text-[9px] px-1 py-0.5 rounded bg-black/20 font-bold">
+              {idp === 'KEYCLOAK' ? 'RS256' : 'HMAC'}
+            </span>
+            <a
+              href="http://localhost:8080/admin/master/console/#/sih-lea/sessions"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-emerald-400 hover:text-emerald-300 font-bold ml-0.5 hover:underline"
+              title="Open Keycloak Admin Sessions Console (sih-lea)"
+              onClick={(e) => e.stopPropagation()}
+            >
+              ↗
+            </a>
+          </div>
+
           {/* User Profile Badge & Persona Switcher */}
           {user ? (
             <div

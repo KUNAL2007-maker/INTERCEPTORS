@@ -4,7 +4,7 @@ import { extractUserClaims } from '@/lib/auth-crypto';
 import { normalizeRole } from '@/lib/rbac-abac';
 
 export async function GET(req: Request) {
-  const claims = extractUserClaims(req);
+  const claims = await extractUserClaims(req);
   if (!claims) {
     return NextResponse.json(
       { error: 'Unauthorized: Authentication required to inspect audit logs.' },

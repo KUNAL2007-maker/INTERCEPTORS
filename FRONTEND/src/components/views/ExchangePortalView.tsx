@@ -28,7 +28,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Page, Card, PanelHeader } from "../ui/Page";
 import { useAuth } from "../AuthProvider";
-import { formatINR } from "@/lib/domain";
+import { formatINR, shortWallet } from "@/lib/domain";
 
 type VaspResponse = {
   acknowledged_at?: string;

@@ -5,7 +5,7 @@ import { normalizeRole } from '@/lib/rbac-abac';
 
 export async function POST(req: Request) {
   try {
-    const claims = extractUserClaims(req);
+    const claims = await extractUserClaims(req);
     if (!claims) {
       return NextResponse.json(
         { error: 'Unauthorized: Authentication required to ingest complaints into NCRP gateway.' },
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
     const crimeCategory = body.crime_category || body.crime_type || 'Task-based Investment Scam';
     const amountInr = Number(body.loss_amount_inr || body.amount_inr || 450000);
     const portal = body.portal || 'NCRP_1930';
-    const complaintId = body.complaint_id || `NCRP-${Date.now().toString().slice(-5)}`;
+    const complaintId = body.case_number || body.complaint_id || `NCRP-${Date.now().toString().slice(-5)}`;
 
     // Privacy isolation: If complainant is a citizen, lock complaint strictly to their own victim ID
     const isVictim = normRole === 'VICTIM';

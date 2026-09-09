@@ -13,7 +13,7 @@ import { extractUserClaims } from '@/lib/auth-crypto';
 import { evaluateABAC, normalizeRole, hasPermission, PERMISSIONS } from '@/lib/rbac-abac';
 
 export async function GET(req: Request) {
-  const claims = extractUserClaims(req);
+  const claims = await extractUserClaims(req);
   if (!claims) {
     return NextResponse.json(
       { error: 'Unauthorized: Authentication required to access case dossiers.' },
@@ -193,7 +193,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const claims = extractUserClaims(req);
+    const claims = await extractUserClaims(req);
     if (!claims) {
       return NextResponse.json(
         { error: 'Unauthorized: Authentication required to create or register cases.' },
@@ -279,7 +279,7 @@ export async function POST(req: Request) {
 
 export async function PATCH(req: Request) {
   try {
-    const claims = extractUserClaims(req);
+    const claims = await extractUserClaims(req);
     if (!claims) {
       return NextResponse.json(
         { error: 'Unauthorized: Authentication required to update cases.' },
