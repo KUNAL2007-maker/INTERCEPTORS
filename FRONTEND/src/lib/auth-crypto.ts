@@ -37,7 +37,13 @@ const JWT_SECRET = (() => {
   const fromEnv = process.env.JWT_SECRET;
   if (fromEnv && fromEnv.length >= 32) return fromEnv;
 
-  if (process.env.NODE_ENV === 'production') {
+  // `next build` imports every route module to collect page data. That phase
+  // serves no requests and signs no tokens, so a missing secret there is
+  // harmless — refusing would just make the repo impossible to build without
+  // injecting a throwaway secret. Enforce the hard requirement at runtime
+  // (the production server), not at build time.
+  const isProductionBuild = process.env.NEXT_PHASE === 'phase-production-build';
+  if (process.env.NODE_ENV === 'production' && !isProductionBuild) {
     throw new Error(
       'JWT_SECRET is not set (or is shorter than 32 characters). Refusing to start: without it, session tokens could be forged by anyone holding a copy of this source.'
     );
