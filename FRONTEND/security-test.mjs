@@ -332,6 +332,24 @@ async function runSecurityTests() {
     `Exchange Nodal Officer successfully reported freeze execution action: HTTP ${binanceReportAction.status}`
   );
 
+  // Can Exchange Officer report action twice on the same notice? (MUST BE DENIED: 400 - Immutability rule)
+  const binanceDuplicateAction = await api('/api/notices', {
+    method: 'POST',
+    token: binanceAuth.token,
+    body: JSON.stringify({
+      id: issuedNoticeId,
+      action: 'report_action',
+      action_taken: 'FREEZE_EXECUTED',
+      exchange_ref_no: 'BINANCE-FRZ-SEC-01-DUP',
+      executed_by: 'Binance Compliance Lead',
+      frozen_amount: '$5,400 USDT'
+    })
+  });
+  assert(
+    binanceDuplicateAction.status === 400 && String(binanceDuplicateAction.body?.error).includes('already been reported'),
+    `Duplicate VASP action reporting safely rejected under statutory immutability rule: HTTP ${binanceDuplicateAction.status}`
+  );
+
   // ──────────────────────────────────────────────────────────────────────────
   // TEST GROUP 6: JUDICIAL AUDITOR ZERO-WRITE RESTRICTION (Justice K.S. Rao)
   // ──────────────────────────────────────────────────────────────────────────

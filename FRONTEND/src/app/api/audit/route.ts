@@ -128,6 +128,7 @@ export async function GET(req: Request) {
   return NextResponse.json({
     case_number: foundCase.case_number,
     count: caseLogs.length,
-    logs: caseLogs
+    logs: caseLogs,
+    audit_logs: caseLogs
   });
 }

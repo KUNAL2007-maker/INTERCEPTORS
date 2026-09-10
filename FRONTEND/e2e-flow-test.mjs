@@ -251,6 +251,43 @@ async function runE2EFlow() {
   assert(adminFoundCase !== undefined, 'Super Admin can observe the complaint and entire lifecycle');
   assert(adminFoundCase?.status === 'FROZEN', 'Super Admin sees case status as FROZEN');
 
+  // STEP 8: Court Evidence Review (BSA 2023 Section 65B Evidentiary Review)
+  console.log('\n[STEP 8] Court Evidence Review: Judicial Integrity & Zero-Write Verification');
+  const courtAuth = await login('judge.rao@ecourts.gov.in', 'Judge@123');
+  assert(courtAuth.status === 200 && courtAuth.token, 'Judicial Reviewer (Justice Rao) authenticated');
+  assert(courtAuth.user.role === 'COURT_REVIEWER' || courtAuth.user.role === 'AUDITOR', 'Role is COURT_REVIEWER');
+
+  // Judicial Case Review
+  const courtCaseRes = await api(`/api/cases?case_number=${createdCase.case_number}`, { token: courtAuth.token });
+  assert(courtCaseRes.status === 200, 'Court Reviewer retrieved case evidence dossier: HTTP 200');
+  const courtCase = courtCaseRes.body?.case;
+  assert(courtCase?.status === 'FROZEN', `Court Reviewer confirms case status is FROZEN (Got: ${courtCase?.status})`);
+  assert(courtCase?.suspect_wallet_address === createdCase.suspect_wallet_address, 'Court Reviewer verified suspect wallet chain of custody');
+
+  // Statutory Notice Inspection
+  const courtNoticesRes = await api('/api/notices', { token: courtAuth.token });
+  assert(courtNoticesRes.status === 200, 'Court Reviewer retrieved statutory legal notices: HTTP 200');
+  const courtNotice = courtNoticesRes.body?.notices?.find(n => n.case_number === createdCase.case_number || n.id === issuedNotice.id);
+  assert(courtNotice !== undefined, 'Court Reviewer found Section 94 BNSS statutory notice');
+  assert(courtNotice?.vasp_response?.action === 'FREEZE_EXECUTED', 'Court Reviewer verified VASP FREEZE_EXECUTED compliance certification');
+
+  // BSA 2023 Sec 65B Immutable Audit Trail Inspection
+  const courtAuditRes = await api(`/api/audit?case_number=${createdCase.case_number}`, { token: courtAuth.token });
+  assert(courtAuditRes.status === 200, 'Court Reviewer inspected BSA 2023 Sec 65B audit trail: HTTP 200');
+  const courtLogs = courtAuditRes.body?.logs || courtAuditRes.body?.audit_logs;
+  assert(Array.isArray(courtLogs) && courtLogs.length > 0, 'Audit trail contains tamper-evident entries for case lifecycle');
+
+  // Judicial Zero-Write Rule Enforcement (POL-02-JUDICIAL-READ-ONLY)
+  const courtWriteAttempt = await api('/api/cases', {
+    method: 'PATCH',
+    token: courtAuth.token,
+    body: JSON.stringify({ case_number: createdCase.case_number, status: 'CLOSED' })
+  });
+  assert(
+    courtWriteAttempt.status === 403,
+    `Court Reviewer zero-write restriction enforced (BSA 2023 Sec 65B): HTTP ${courtWriteAttempt.status} (Expected: 403)`
+  );
+
   console.log('\n================================================================');
   console.log(`  E2E FLOW RESULTS: ${passed} PASSED, ${failed} FAILED`);
   console.log('================================================================');

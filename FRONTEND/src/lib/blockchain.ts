@@ -747,7 +747,14 @@ async function liveTrace(
     // warns without marking the whole trace degraded.
   }
 
-  const seedNode = makeNode(seed, chain, "VICTIM_ENTRY", 0);
+  const seedVasp = attributeVasp(seed, chain);
+  const seedLayer: LayerType = seedVasp
+    ? (seedVasp.is_mixer ? "BURNER_MULE" : "VASP_DEPOSIT")
+    : "VICTIM_ENTRY";
+  const seedNode = makeNode(seed, chain, seedLayer, 0, {
+    vasp: seedVasp,
+    touchedMixer: seedVasp?.is_mixer,
+  });
   nodeMap.set(seed.toLowerCase(), seedNode);
 
   let frontier: { address: string; chain: Chain; hop: number }[] = [
@@ -966,10 +973,19 @@ function emptyLiveTrace(
   caseMeta: CaseMeta | undefined,
   opts: { degraded?: boolean; warning: string }
 ): TraceResult {
+  const seedVasp = attributeVasp(seed, chain);
+  const seedLayer: LayerType = seedVasp
+    ? (seedVasp.is_mixer ? "BURNER_MULE" : "VASP_DEPOSIT")
+    : "VICTIM_ENTRY";
   return {
     seed,
     seed_chain: chain,
-    nodes: [makeNode(seed, chain, "VICTIM_ENTRY", 0)],
+    nodes: [
+      makeNode(seed, chain, seedLayer, 0, {
+        vasp: seedVasp,
+        touchedMixer: seedVasp?.is_mixer,
+      }),
+    ],
     transfers: [],
     hops: 0,
     source: "live",
