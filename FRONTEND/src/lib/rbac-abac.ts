@@ -650,7 +650,14 @@ export const SYSTEM_PERSONAS: AppUser[] = [
     role_id: 3,
     workspace_id: 1,
     jurisdiction_code: 'MH-CYBER-01',
-    clearance_level: 'RESTRICTED',
+    // Field investigators working cyber-fraud dossiers hold CONFIDENTIAL
+    // clearance: every NCRP complaint is ingested as CONFIDENTIAL (see
+    // /api/ingest/ncrp), so a RESTRICTED officer could never see the very
+    // case a supervisor assigned them - the clearance gate in
+    // filterCasesByScope runs before the assignment check and would drop it
+    // from "My Cases". CONFIDENTIAL keeps the ladder intact (SECRET/TOP_SECRET
+    // dossiers still gated) while unblocking the assigned-case workflow (#2).
+    clearance_level: 'CONFIDENTIAL',
     is_gazetted: false,
     vasp_id: null,
     badge: 'MH-POLICE-102',
