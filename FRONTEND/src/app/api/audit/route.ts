@@ -37,6 +37,8 @@ export async function GET(req: Request) {
     url.searchParams.get('case_id') ||
     url.searchParams.get('id');
 
+  // #15: the national analyst no longer holds audit-log access — its desk is
+  // aggregate National Correlation, not per-actor chain-of-custody.
   const systemOversightRoles = [
     'COURT_REVIEWER',
     'AUDITOR',
@@ -44,8 +46,7 @@ export async function GET(req: Request) {
     'WORKSPACE_ADMIN',
     'SENIOR_INVESTIGATOR',
     'SYSTEM_ADMIN',
-    'SUPER_ADMIN',
-    'NATIONAL_COORDINATION_ANALYST'
+    'SUPER_ADMIN'
   ];
 
   const hasSystemAuditAccess =

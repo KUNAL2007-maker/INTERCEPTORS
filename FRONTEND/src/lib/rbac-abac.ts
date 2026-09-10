@@ -237,21 +237,18 @@ export const ROLE_PERMISSIONS: Record<RoleName, string[]> = {
     PERMISSIONS.BLOCKCHAIN_HASH_VERIFY,
     PERMISSIONS.WALLET_GRAPH_READ
   ],
+  // #15: the national analyst's desk is National Correlation only. Address
+  // lookup (TRACE_*/ADDRESS_SEARCH), the fund-flow graph (WALLET_GRAPH_READ),
+  // the crime canvas and the audit trail (AUDIT_LOG_READ) are removed — the
+  // analyst works aggregate cross-case intelligence, not single-wallet traces.
   NATIONAL_COORDINATION_ANALYST: [
     PERMISSIONS.INTELLIGENCE_CROSS_CASE_VIEW,
-    PERMISSIONS.INTELLIGENCE_ADDRESS_SEARCH,
     PERMISSIONS.INTELLIGENCE_CLUSTER_VIEW,
     PERMISSIONS.INTELLIGENCE_FRAUD_PATTERNS_VIEW,
     PERMISSIONS.INTELLIGENCE_CROSS_STATE_VIEW,
     PERMISSIONS.INTELLIGENCE_VASP_ENDPOINTS_VIEW,
     PERMISSIONS.INTELLIGENCE_ALERT_GENERATE,
-    PERMISSIONS.INTELLIGENCE_STATISTICS_VIEW,
-    PERMISSIONS.WALLET_GRAPH_READ,
-    PERMISSIONS.TRACE_EXECUTE,
-    PERMISSIONS.TRACE_VIEW,
-    PERMISSIONS.VASP_ATTRIBUTION_VIEW,
-    PERMISSIONS.RISK_ANALYSIS_VIEW,
-    PERMISSIONS.AUDIT_LOG_READ
+    PERMISSIONS.INTELLIGENCE_STATISTICS_VIEW
   ],
   SYSTEM_ADMIN: [
     PERMISSIONS.ADMIN_USER_CREATE,
@@ -497,17 +494,17 @@ export function evaluateABAC(
   }
 
   // POL-08: Case-Level Access Control (IDOR Prevention for Investigating Officers)
+  // A filed complaint is routed to the supervisor for triage first (#2); a field
+  // officer sees a case ONLY once it has been allocated to them. There is no
+  // "unassigned unit intake" visibility for the officer any more - that queue
+  // lives exclusively with the supervisor.
   if (normRole === 'INVESTIGATING_OFFICER' || subject.role === 'NORMAL_INVESTIGATOR') {
     if (action === 'case_view_detail') {
       const isAssigned =
         (resource.assigned_investigator_id && String(resource.assigned_investigator_id) === String(subject.id)) ||
         (resource.assigned_investigator_name && subject.name && resource.assigned_investigator_name.toLowerCase().includes(subject.name.toLowerCase()));
-      const isPendingUnitComplaint =
-        resource.status === 'PENDING_TRACING' &&
-        resource.jurisdiction_code === subject.jurisdiction_code &&
-        !resource.assigned_investigator_id;
 
-      if (!isAssigned && !isPendingUnitComplaint) {
+      if (!isAssigned) {
         return {
           decision: 'DENY',
           policyId: 'POL-08-CASE-ASSIGNMENT-BARRIER',
@@ -550,15 +547,15 @@ export function filterCasesByScope(user: SubjectAttributes, cases: any[]): any[]
       return Boolean(user.vasp_id && c.vasp_id === user.vasp_id);
     }
 
-    // 4. Investigating Officer: Assigned cases + new unit intake queue
+    // 4. Investigating Officer: strictly the cases allocated to them (#2). A new
+    // complaint is shifted to the supervisor for triage, not to any officer, so
+    // there is no unit-intake queue in the officer's scope - the case surfaces
+    // only after the supervisor allocates it.
     if (normRole === 'INVESTIGATING_OFFICER' || user.role === 'NORMAL_INVESTIGATOR') {
-      const isAssigned =
+      return (
         String(c.assigned_investigator_id) === String(user.id) ||
-        (user.name && c.assigned_investigator_name && c.assigned_investigator_name.toLowerCase().includes(user.name.toLowerCase()));
-      const isPendingInUnit =
-        c.jurisdiction_code === user.jurisdiction_code &&
-        (c.status === 'PENDING_TRACING' || !c.assigned_investigator_id);
-      return isAssigned || isPendingInUnit;
+        Boolean(user.name && c.assigned_investigator_name && c.assigned_investigator_name.toLowerCase().includes(user.name.toLowerCase()))
+      );
     }
 
     // 5. Supervisor: All cases within their assigned jurisdictional unit

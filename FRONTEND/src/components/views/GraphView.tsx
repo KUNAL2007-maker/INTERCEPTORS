@@ -197,24 +197,35 @@ export function GraphView({
   // the stat and the list could disagree.
   const webClusters = useMemo(() => CLUSTERS.filter((c) => c.kind === "web"), [CLUSTERS]);
 
-  // Below lg the pane is about 340px against a 1240px canvas, so at 100% a phone
-  // showed a quarter of the first ring. Fitting the canvas to the pane on first
-  // paint is the fix — the whole network arrives complete, and the zoom controls
-  // are right there to read a ring properly. Desktop never enters this branch.
+  // The 1240px canvas is wider than the pane at almost every breakpoint — on a
+  // phone the pane is ~340px, and even on a laptop with the sidebar open it sits
+  // well under 1240. At 100% the graph then spills past the right edge and the
+  // user has to scroll sideways to find the exchange (the reported "graph goes
+  // outside the window"). Fitting the whole canvas width into the pane on first
+  // paint — and on every resize, via a ResizeObserver on the actual scroll box —
+  // keeps the entire victim→exchange flow on screen. We never enlarge past 100%,
+  // and the moment the user touches the zoom controls we stop auto-fitting so
+  // their choice sticks.
   const touchedZoom = useRef(false);
   const [narrow, setNarrow] = useState(false);
   useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
     const apply = () => {
-      const isNarrow = window.matchMedia("(max-width: 1023px)").matches;
-      setNarrow(isNarrow);
-      if (!isNarrow || touchedZoom.current) return;
-      const el = scrollRef.current;
-      if (!el || !el.clientWidth) return;
-      setZoom(Math.max(0.16, Math.min(1, (el.clientWidth - 12) / W)));
+      setNarrow(window.matchMedia("(max-width: 1023px)").matches);
+      if (touchedZoom.current) return;
+      const cw = el.clientWidth;
+      if (!cw) return;
+      setZoom(Math.max(0.16, Math.min(1, (cw - 12) / W)));
     };
     apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
     window.addEventListener("resize", apply);
-    return () => window.removeEventListener("resize", apply);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", apply);
+    };
   }, [H, NODES.length]);
 
   const zoomBy = (fn: (z: number) => number) => {
@@ -281,10 +292,14 @@ export function GraphView({
           <div className="flex items-center gap-2.5 flex-wrap">
             <div>
               <div className="text-[14px] font-semibold leading-tight" style={{ color: "var(--text-strong)" }}>
-                Transaction Flow
+                {activeCase
+                  ? `Money-Flow Graph · ${activeCase.case_number}`
+                  : "Transaction Flow"}
               </div>
               <div className="text-[11px] leading-tight" style={{ color: "var(--muted)" }}>
-                Visual trace from victim wallet to exchange (multi-chain)
+                {activeCase
+                  ? `${activeCase.victim_name || "Complainant"} · suspect ${shortWallet(activeCase.suspect_wallet_address)} → exchange`
+                  : "Visual trace from victim wallet to exchange (multi-chain)"}
               </div>
             </div>
             <span

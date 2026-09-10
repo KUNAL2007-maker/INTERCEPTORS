@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Page, Card } from "../ui/Page";
+import { CaseFlowTimeline } from "../ui/CaseFlowTimeline";
 import { useAuth } from "../AuthProvider";
 import { useTraceStore } from "@/lib/store";
 import type { StoredCase } from "@/lib/db";
@@ -24,6 +25,7 @@ export function VictimPortalView() {
   const [withdrawMsg, setWithdrawMsg] = useState<string | null>(null);
 
   // Registration Form State
+  const [victimName, setVictimName] = useState("");
   const [suspectWallet, setSuspectWallet] = useState("");
   const [lossAmount, setLossAmount] = useState("350000");
   const [tokenSymbol, setTokenSymbol] = useState("USDT");
@@ -36,6 +38,7 @@ export function VictimPortalView() {
   const [filedSuccessCase, setFiledSuccessCase] = useState<StoredCase | null>(null);
 
   const handleAutofillDemoCase = () => {
+    setVictimName(user?.name || "Rajesh Verma");
     setSuspectWallet("0x71C7656EC7ab88b098defB751B7401B5f6d8976F");
     setLossAmount("350000");
     setTokenSymbol("USDT");
@@ -88,7 +91,7 @@ export function VictimPortalView() {
         case_number: complaintId,
         complaint_id: complaintId,
         portal: "NCRP_1930_CFCFRMS",
-        victim_name: user?.name || "Rajesh Verma",
+        victim_name: victimName.trim() || user?.name || "Rajesh Verma",
         victim_email: user?.email || "victim.verma@gmail.com",
         victim_phone: "+91-98765-43210",
         suspect_wallet: suspectWallet.trim(),
@@ -111,6 +114,7 @@ export function VictimPortalView() {
       }
 
       setShowFileModal(false);
+      setVictimName("");
       setSuspectWallet("");
       setTxHash("");
       setIncidentDesc("");
@@ -343,106 +347,7 @@ export function VictimPortalView() {
                 title="Asset Recovery & Statutory Legal Tracking Timeline"
                 hint="Real-time statutory progress under Bharatiya Nagarik Suraksha Sanhita (BNSS 2023)"
               >
-                <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-800 mt-2">
-                  {/* Step 1: Ingestion */}
-                  <TimelineStep
-                    stepNum={1}
-                    isDone={true}
-                    isActive={false}
-                    title="1. Fraud Incident Ingested via NCRP Gateway"
-                    description={`Registered with Ack No. ${activeComplaint.case_number}. Suspect wallet recorded in police database.`}
-                    timestamp={`${activeComplaint.incident_date || "17 Aug 2026"} · Ingestion Confirmed`}
-                  />
-
-                  {/* Step 2: Police Assigned & Money Flow Mapped */}
-                  <TimelineStep
-                    stepNum={2}
-                    isDone={activeComplaint.status !== "PENDING_TRACING"}
-                    isActive={activeComplaint.status === "PENDING_TRACING"}
-                    title="2. Automated Multi-Hop Blockchain Tracing"
-                    description={
-                      activeComplaint.status === "PENDING_TRACING"
-                        ? "Assigned to Maharashtra Cyber Unit. Investigating Officer initiating forensic money flow tracing on suspect wallet."
-                        : `Suspect wallet ${shortWallet(activeComplaint.suspect_wallet_address)} traced across hops. Laundering path unmasked.`
-                    }
-                    timestamp={activeComplaint.status === "PENDING_TRACING" ? "Under Police Investigation" : "Attribution Complete"}
-                  />
-
-                  {/* Step 3: VASP Attribution */}
-                  <TimelineStep
-                    stepNum={3}
-                    isDone={activeComplaint.status === "TRACED" || activeComplaint.status === "NOTICE_SERVED" || activeComplaint.status === "FROZEN" || activeComplaint.status === "FREEZE_REFUSED"}
-                    isActive={activeComplaint.status === "PENDING_TRACING"}
-                    title="3. Exchange / VASP Attribution Unmasked"
-                    description={
-                      activeComplaint.status === "PENDING_TRACING"
-                        ? "Tracing algorithm actively locating deposit endpoints at FIU-IND registered crypto exchanges."
-                        : `Laundered funds identified at ${activeComplaint.target_vasp || "Binance International"} deposit wallet.`
-                    }
-                    timestamp={
-                      activeComplaint.status === "PENDING_TRACING" ? "Pending Trace Results" : "Attribution Verified"
-                    }
-                  />
-
-                  {/* Step 4: Section 94 BNSS Freeze Notice */}
-                  <TimelineStep
-                    stepNum={4}
-                    isDone={activeComplaint.status === "NOTICE_SERVED" || activeComplaint.status === "FROZEN" || activeComplaint.status === "FREEZE_REFUSED"}
-                    isActive={activeComplaint.status === "TRACED"}
-                    title="4. Statutory Section 94 BNSS Freezing Order Served"
-                    description={
-                      activeComplaint.status === "NOTICE_SERVED" || activeComplaint.status === "FROZEN" || activeComplaint.status === "FREEZE_REFUSED"
-                        ? `Digitally signed by Gazetted Police Officer under Section 94 BNSS / 91 CrPC and served directly to ${activeComplaint.target_vasp || "Binance"} Compliance.`
-                        : activeComplaint.status === "TRACED"
-                        ? "Money flow verified. Gazetted Police Officer preparing statutory Section 94 BNSS requisition."
-                        : "Requires completion of money flow trace."
-                    }
-                    timestamp={
-                      activeComplaint.status === "NOTICE_SERVED" || activeComplaint.status === "FROZEN" || activeComplaint.status === "FREEZE_REFUSED"
-                        ? "Statutory Notice Served"
-                        : activeComplaint.status === "TRACED"
-                        ? "Drafting Freezing Order"
-                        : "Pending Prior Step"
-                    }
-                  />
-
-                  {/* Step 5: Exchange Asset Freezing */}
-                  <TimelineStep
-                    stepNum={5}
-                    isDone={activeComplaint.status === "FROZEN" || activeComplaint.status === "FREEZE_REFUSED"}
-                    isActive={activeComplaint.status === "NOTICE_SERVED"}
-                    isRefused={activeComplaint.status === "FREEZE_REFUSED"}
-                    title="5. Exchange Asset Freezing & Escrow"
-                    description={
-                      activeComplaint.status === "FROZEN"
-                        ? `${activeComplaint.target_vasp || "Binance"} Nodal Officer confirmed asset lock. Cryptocurrency balance held in escrow under police directive.`
-                        : activeComplaint.status === "FREEZE_REFUSED"
-                        ? `${activeComplaint.target_vasp || "The exchange"} Compliance reported inability to execute freeze. Refusal report forwarded to Investigating Officer for review.`
-                        : activeComplaint.status === "NOTICE_SERVED"
-                        ? "Exchange Compliance Nodal Desk processing freezing directive under 45-minute statutory SLA."
-                        : "Awaiting legal notice delivery to exchange compliance desk."
-                    }
-                    timestamp={
-                      activeComplaint.status === "FROZEN"
-                        ? "Assets Locked in Escrow"
-                        : activeComplaint.status === "FREEZE_REFUSED"
-                        ? "Freeze Refused by Exchange"
-                        : activeComplaint.status === "NOTICE_SERVED"
-                        ? "Under Exchange Compliance Review"
-                        : "Pending"
-                    }
-                  />
-
-                  {/* Step 6: Judicial Restitution */}
-                  <TimelineStep
-                    stepNum={6}
-                    isDone={false}
-                    isActive={false}
-                    title="6. Judicial Restitution & Fund Return to Bank Account"
-                    description="Application under Section 503 BNSS (formerly Sec 451/457 CrPC) before Metropolitan Magistrate Court for judicial release of frozen cryptocurrency back to complainant."
-                    timestamp="Pending Court Order"
-                  />
-                </div>
+                <CaseFlowTimeline c={activeComplaint} />
               </Card>
             </div>
 
@@ -632,6 +537,27 @@ export function VictimPortalView() {
             </div>
 
             <form onSubmit={handleFileComplaint} className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold mb-1 text-muted">
+                  Complainant / Victim Name <span className="text-muted text-[10px]">(Optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={victimName}
+                  onChange={(e) => setVictimName(e.target.value)}
+                  placeholder={user?.name || "Full name as per FIR / KYC"}
+                  className="w-full px-3.5 py-2.5 rounded text-xs border focus:outline-none"
+                  style={{
+                    background: "var(--surface-sunken)",
+                    borderColor: "var(--border)",
+                    color: "var(--text-strong)",
+                  }}
+                />
+                <p className="text-[10px] text-muted mt-1">
+                  Leave blank to file under your registered account name ({user?.name || "Rajesh Verma"}).
+                </p>
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold mb-1 text-muted">
                   Fraudster Suspect Wallet Address <span className="text-red-400">*</span>
@@ -959,57 +885,3 @@ function getPhaseName(status: string): { phase: string; subtext: string } {
   }
 }
 
-function TimelineStep({
-  stepNum,
-  isDone,
-  isActive,
-  isRefused,
-  title,
-  description,
-  timestamp,
-}: {
-  stepNum: number;
-  isDone: boolean;
-  isActive: boolean;
-  isRefused?: boolean;
-  title: string;
-  description: string;
-  timestamp: string;
-}) {
-  const dotClass = isRefused
-    ? "bg-red-500 text-white"
-    : isDone
-    ? "bg-emerald-500 text-black"
-    : isActive
-    ? "bg-amber-400 text-black"
-    : "bg-slate-700 text-slate-400";
-
-  const titleClass = isRefused
-    ? "text-red-400"
-    : isDone
-    ? "text-white"
-    : isActive
-    ? "text-amber-300"
-    : "text-slate-400";
-
-  const tsClass = isRefused
-    ? "text-red-500"
-    : isDone
-    ? "text-muted"
-    : isActive
-    ? "text-amber-400"
-    : "text-slate-500";
-
-  return (
-    <div className="relative">
-      <span
-        className={`absolute -left-[27px] top-0 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold ring-4 ring-[#0d1117] ${dotClass}`}
-      >
-        {isDone ? stepNum : isActive ? "●" : stepNum}
-      </span>
-      <div className={`text-xs font-bold ${titleClass}`}>{title}</div>
-      <div className="text-[11px] text-muted mt-0.5">{description}</div>
-      <span className={`text-[10px] font-mono ${tsClass}`}>{timestamp}</span>
-    </div>
-  );
-}

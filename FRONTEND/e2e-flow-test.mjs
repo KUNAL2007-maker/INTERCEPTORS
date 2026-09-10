@@ -96,16 +96,43 @@ async function runE2EFlow() {
   const foundVictimCase = victimCasesRes.body?.cases?.find(c => c.case_number === createdCase.case_number);
   assert(foundVictimCase !== undefined, 'Registered complaint appears in victim\'s personal dashboard');
 
-  // STEP 2: Investigating Officer views complaint in queue
-  console.log('\n[STEP 2] Investigating Officer Queue: Receiving Complaint');
+  // STEP 1.5: Supervisor triages the new complaint and allocates a field officer.
+  // Per the operating model (#2), a filed complaint is routed to the SUPERVISOR
+  // only - not to any officer - and becomes visible to the field officer solely
+  // after the supervisor allocates it.
+  console.log('\n[STEP 1.5] Supervisor Triage: Allocating Complaint to a Field Officer');
+  const supervisorAuth = await login('supervisor@example.demo', 'Deshmukh@123');
+  assert(supervisorAuth.status === 200 && supervisorAuth.token, 'SP Deshmukh (Cybercrime Supervisor) authenticated');
+
+  const triageRes = await api('/api/cases', { token: supervisorAuth.token });
+  const triageCase = triageRes.body?.cases?.find(c => c.case_number === createdCase.case_number);
+  assert(triageCase !== undefined, `Supervisor sees new complaint ${createdCase.case_number} in the unit triage queue`);
+  assert(!triageCase?.assigned_investigator_id, 'Complaint reaches the supervisor unassigned (routed to supervisor, not an officer)');
+
+  const allocateRes = await api('/api/cases', {
+    method: 'PATCH',
+    token: supervisorAuth.token,
+    body: JSON.stringify({
+      case_number: createdCase.case_number,
+      assigned_investigator_id: 3,
+      assigned_investigator_name: 'SI Patil'
+    })
+  });
+  assert(
+    allocateRes.status === 200 && String(allocateRes.body?.case?.assigned_investigator_id) === '3',
+    'Supervisor allocated SI Patil to the complaint'
+  );
+
+  // STEP 2: The allocated Investigating Officer now sees the case
+  console.log('\n[STEP 2] Investigating Officer Queue: Receiving the Allocated Case');
   const officerAuth = await login('officer.patil@mhcyber.gov.in', 'Patil@123');
   assert(officerAuth.status === 200 && officerAuth.token, 'Sub-Inspector Patil successfully authenticated');
   assert(officerAuth.user.role === 'INVESTIGATING_OFFICER' || officerAuth.user.role === 'NORMAL_INVESTIGATOR', 'Officer role is INVESTIGATING_OFFICER');
 
   const officerCasesRes = await api('/api/cases', { token: officerAuth.token });
-  assert(officerCasesRes.status === 200, 'Investigating officer retrieved regional complaint queue');
+  assert(officerCasesRes.status === 200, 'Investigating officer retrieved their allocated caseload');
   const officerFoundCase = officerCasesRes.body?.cases?.find(c => c.case_number === createdCase.case_number);
-  assert(officerFoundCase !== undefined, `Investigating officer sees victim complaint ${createdCase.case_number} in queue`);
+  assert(officerFoundCase !== undefined, `Investigating officer sees the case ${createdCase.case_number} allocated to them by the supervisor`);
 
   // Sub-Inspector Patil executes forensic trace on suspect wallet
   const patilTraceRes = await api('/api/trace', {

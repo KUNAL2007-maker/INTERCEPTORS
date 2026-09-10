@@ -83,7 +83,21 @@ export function InvestigatorChat({ onOpenGraph }: { onOpenGraph: (accounts: stri
   // sent to /api/chat as `context` on every turn — the route calls asTrace() on
   // it and reads context.transfers / context.nodes, so a slimmed projection
   // would be discarded.
-  const { trace } = useTraceStore();
+  //
+  // `activeCase` is what the officer last selected in My Cases. It can point at a
+  // different docket than the one `trace` holds — e.g. the officer traced case A,
+  // then clicked into case B. The assistant must analyse whatever case is
+  // *selected now*, so "Run full investigation" re-traces the active case first
+  // when the loaded trace belongs to a different wallet (flaw #8).
+  const { trace, activeCase, runTrace } = useTraceStore();
+  const [switchingCase, setSwitchingCase] = useState(false);
+
+  // True when the loaded trace is for a different wallet than the selected case —
+  // i.e. the answers on screen are about the *previous* case, not this one.
+  const traceMatchesActiveCase =
+    !activeCase ||
+    (!!trace &&
+      trace.seed?.toLowerCase() === activeCase.suspect_wallet_address?.toLowerCase());
 
   // Scoped to the signed-in officer, so two officers sharing a machine never
   // read each other's transcript. It survives a page reload or a full remount,
@@ -199,6 +213,25 @@ export function InvestigatorChat({ onOpenGraph }: { onOpenGraph: (accounts: stri
     setInput("");
     setThinking("assistant");
 
+    // Analyse the case the officer has selected *now*. If they switched dockets
+    // since the last trace ran, the loaded `trace` is about the previous wallet —
+    // re-trace the active case so the assistant grounds its answer in the right
+    // evidence. We use the freshly-returned trace as this turn's context rather
+    // than the stale store value, which the state update wouldn't expose yet.
+    let context = trace;
+    if (activeCase && !traceMatchesActiveCase) {
+      try {
+        setSwitchingCase(true);
+        const fresh = await runTrace(activeCase.suspect_wallet_address, activeCase);
+        if (fresh) context = fresh;
+      } catch {
+        // Trace failed — fall through with whatever context we have; the route
+        // degrades gracefully on a null/stale trace.
+      } finally {
+        setSwitchingCase(false);
+      }
+    }
+
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -210,7 +243,7 @@ export function InvestigatorChat({ onOpenGraph }: { onOpenGraph: (accounts: stri
           // an evidence brief before the AI sees them, and it checks
           // context.transfers / context.nodes are arrays. A null trace is fine:
           // the route degrades to a "no trace loaded" verdict.
-          context: trace,
+          context,
           // Gemini accepts two roles, "user" and "model". A finished report is
           // stored locally as role "report"; passing that through verbatim gets
           // the turn rejected, so every follow-up is normalised to user/assistant
@@ -374,6 +407,7 @@ export function InvestigatorChat({ onOpenGraph }: { onOpenGraph: (accounts: stri
           <div className="rounded-2xl p-4 border" style={{ background: "var(--panel)", borderColor: "var(--border)" }}>
             <div className="text-[11px] uppercase tracking-widest" style={{ color: "var(--muted)" }}>Session context</div>
             <div className="mt-2 space-y-1.5 text-[12px]">
+              {activeCase && <ContextRow k="Selected case" v={activeCase.case_number} mono />}
               <ContextRow k="Transfers" v={String(trace?.transfers.length ?? 0)} />
               {evidence ? (
                 <>
@@ -506,7 +540,17 @@ export function InvestigatorChat({ onOpenGraph }: { onOpenGraph: (accounts: stri
                   Ask fleet
                 </button>
               </div>
-              {trace ? (
+              {switchingCase ? (
+                <div className="mt-2 flex items-center gap-2 text-[11px]" style={{ color: "var(--muted)" }}>
+                  <span className="w-1.5 h-1.5 shrink-0 rounded-full bg-cyan-400 animate-blink" />
+                  Re-tracing selected case {activeCase?.case_number} before analysing…
+                </div>
+              ) : activeCase && !traceMatchesActiveCase ? (
+                <div className="mt-2 flex items-center gap-2 text-[11px]" style={{ color: "var(--muted)" }}>
+                  <span className="w-1.5 h-1.5 shrink-0 rounded-full bg-amber-400 animate-blink" />
+                  Selected case is <span style={{ color: "var(--text)" }}>{activeCase.case_number}</span> — the next question re-traces it so the answer is about this case, not the previous one.
+                </div>
+              ) : trace ? (
                 <div className="mt-2 flex items-center gap-2 text-[11px]" style={{ color: "var(--muted)" }}>
                   <span className="w-1.5 h-1.5 shrink-0 rounded-full bg-emerald-400 animate-blink" />
                   Answers are grounded in the {trace.transfers.length} on-chain transfers in this trace — no generic advice.

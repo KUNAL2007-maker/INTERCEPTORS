@@ -57,10 +57,20 @@ export async function POST(req: Request) {
     const newCase = await createCase({
       case_number: complaintId,
       victim_id: assignedVictimId,
-      victim_name: isVictim ? user.name : (body.victim_name || 'Rajesh Verma'),
+      // #1: honour a complainant name supplied on the complaint form. A victim
+      // filing for themselves still defaults to their account name; an officer
+      // (or the victim entering the actual victim's name) may override it.
+      victim_name: (typeof body.victim_name === 'string' && body.victim_name.trim())
+        || (isVictim ? user.name : 'Rajesh Verma'),
       victim_email: isVictim ? user.email : (body.victim_email || 'victim.verma@example.demo'),
       workspace_id: user.workspace_id || 1,
-      jurisdiction_code: user.jurisdiction_code || 'MH-CYBER-01',
+      // Jurisdiction is normally stamped from the caller's unit. An authenticated
+      // LEA caller (never a victim) may file on behalf of another unit by
+      // supplying jurisdiction_code - this is what lets the automated suites
+      // provision a cross-jurisdiction case for the IDOR barrier test now that
+      // no fixtures are seeded (#17).
+      jurisdiction_code: (!isVictim && typeof body.jurisdiction_code === 'string' && body.jurisdiction_code.trim())
+        || user.jurisdiction_code || 'MH-CYBER-01',
       suspect_wallet_address: suspectWallet,
       blockchain_network: body.blockchain_network || 'Ethereum',
       loss_amount_inr: amountInr,

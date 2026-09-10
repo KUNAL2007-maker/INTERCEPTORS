@@ -110,7 +110,6 @@ export function AppShell() {
           {active === "system_admin" && <SystemAdminView />}
           {active === "cases" && (
             <CasesView
-              onGoToTrace={() => handleSetView("trace")}
               onGoToGraph={() => handleSetView("graph")}
               onGoToNotices={() => handleSetView("notices")}
             />

@@ -72,17 +72,15 @@ export async function GET(req: Request) {
         }
       }
 
-      // Investigating Officer Case-Level Access Control (IDOR barrier)
+      // Investigating Officer Case-Level Access Control (IDOR barrier). A field
+      // officer may open a case ONLY once the supervisor has allocated it to
+      // them (#2) - there is no unassigned-unit-intake visibility here.
       if (normRole === 'INVESTIGATING_OFFICER' || user.role === 'NORMAL_INVESTIGATOR') {
         const isAssigned =
           (foundCase.assigned_investigator_id && String(foundCase.assigned_investigator_id) === String(user.id)) ||
           (foundCase.assigned_investigator_name && user.name && foundCase.assigned_investigator_name.toLowerCase().includes(user.name.toLowerCase()));
-        const isPendingUnitComplaint =
-          foundCase.status === 'PENDING_TRACING' &&
-          foundCase.jurisdiction_code === user.jurisdiction_code &&
-          !foundCase.assigned_investigator_id;
 
-        if (!isAssigned && !isPendingUnitComplaint) {
+        if (!isAssigned) {
           recordAuditLog({
             user_id: user.id,
             user_name: user.name,
@@ -432,7 +430,10 @@ export async function PATCH(req: Request) {
       const isAssigned =
         String(existing.assigned_investigator_id) === String(user.id) ||
         (user.name && existing.assigned_investigator_name && existing.assigned_investigator_name.toLowerCase().includes(user.name.toLowerCase()));
-      if (!isAssigned && existing.status !== 'PENDING_TRACING') {
+      // An officer can only act on a case allocated to them. Unassigned
+      // complaints sit in the supervisor's triage queue (#2), so there is no
+      // "pick up a pending case" path for the field officer here either.
+      if (!isAssigned) {
         return NextResponse.json(
           { error: 'Access Denied: Investigating Officers can only update cases assigned to them.' },
           { status: 403 }

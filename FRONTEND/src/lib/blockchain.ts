@@ -1049,14 +1049,21 @@ function finalizeNodeStats(nodeMap: Map<string, WalletNode>, transfers: WalletTr
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// Deterministic mock dataset — the demo default and the offline fallback.
+// Deterministic showcase dataset — the demo default and the offline fallback.
 //
-// A realistic ₹12 lakh investment-scam laundering flow reported via NCRP/1930:
-//   VICTIM_ENTRY → three sub-₹ threshold-split burner mules (funded from one
-//   common gas wallet, with dust taint) → a clean peel chain into a WazirX
-//   deposit (Track A: verified, direct, no obfuscation) AND a branch that
-//   crosses an ETH→TRON bridge and another that passes through Tornado Cash,
-//   both converging on a Binance deposit (Track B: needs officer review).
+// A realistic ₹18 lakh investment-scam laundering flow reported via NCRP/1930,
+// designed to be a visually balanced medium graph that fans out into FOUR
+// distinct FIU-registered / verified exchange endpoints so the money trail
+// reads clearly to a reviewer:
+//   VICTIM_ENTRY → four sub-threshold burner mules (funded from one common gas
+//   wallet, dust-tainted → multi-input cluster signal) → four laundering tracks,
+//   each terminating at a different VASP deposit→hot-wallet sweep:
+//     • Track A — clean peel chain           → WazirX  (verified, India / FIU-IND)
+//     • Track B — ETH→TRON cross-chain bridge → Binance (verified, global)
+//     • Track C — short peel                  → CoinDCX (verified, India / FIU-IND)
+//     • Track D — Tornado Cash mixer hop      → Kraken  (verified, US)
+// Four verified exchanges + one sanctioned mixer, evenly spread across the
+// canvas — a "medium, good-looking" graph for the invigilator walkthrough.
 // ═════════════════════════════════════════════════════════════════════════════
 
 // Deterministic address/hash fabricators — valid-shaped, stable across renders,
@@ -1109,26 +1116,40 @@ export function loadMockTrace(seedInput?: string, caseMeta?: CaseMeta): TraceRes
   const seedChain = seedInput ? detectChain(seedInput) ?? "ETHEREUM" : "ETHEREUM";
   const V = seedInput && detectChain(seedInput) ? seedInput : ethAddr("victim-entry");
 
-  // Attribution objects for the two exchange endpoints and the mixer.
+  // Attribution objects for the four verified exchange endpoints and the mixer.
   const wazirx = attributeVaspByName("WazirX", 94);
   const binance = attributeVaspByName("Binance", 91);
+  const coindcx = attributeVaspByName("CoinDCX", 90);
+  const kraken = attributeVaspByName("Kraken", 88);
   const tornado = attributeVaspByName("Tornado Cash", 96);
 
-  // Wallet roster.
+  // Wallet roster — one gas funder, four burner mules, and four laundering
+  // tracks (A: peel→WazirX, B: bridge→Binance, C: short-peel→CoinDCX,
+  // D: mixer→Kraken).
   const gas = ethAddr("gas-funder");
   const m1 = ethAddr("mule-1");
   const m2 = ethAddr("mule-2");
   const m3 = ethAddr("mule-3");
+  const m4 = ethAddr("mule-4");
+  // Track A — clean peel chain into WazirX.
   const p1 = ethAddr("peel-1");
   const p2 = ethAddr("peel-2");
   const dwz = ethAddr("wazirx-deposit");
   const hwz = ethAddr("wazirx-hot");
+  // Track B — ETH→TRON cross-chain bridge into Binance.
   const br = ethAddr("bridge-router");
   const t1 = tronAddr("tron-mule-1");
   const dbn = tronAddr("binance-deposit");
   const hbn = tronAddr("binance-hot");
+  // Track C — short peel into CoinDCX.
+  const c1 = ethAddr("coindcx-peel-1");
+  const dcx = ethAddr("coindcx-deposit");
+  const hcx = ethAddr("coindcx-hot");
+  // Track D — Tornado Cash mixer hop into Kraken.
   const mix = ethAddr("tornado-router");
   const mx1 = ethAddr("post-mix-mule");
+  const dkr = ethAddr("kraken-deposit");
+  const hkr = ethAddr("kraken-hot");
 
   const nodes: WalletNode[] = [
     makeNode(V, seedChain, "VICTIM_ENTRY", 0),
@@ -1136,16 +1157,26 @@ export function loadMockTrace(seedInput?: string, caseMeta?: CaseMeta): TraceRes
     makeNode(m1, "ETHEREUM", "BURNER_MULE", 1),
     makeNode(m2, "ETHEREUM", "BURNER_MULE", 1),
     makeNode(m3, "ETHEREUM", "BURNER_MULE", 1),
+    makeNode(m4, "ETHEREUM", "BURNER_MULE", 1),
+    // Track A → WazirX
     makeNode(p1, "ETHEREUM", "PEELING_CHAIN", 2),
     makeNode(p2, "ETHEREUM", "PEELING_CHAIN", 3),
     makeNode(dwz, "ETHEREUM", "VASP_DEPOSIT", 4, { vasp: wazirx }),
     makeNode(hwz, "ETHEREUM", "VASP_HOT_WALLET", 5, { vasp: wazirx }),
+    // Track B → Binance (cross-chain)
     makeNode(br, "ETHEREUM", "BRIDGE_HOP", 2, { touchedBridge: true }),
     makeNode(t1, "TRON", "BURNER_MULE", 3, { touchedBridge: true }),
     makeNode(dbn, "TRON", "VASP_DEPOSIT", 4, { vasp: binance, touchedBridge: true }),
     makeNode(hbn, "TRON", "VASP_HOT_WALLET", 5, { vasp: binance, touchedBridge: true }),
+    // Track C → CoinDCX
+    makeNode(c1, "ETHEREUM", "PEELING_CHAIN", 2),
+    makeNode(dcx, "ETHEREUM", "VASP_DEPOSIT", 3, { vasp: coindcx }),
+    makeNode(hcx, "ETHEREUM", "VASP_HOT_WALLET", 4, { vasp: coindcx }),
+    // Track D → Kraken (mixer)
     makeNode(mix, "ETHEREUM", "BURNER_MULE", 2, { vasp: tornado, touchedMixer: true }),
     makeNode(mx1, "ETHEREUM", "BURNER_MULE", 3, { touchedMixer: true }),
+    makeNode(dkr, "ETHEREUM", "VASP_DEPOSIT", 4, { vasp: kraken, touchedMixer: true }),
+    makeNode(hkr, "ETHEREUM", "VASP_HOT_WALLET", 5, { vasp: kraken, touchedMixer: true }),
   ];
 
   // Transfers. USDT figures are their own USD value; the gas-dust transfers are
@@ -1178,28 +1209,35 @@ export function loadMockTrace(seedInput?: string, caseMeta?: CaseMeta): TraceRes
   });
 
   const transfers: WalletTransfer[] = [
-    // Threshold split: three sub-$5k mule payments (structuring under $10k).
+    // Threshold split: four sub-$5k mule payments (structuring under $10k).
     mk(V, m1, "ETHEREUM", "USDT", 4800, 1, "threshold split", 0),
     mk(V, m2, "ETHEREUM", "USDT", 4900, 1, "threshold split", 3),
     mk(V, m3, "ETHEREUM", "USDT", 4700, 1, "threshold split", 6),
-    // Common gas funder dusts all three mules (multi-input cluster + dust taint).
+    mk(V, m4, "ETHEREUM", "USDT", 4850, 1, "threshold split", 9),
+    // Common gas funder dusts all four mules (multi-input cluster + dust taint).
     mk(gas, m1, "ETHEREUM", "ETH", 0.0006, 1, "gas dust multi-input", -20),
     mk(gas, m2, "ETHEREUM", "ETH", 0.0006, 1, "gas dust multi-input", -19),
     mk(gas, m3, "ETHEREUM", "ETH", 0.0005, 1, "gas dust multi-input", -18),
-    // Clean peel chain into WazirX (Track A path).
+    mk(gas, m4, "ETHEREUM", "ETH", 0.0006, 1, "gas dust multi-input", -17),
+    // Track A — clean peel chain into WazirX.
     mk(m1, p1, "ETHEREUM", "USDT", 4600, 2, "peeling", 40),
     mk(p1, p2, "ETHEREUM", "USDT", 3900, 3, "peeling", 95),
     mk(p2, dwz, "ETHEREUM", "USDT", 3400, 4, "vasp deposit", 150),
     mk(dwz, hwz, "ETHEREUM", "USDT", 3350, 5, "vasp sweep hot-wallet", 220),
-    // Cross-chain bridge branch into Binance (Track B path).
+    // Track B — cross-chain bridge branch into Binance.
     mk(m2, br, "ETHEREUM", "USDT", 4800, 2, "cross-chain bridge", 55),
     mk(br, t1, "TRON", "USDT", 4720, 3, "cross-chain bridge", 70),
     mk(t1, dbn, "TRON", "USDT", 4650, 4, "vasp deposit", 130),
-    // Mixer branch, also converging on Binance (Track B path).
+    mk(dbn, hbn, "TRON", "USDT", 4600, 5, "vasp sweep hot-wallet", 200),
+    // Track C — short peel into CoinDCX.
+    mk(m4, c1, "ETHEREUM", "USDT", 4700, 2, "peeling", 60),
+    mk(c1, dcx, "ETHEREUM", "USDT", 4550, 3, "vasp deposit", 140),
+    mk(dcx, hcx, "ETHEREUM", "USDT", 4500, 4, "vasp sweep hot-wallet", 210),
+    // Track D — Tornado Cash mixer hop into Kraken.
     mk(m3, mix, "ETHEREUM", "USDT", 4600, 2, "mixer tornado", 48),
     mk(mix, mx1, "ETHEREUM", "USDT", 4450, 3, "mixer tornado", 300),
-    mk(mx1, dbn, "TRON", "USDT", 4380, 4, "vasp deposit", 360),
-    mk(dbn, hbn, "TRON", "USDT", 8900, 5, "vasp sweep hot-wallet", 420),
+    mk(mx1, dkr, "ETHEREUM", "USDT", 4380, 4, "vasp deposit", 360),
+    mk(dkr, hkr, "ETHEREUM", "USDT", 4350, 5, "vasp sweep hot-wallet", 420),
   ];
 
   finalizeNodeStats(new Map(nodes.map((n) => [n.address.toLowerCase(), n])), transfers);
@@ -1217,7 +1255,7 @@ export function loadMockTrace(seedInput?: string, caseMeta?: CaseMeta): TraceRes
       caseMeta ?? {
         ncrp_ack_no: "NCRP-DL-2026-0031847",
         victim_name: "Complainant (identity withheld)",
-        amount_lost_inr: 1_200_000,
+        amount_lost_inr: 1_800_000,
         reported_on: "2026-08-18",
         jurisdiction_ps: "Cyber Crime Police Station, New Delhi",
         io_name: "Investigating Officer, I4C Cell",

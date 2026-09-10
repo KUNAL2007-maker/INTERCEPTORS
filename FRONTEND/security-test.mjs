@@ -56,11 +56,71 @@ async function login(email, password) {
   };
 }
 
+/**
+ * Provision the two dockets the assertions below assume. No cases are seeded
+ * (db.ts starts empty so officer tabs open clean for the live demo, #17), so
+ * the suite creates its own fixtures through the NCRP ingest gateway. The
+ * supervisor is an authorised LEA caller, so jurisdiction_code is honoured -
+ * which is what lets KA-CYBER-2026-1104 live in a different unit than SI Patil
+ * for the IDOR barrier test. createCase is idempotent by case_number, so this
+ * is safe to re-run against a persistent dev server.
+ */
+async function provisionFixtures() {
+  console.log('\x1b[36m[SETUP] Provisioning case fixtures (no seeds; see db.ts #17):\x1b[0m');
+  const sup = await login('supervisor@example.demo', 'Deshmukh@123');
+  assert(sup.status === 200 && sup.token, `Fixture setup: authenticated as supervisor: HTTP ${sup.status}`);
+  const ingest = (payload) =>
+    api('/api/ingest/ncrp', { method: 'POST', token: sup.token, body: JSON.stringify(payload) });
+
+  const mh = await ingest({
+    case_number: 'MH-CYBER-2026-0842',
+    victim_id: 5,
+    victim_name: 'Rajesh Verma',
+    victim_email: 'victim.verma@example.demo',
+    jurisdiction_code: 'MH-CYBER-01',
+    suspect_wallet: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F',
+    blockchain_network: 'Ethereum',
+    loss_amount_inr: 350000,
+    token_symbol: 'USDT',
+    crime_type: 'Task-based Fake Part-Time Job Scam',
+    target_vasp: 'Binance International',
+    vasp_id: 1,
+    notes: 'Security-suite fixture: full-lifecycle docket.'
+  });
+  assert(
+    mh.status === 200 && mh.body?.case?.case_number === 'MH-CYBER-2026-0842',
+    `Fixture: MH-CYBER-2026-0842 provisioned in MH-CYBER-01: HTTP ${mh.status}`
+  );
+
+  const ka = await ingest({
+    case_number: 'KA-CYBER-2026-1104',
+    victim_id: 89,
+    victim_name: 'Sunil Rao',
+    victim_email: 'sunil.rao@example.demo',
+    jurisdiction_code: 'KA-CYBER-03',
+    suspect_wallet: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F',
+    blockchain_network: 'Ethereum',
+    loss_amount_inr: 1800000,
+    token_symbol: 'USDT',
+    crime_type: 'Task-based Fake Part-Time Job Scam',
+    target_vasp: 'Binance International',
+    vasp_id: 1,
+    notes: 'Security-suite fixture: cross-jurisdiction docket for IDOR barrier.'
+  });
+  assert(
+    ka.status === 200 && ka.body?.case?.jurisdiction_code === 'KA-CYBER-03',
+    `Fixture: KA-CYBER-2026-1104 provisioned in KA-CYBER-03: HTTP ${ka.status}`
+  );
+  console.log('');
+}
+
 async function runSecurityTests() {
   console.log('================================================================');
   console.log('  🔒 AUTOMATED SECURITY & PRIVILEGE ESCALATION BARRIER TEST SUITE');
   console.log(`  Target: ${BASE_URL}`);
   console.log('================================================================\n');
+
+  await provisionFixtures();
 
   // ──────────────────────────────────────────────────────────────────────────
   // TEST GROUP 1: UNAUTHENTICATED ACCESS PREVENTION (Expect 401 Unauthorized)

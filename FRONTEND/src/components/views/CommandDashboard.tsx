@@ -13,6 +13,7 @@ import {
   chainColor
 } from "@/lib/domain";
 import { normalizeRole } from "@/lib/rbac-abac";
+import { CaseFlowTimeline } from "../ui/CaseFlowTimeline";
 
 /** An assignable officer, as /api/officers returns them. */
 type Officer = {
@@ -55,6 +56,12 @@ export function CommandDashboard({
   const [officersError, setOfficersError] = useState<string | null>(null);
   const [pendingAssign, setPendingAssign] = useState<Record<string, number>>({});
   const [assignError, setAssignError] = useState<Record<string, string>>({});
+
+  // Supervisor drill-in. The triage queue is a scan surface; clicking a docket
+  // opens the full case detail (amount, complainant, suspect wallet, read-only
+  // recovery progress) so the supervisor can decide and allocate from one place
+  // without any analytical tooling.
+  const [detailCase, setDetailCase] = useState<StoredCase | null>(null);
 
   // The assignable-officer directory is a supervisory resource, so only fetch it
   // for a supervisor. It returns exactly the officers this PATCH will accept -
@@ -269,8 +276,17 @@ export function CommandDashboard({
                   return (
                     <tr key={c.case_number} className="hover:bg-white/[0.02] transition align-top">
                       <td className="py-3.5 pr-4">
-                        <div className="font-mono font-bold text-white">{c.case_number}</div>
-                        <div className="text-[11px] text-muted truncate max-w-[180px]">{c.crime_type}</div>
+                        <button
+                          onClick={() => setDetailCase(c)}
+                          className="text-left group cursor-pointer"
+                          title="Open full case detail"
+                        >
+                          <div className="font-mono font-bold text-white group-hover:text-cyan-300 underline decoration-dotted decoration-white/30 underline-offset-2 transition-colors">
+                            {c.case_number}
+                          </div>
+                          <div className="text-[11px] text-muted truncate max-w-[180px]">{c.crime_type}</div>
+                          <div className="text-[10px] text-cyan-400/70 mt-0.5">View details →</div>
+                        </button>
                       </td>
                       <td className="py-3.5 pr-4 font-mono">
                         <div className="text-cyan-300 flex items-center gap-1.5">
@@ -327,9 +343,9 @@ export function CommandDashboard({
                               className="rounded border px-2 py-1 text-xs font-semibold focus:outline-none"
                               style={{ borderColor: "var(--border)", background: "var(--chip)", color: "var(--text-strong)" }}
                             >
-                              <option value="">Select officer…</option>
+                              <option value="" style={{ background: "#0d1117", color: "#e2e8f0" }}>Select officer…</option>
                               {officers.map((o) => (
-                                <option key={o.id} value={o.id}>
+                                <option key={o.id} value={o.id} style={{ background: "#0d1117", color: "#e2e8f0" }}>
                                   {o.name}{o.badge ? ` · ${o.badge}` : ""}
                                 </option>
                               ))}
@@ -366,10 +382,10 @@ export function CommandDashboard({
                               : "text-slate-300 border-slate-600"
                           }`}
                         >
-                          <option value="LOW">LOW</option>
-                          <option value="MEDIUM">MEDIUM</option>
-                          <option value="HIGH">HIGH</option>
-                          <option value="CRITICAL">CRITICAL</option>
+                          <option value="LOW" style={{ background: "#0d1117", color: "#e2e8f0" }}>LOW</option>
+                          <option value="MEDIUM" style={{ background: "#0d1117", color: "#e2e8f0" }}>MEDIUM</option>
+                          <option value="HIGH" style={{ background: "#0d1117", color: "#e2e8f0" }}>HIGH</option>
+                          <option value="CRITICAL" style={{ background: "#0d1117", color: "#e2e8f0" }}>CRITICAL</option>
                         </select>
                       </td>
                     </tr>
@@ -380,6 +396,16 @@ export function CommandDashboard({
           </div>
         </div>
 
+        {detailCase && (
+          <SupervisorCaseDetail
+            c={detailCase}
+            officers={officers}
+            isUpdating={updatingCase === detailCase.case_number}
+            assignError={assignError[detailCase.case_number]}
+            onAssign={(ioId) => handleAssignIO(detailCase.case_number, ioId)}
+            onClose={() => setDetailCase(null)}
+          />
+        )}
       </Page>
     );
   }
@@ -872,6 +898,154 @@ function RoleHeader({
               {user.name}{user.badge ? ` · ${user.badge}` : ""}
             </span>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Supervisor case-detail drawer. Opened by clicking a docket in the triage
+ * queue. It is deliberately allocation-only: the supervisor sees the money at
+ * stake, who reported it, the suspect wallet and the read-only recovery
+ * progress, and can allocate a field Investigating Officer — but there is no
+ * fund-flow, no crime canvas, no audit trail here (those belong to the
+ * investigating and gazetted roles).
+ */
+function SupervisorCaseDetail({
+  c,
+  officers,
+  isUpdating,
+  assignError,
+  onAssign,
+  onClose,
+}: {
+  c: StoredCase;
+  officers: Officer[];
+  isUpdating: boolean;
+  assignError?: string;
+  onAssign: (ioId: number) => void;
+  onClose: () => void;
+}) {
+  const chain = detectChain(c.suspect_wallet_address);
+  const current = c.assigned_investigator_id ?? null;
+  const [pending, setPending] = useState<number | "">(current ?? "");
+  const canAssign = pending !== "" && pending !== current;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.6)" }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-2xl max-h-[88vh] overflow-y-auto rounded-2xl border shadow-2xl"
+        style={{ background: "var(--panel)", borderColor: "var(--border)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-start justify-between gap-4 border-b px-6 py-4" style={{ borderColor: "var(--border)" }}>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-mono font-bold text-white text-base">{c.case_number}</span>
+              <DashboardStatusBadge status={c.status} />
+            </div>
+            <div className="text-xs text-muted">{c.crime_type}</div>
+          </div>
+          <button
+            onClick={onClose}
+            className="shrink-0 rounded-md border px-2.5 py-1 text-sm transition hover:opacity-80 cursor-pointer"
+            style={{ borderColor: "var(--border)", background: "var(--chip)", color: "var(--text)" }}
+            aria-label="Close"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="px-6 py-5 space-y-5">
+          {/* At-a-glance facts */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="rounded-lg border p-3.5" style={{ borderColor: "rgba(244,63,94,0.35)", background: "rgba(244,63,94,0.06)" }}>
+              <div className="text-[10px] uppercase tracking-wider text-muted font-semibold mb-1">Amount Defrauded</div>
+              <div className="text-xl font-bold font-mono text-rose-400">{formatINR(c.loss_amount_inr ?? 0)}</div>
+              {c.token_symbol && <div className="text-[10px] text-muted mt-0.5">{c.token_symbol}</div>}
+            </div>
+            <div className="rounded-lg border p-3.5" style={{ borderColor: "var(--border)", background: "var(--chip)" }}>
+              <div className="text-[10px] uppercase tracking-wider text-muted font-semibold mb-1">Complainant</div>
+              <div className="text-sm font-semibold text-white">{c.victim_name || "Citizen"}</div>
+              {(c.victim_phone || c.victim_email) && (
+                <div className="text-[11px] text-muted mt-0.5 truncate">{c.victim_phone || c.victim_email}</div>
+              )}
+            </div>
+          </div>
+
+          {/* Suspect wallet */}
+          <div className="rounded-lg border p-3.5" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
+            <div className="text-[10px] uppercase tracking-wider text-muted font-semibold mb-1.5">Suspect Crypto Wallet</div>
+            <div className="flex items-center gap-2 font-mono text-sm text-cyan-300 break-all">
+              <span>{c.suspect_wallet_address}</span>
+              {chain && (
+                <span
+                  className="text-[9px] px-1.5 py-0.5 rounded font-bold shrink-0"
+                  style={{ background: `${chainColor(chain)}22`, color: chainColor(chain) }}
+                >
+                  {CHAINS[chain].short}
+                </span>
+              )}
+            </div>
+            {c.target_vasp && <div className="text-[11px] text-muted mt-1.5">Suspected destination VASP: {c.target_vasp}</div>}
+          </div>
+
+          {/* Read-only recovery progress — the same timeline the victim sees. */}
+          <div>
+            <div className="text-[11px] uppercase tracking-wider font-bold mb-1" style={{ color: "var(--muted)" }}>
+              Case Progress (Read-Only)
+            </div>
+            <CaseFlowTimeline c={c} />
+          </div>
+
+          {/* Allocation — the supervisor's one action. */}
+          <div className="rounded-lg border p-4" style={{ borderColor: "var(--border)", background: "var(--chip)" }}>
+            <div className="text-[11px] uppercase tracking-wider font-bold mb-2.5" style={{ color: "var(--muted)" }}>
+              Allocate Field Investigating Officer
+            </div>
+            {current && (
+              <div className="mb-2.5 text-xs">
+                Currently allocated to <strong className="text-white">{c.assigned_investigator_name}</strong>.
+              </div>
+            )}
+            {officers.length > 0 ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  disabled={isUpdating}
+                  value={pending === "" ? "" : String(pending)}
+                  onChange={(e) => setPending(e.target.value ? Number(e.target.value) : "")}
+                  className="rounded border px-2.5 py-1.5 text-xs font-semibold focus:outline-none"
+                  style={{ borderColor: "var(--border)", background: "var(--bg)", color: "var(--text-strong)" }}
+                >
+                  <option value="" style={{ background: "#0d1117", color: "#e2e8f0" }}>Select officer…</option>
+                  {officers.map((o) => (
+                    <option key={o.id} value={o.id} style={{ background: "#0d1117", color: "#e2e8f0" }}>
+                      {o.name}{o.badge ? ` · ${o.badge}` : ""}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  disabled={isUpdating || !canAssign}
+                  onClick={() => canAssign && onAssign(Number(pending))}
+                  className="rounded px-4 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-40 cursor-pointer"
+                  style={{ background: "#047857" }}
+                >
+                  {isUpdating ? "Assigning…" : current ? "Reassign" : "Assign to Officer"}
+                </button>
+              </div>
+            ) : (
+              <div className="text-[11px]" style={{ color: "var(--muted)" }}>
+                No Investigating Officers available in this unit.
+              </div>
+            )}
+            {assignError && <div className="mt-2 text-[11px] text-rose-300">{assignError}</div>}
+          </div>
         </div>
       </div>
     </div>

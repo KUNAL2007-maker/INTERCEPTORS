@@ -289,6 +289,10 @@ function NoticeRow({
   const wallets: string[] = Array.isArray(notice.notice?.targetAddresses) ? notice.notice.targetAddresses : [];
   const amountInr = Number(notice.notice?.amountInr ?? 0);
 
+  // #13: the two-button desk only unlocks once the signature has been verified.
+  const [freezeMode, setFreezeMode] = useState(false);
+  const verifiedOk = verification && verification !== "loading" ? verification.valid : false;
+
   const stage: "unacknowledged" | "acknowledged" | "reported" = resp?.action
     ? "reported"
     : resp?.acknowledged_at
@@ -435,30 +439,84 @@ function NoticeRow({
         )}
       </div>
 
-      {/* Stage 1 / stage 2 / outcome */}
+      {/* #13: the two-button desk. Nothing is actionable until the officer has
+          verified the gazetted officer's signature — an exchange should not
+          restrain an account on an instrument it has not checked. Once verified,
+          two options stand side by side: freeze the deposit in escrow (which
+          opens the acknowledgement), or send the acknowledgement straight up.
+          Either way the acknowledgement routes to the court reviewer. */}
       <div className="border-t px-4 py-3" style={{ borderColor: "var(--border)" }}>
         {stage === "unacknowledged" && (
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={onAcknowledge}
-              className="rounded border px-3.5 py-2 text-[12px] font-semibold transition hover:bg-[var(--hover)]"
-              style={{ borderColor: "rgba(56,189,248,0.4)", background: "rgba(56,189,248,0.1)", color: "#e0f2fe" }}
-            >
-              Acknowledge receipt of requisition
-            </button>
-            <span className="text-[10.5px] text-muted">
-              Confirms your organisation holds this order and starts the response clock. It is not a statement that
-              you have acted.
-            </span>
-          </div>
+          <>
+            {!verifiedOk ? (
+              <div
+                className="rounded border px-3 py-2.5 text-[11px] leading-relaxed"
+                style={{ borderColor: "rgba(252,211,77,0.35)", background: "rgba(252,211,77,0.06)", color: "#fcd34d" }}
+              >
+                Verify the gazetted officer&rsquo;s Ed25519 signature above before acting. This desk will not freeze in
+                escrow or acknowledge an order whose signature has not been checked.
+              </div>
+            ) : freezeMode && formOpen ? (
+              <div className="space-y-2.5">
+                <div className="text-[11px] font-semibold" style={{ color: "#6ee7b7" }}>
+                  Freeze in escrow — record the restraint, then acknowledge to the court
+                </div>
+                <ActionForm
+                  escrow
+                  onCancel={() => {
+                    setFreezeMode(false);
+                    onToggleForm();
+                  }}
+                  onSubmit={async (payload) => {
+                    // Freeze opens the acknowledgement: record the escrow hold,
+                    // then send the acknowledgement, which routes to the court.
+                    const ok = await onReport(payload);
+                    if (ok) onAcknowledge();
+                    return ok;
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    onClick={() => {
+                      setFreezeMode(true);
+                      if (!formOpen) onToggleForm();
+                    }}
+                    className="rounded border px-3.5 py-2 text-[12px] font-semibold transition hover:bg-[var(--hover)]"
+                    style={{ borderColor: "rgba(110,231,183,0.4)", background: "rgba(110,231,183,0.1)", color: "#d1fae5" }}
+                  >
+                    Freeze in Escrow
+                  </button>
+                  <button
+                    onClick={onAcknowledge}
+                    className="rounded border px-3.5 py-2 text-[12px] font-semibold transition hover:bg-[var(--hover)]"
+                    style={{ borderColor: "rgba(56,189,248,0.4)", background: "rgba(56,189,248,0.1)", color: "#e0f2fe" }}
+                  >
+                    Send Acknowledgement
+                  </button>
+                </div>
+                <span className="block text-[10.5px] text-muted">
+                  <b>Freeze in Escrow</b> restrains the named deposit in a holding account and opens the acknowledgement.{" "}
+                  <b>Send Acknowledgement</b> confirms receipt and routes it to the court reviewer. Neither touches the
+                  blockchain — the restraint is a hold on your own systems.
+                </span>
+              </div>
+            )}
+          </>
         )}
 
         {stage === "acknowledged" && (
           <div className="space-y-3">
-            <div className="text-[11px] text-muted">
-              Receipt acknowledged by {resp?.acknowledged_by} on{" "}
+            <div
+              className="rounded border px-3 py-2 text-[11px] leading-relaxed"
+              style={{ borderColor: "rgba(56,189,248,0.3)", background: "rgba(56,189,248,0.06)", color: "#bae6fd" }}
+            >
+              Acknowledgement recorded by {resp?.acknowledged_by} on{" "}
               {resp?.acknowledged_at ? new Date(resp.acknowledged_at).toLocaleString("en-IN") : "—"}
-              {typeof resp?.ack_latency_minutes === "number" ? ` · ${resp.ack_latency_minutes} min after issue` : ""}.
+              {typeof resp?.ack_latency_minutes === "number" ? ` · ${resp.ack_latency_minutes} min after issue` : ""}. It
+              has been forwarded to the court reviewer for the Section 65B record.
             </div>
             {!formOpen ? (
               <button
@@ -712,9 +770,11 @@ function Outcome({ resp }: { resp: VaspResponse }) {
 function ActionForm({
   onCancel,
   onSubmit,
+  escrow = false,
 }: {
   onCancel: () => void;
   onSubmit: (payload: Record<string, unknown>) => Promise<boolean>;
+  escrow?: boolean;
 }) {
   const [action, setAction] = useState<"FREEZE_EXECUTED" | "PARTIAL_FREEZE" | "REFUSED">("FREEZE_EXECUTED");
   const [refNo, setRefNo] = useState("");
@@ -731,7 +791,7 @@ function ActionForm({
   return (
     <div className="rounded border p-3" style={{ borderColor: "var(--border)", background: "var(--surface-sunken)" }}>
       <div className="text-[11px] font-semibold" style={{ color: "var(--text-strong)" }}>
-        Report what your compliance team did
+        {escrow ? "Confirm the escrow restraint" : "Report what your compliance team did"}
       </div>
 
       <div className="mt-3 space-y-2">
@@ -811,7 +871,7 @@ function ActionForm({
           className="rounded border px-3.5 py-2 text-[12px] font-semibold transition disabled:opacity-40"
           style={{ borderColor: "rgba(56,189,248,0.4)", background: "rgba(56,189,248,0.1)", color: "#e0f2fe" }}
         >
-          {busy ? "Recording…" : "Submit reply to issuing officer"}
+          {busy ? "Recording…" : escrow ? "Freeze in escrow & send acknowledgement" : "Submit reply to issuing officer"}
         </button>
         <button
           onClick={onCancel}

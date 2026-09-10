@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Page, Card } from "../ui/Page";
+import { CaseFlowTimeline } from "../ui/CaseFlowTimeline";
 import { useAuth } from "../AuthProvider";
 import { useTraceStore } from "@/lib/store";
 import type { StoredCase } from "@/lib/db";
@@ -17,11 +18,9 @@ import { normalizeRole } from "@/lib/rbac-abac";
 type FilterStatus = "ALL" | "PENDING_TRACING" | "TRACED" | "NOTICE_SERVED" | "FROZEN" | "FREEZE_REFUSED";
 
 export function CasesView({
-  onGoToTrace,
   onGoToGraph,
   onGoToNotices,
 }: {
-  onGoToTrace: (address?: string) => void;
   onGoToGraph: () => void;
   onGoToNotices: () => void;
 }) {
@@ -156,7 +155,6 @@ C. ADMISSIBILITY:
     normRole === "INVESTIGATING_OFFICER" ||
     normRole === "CYBERCRIME_SUPERVISOR" ||
     normRole === "SENIOR_INVESTIGATOR" ||
-    normRole === "NATIONAL_COORDINATION_ANALYST" ||
     user?.role === "NORMAL_INVESTIGATOR" ||
     user?.role === "SENIOR_INVESTIGATOR" ||
     user?.role === "SUPER_ADMIN" ||
@@ -503,6 +501,18 @@ C. ADMISSIBILITY:
                 </div>
               )}
 
+              {/* Supervisor: read-only "where has the case reached" flow timeline.
+                  The supervisor only triages and allocates — no tracing, no
+                  fund-flow/crime-canvas/audit-trail analytics (#4). */}
+              {isSupervisor && (
+                <div className="mb-3.5 p-3.5 rounded border" style={{ borderColor: "var(--border)", background: "var(--chip)" }}>
+                  <div className="text-[11px] uppercase tracking-wider font-bold mb-1" style={{ color: "var(--muted)" }}>
+                    Case Progress (Read-Only)
+                  </div>
+                  <CaseFlowTimeline c={c} />
+                </div>
+              )}
+
               {/* Action Buttons */}
               <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t" style={{ borderColor: "var(--border)" }}>
                 <div className="text-[11px] text-muted flex flex-wrap items-center gap-2">
@@ -517,9 +527,9 @@ C. ADMISSIBILITY:
                       className="rounded border px-2 py-0.5 text-xs bg-[var(--chip)] text-white focus:outline-none min-w-[13rem]"
                       style={{ borderColor: "var(--border)" }}
                     >
-                      <option value="">— Unallocated —</option>
+                      <option value="" style={{ background: "#0d1117", color: "#e2e8f0" }}>— Unallocated —</option>
                       {officers.map((o) => (
-                        <option key={o.id} value={o.id}>
+                        <option key={o.id} value={o.id} style={{ background: "#0d1117", color: "#e2e8f0" }}>
                           {o.name}
                           {o.badge ? ` · ${o.badge}` : ""}
                         </option>
@@ -527,7 +537,7 @@ C. ADMISSIBILITY:
                       {/* Show any already-assigned officer not in the current roster so the name never blanks out */}
                       {c.assigned_investigator_id != null &&
                         !officers.some((o) => o.id === c.assigned_investigator_id) && (
-                          <option value={c.assigned_investigator_id}>
+                          <option value={c.assigned_investigator_id} style={{ background: "#0d1117", color: "#e2e8f0" }}>
                             {c.assigned_investigator_name || `Officer #${c.assigned_investigator_id}`}
                           </option>
                         )}
@@ -554,6 +564,11 @@ C. ADMISSIBILITY:
                         Export Sec 65B BSA Certificate
                       </button>
                     </>
+                  ) : isSupervisor ? (
+                    /* Supervisor only allocates via the IO dropdown — no analytical actions (#4). */
+                    <span className="px-2.5 py-1 rounded border text-xs font-mono font-semibold" style={{ color: "var(--muted)", borderColor: "var(--border)", background: "var(--chip)" }}>
+                      TRIAGE &amp; ALLOCATION ONLY
+                    </span>
                   ) : (
                     <>
                       {c.status === "PENDING_TRACING" && (
@@ -638,7 +653,10 @@ C. ADMISSIBILITY:
                     </>
                   )}
 
-                  {normRole !== "VICTIM" && (
+                  {/* Audit trail is for the investigating/gazetted officer only.
+                      Removed for the supervisor (#4 — triage/allocation only) and
+                      the court reviewer (#14 — evidence dossier only). */}
+                  {(isInvestigatingOfficer || normRole === "SENIOR_INVESTIGATOR") && (
                     <button
                       onClick={() => handleOpenAuditHistory(c.case_number)}
                       className="px-3 py-1.5 rounded border text-xs font-medium transition hover:opacity-80"

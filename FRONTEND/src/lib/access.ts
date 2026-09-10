@@ -155,38 +155,56 @@ const VIEW_DEFS: Record<ViewKey, ViewDefinition> = {
 export const ROLE_VIEWS: Record<RoleName, ViewKey[]> = {
   VICTIM: ['victim_portal'],
 
-  // Field officer: works the cases assigned to them, drafts the requisition.
-  // Cannot sign it - that gate is POL-05 and lives with a gazetted officer.
-  INVESTIGATING_OFFICER: ['dashboard', 'cases', 'trace', 'graph', 'canvas', 'monitor', 'transfers', 'notices', 'chat'],
+  // Field officer (SI Patil): works the cases assigned to them, runs the trace
+  // from My Cases (not a standalone trace screen), reviews the fund-flow graph
+  // for the case in hand, and drafts the requisition. Cannot sign it - that
+  // gate is POL-05 and lives with a gazetted officer. Trace/canvas/monitor are
+  // deliberately absent: tracing is launched from a case row (store.runTrace),
+  // and the crime canvas / live monitor are hidden for the demo (#7).
+  INVESTIGATING_OFFICER: ['dashboard', 'cases', 'graph', 'transfers', 'notices', 'chat'],
 
-  // Supervisor triages and allocates. Deliberately not given the trace or
-  // notice screens: allocation and oversight is the job, and putting the
-  // investigative tools here is what made the assign action invisible.
-  CYBERCRIME_SUPERVISOR: ['dashboard', 'cases', 'graph', 'canvas', 'audit_logs'],
+  // Supervisor triages and allocates. Only the triage dashboard (where the
+  // assign action lives) and a read-only per-case flow tracker - no analytical
+  // tools, no audit trail.
+  CYBERCRIME_SUPERVISOR: ['dashboard', 'cases'],
 
-  // Gazetted officer: reviews the draft and signs the freeze order.
-  SENIOR_INVESTIGATOR: ['dashboard', 'notices', 'cases', 'trace', 'graph', 'canvas', 'monitor', 'transfers', 'audit_logs'],
+  // Gazetted officer: the Statutory Review Desk (dashboard) lists the cases SI
+  // Patil forwarded for signature. `notices` (the sign surface, #12) and
+  // `graph` (the money-flow copied from the SI, #11) are reachable by drilling
+  // into a case from the desk - they are gate-allowed but hidden from the nav
+  // (see NAV_HIDDEN) so the desk is the only standing entry (#10).
+  SENIOR_INVESTIGATOR: ['dashboard', 'notices', 'graph'],
 
   VASP_COMPLIANCE_OFFICER: ['exchange_portal'],
 
-  // Strictly read-only. No dashboard, no trace, no notice drafting - but the
-  // court must be able to open served freeze orders to verify the Ed25519
-  // signature and SHA-256 dossier hash, so `notices` is granted read-only
-  // (draft/sign/serve controls are gated off in LegalNoticesView).
-  COURT_REVIEWER: ['cases', 'notices', 'graph', 'canvas', 'audit_logs'],
+  // Strictly read-only Evidence Dossier + Freeze Order Review. No graph, no
+  // canvas, no audit trail (#14) - the court opens the served order to verify
+  // the Ed25519 signature and export the Sec 65B certificate.
+  COURT_REVIEWER: ['cases', 'notices'],
 
-  NATIONAL_COORDINATION_ANALYST: ['national_coordination', 'trace', 'graph', 'canvas', 'audit_logs'],
+  NATIONAL_COORDINATION_ANALYST: ['national_coordination'],
 
   SYSTEM_ADMIN: ['system_admin', 'audit_logs'],
 
   // Legacy aliases are never looked up directly (normalizeRole maps them
   // first) but the Record type requires them. Point them at the canonical
   // list so an accidental direct lookup cannot widen access.
-  NORMAL_INVESTIGATOR: ['dashboard', 'cases', 'trace', 'graph', 'canvas', 'monitor', 'transfers', 'notices', 'chat'],
-  WORKSPACE_ADMIN: ['dashboard', 'cases', 'graph', 'canvas', 'audit_logs'],
+  NORMAL_INVESTIGATOR: ['dashboard', 'cases', 'graph', 'transfers', 'notices', 'chat'],
+  WORKSPACE_ADMIN: ['dashboard', 'cases'],
   SUPER_ADMIN: ['system_admin', 'audit_logs'],
   EXCHANGE_NODAL_OFFICER: ['exchange_portal'],
-  AUDITOR: ['cases', 'notices', 'graph', 'canvas', 'audit_logs'],
+  AUDITOR: ['cases', 'notices'],
+};
+
+/**
+ * Views a role may open by drilling in from another screen, but that should NOT
+ * appear as a standing nav entry. They stay gate-allowed via ROLE_VIEWS above;
+ * the sidebar simply omits them. This is what lets the Gazetted officer's nav
+ * contain only the "Statutory Review Desk" (#10) while the money-flow graph
+ * (#11) and the sign screen (#12) are reached by clicking a forwarded case.
+ */
+const NAV_HIDDEN: Partial<Record<RoleName, ViewKey[]>> = {
+  SENIOR_INVESTIGATOR: ['notices', 'graph'],
 };
 
 /** Role-specific wording where the generic label would mislead. */
@@ -200,14 +218,12 @@ const ROLE_VIEW_LABELS: Partial<Record<RoleName, Partial<Record<ViewKey, { label
     dashboard: { label: 'Statutory Review Desk', hint: 'Orders awaiting your signature' },
     notices: { label: 'Freeze Orders', hint: 'Review and sign under Section 94 BNSS' },
   },
+  // #14: the court's desk is the Evidence Dossier + Freeze Order Review only.
+  // No graph, no audit_logs — those views are not in COURT_REVIEWER's ROLE_VIEWS,
+  // so their label overrides were dead entries and have been removed.
   COURT_REVIEWER: {
     cases: { label: 'Evidence Dossier', hint: 'Read-only case record and integrity hash' },
     notices: { label: 'Freeze Order Review', hint: 'Verify Ed25519 signatures & SHA-256 integrity' },
-    graph: { label: 'Fund Flow Review', hint: 'Read-only attribution canvas' },
-    audit_logs: { label: 'Chain of Custody', hint: 'Who did what, and when' },
-  },
-  NATIONAL_COORDINATION_ANALYST: {
-    trace: { label: 'Address Lookup', hint: 'Cross-case address intelligence' },
   },
   INVESTIGATING_OFFICER: {
     dashboard: { label: 'Command Overview', hint: 'Your assigned caseload' },
@@ -228,7 +244,13 @@ export function viewsForRole(role: string | null | undefined): NavItem[] {
   const norm = normalizeRole(role || '');
   const keys = ROLE_VIEWS[norm] || ROLE_VIEWS[(role as RoleName) ?? 'VICTIM'] || ['victim_portal'];
   const overrides = ROLE_VIEW_LABELS[norm] || {};
-  return keys.map((key) => {
+  // Drop drill-in-only views from the nav (they stay gate-allowed via
+  // ROLE_VIEWS so AppShell will still render them when reached from another
+  // screen). This is what keeps the Gazetted officer's nav to just the
+  // Statutory Review Desk while the graph (#11) and sign screen (#12) remain
+  // reachable by opening a forwarded case.
+  const hidden = new Set(NAV_HIDDEN[norm] || []);
+  return keys.filter((key) => !hidden.has(key)).map((key) => {
     const def = VIEW_DEFS[key];
     const over = overrides[key] || {};
     return {

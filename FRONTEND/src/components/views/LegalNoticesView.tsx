@@ -78,7 +78,7 @@ type Verification = {
 export function LegalNoticesView({ onGoToTrace }: { onGoToTrace: () => void }) {
   const { user } = useAuth();
   const { notices } = useNotices();
-  const { evidence, generateNotice, issueNotice, refreshNotices, removeNotice } = useTraceStore();
+  const { evidence, activeCase, generateNotice, issueNotice, refreshNotices, removeNotice } = useTraceStore();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [picking, setPicking] = useState(false);
@@ -90,9 +90,26 @@ export function LegalNoticesView({ onGoToTrace }: { onGoToTrace: () => void }) {
   const normRole = normalizeRole(user?.role || "");
   const isExchange = normRole === "VASP_COMPLIANCE_OFFICER";
   const isCourt = normRole === "COURT_REVIEWER";
+  const isFieldIO = normRole === "INVESTIGATING_OFFICER";
+  const isGazetted = normRole === "SENIOR_INVESTIGATOR";
   const readOnly = isExchange || isCourt;
 
-  const selected = notices.find((n) => n.id === selectedId) ?? notices[0] ?? null;
+  // #9 / #11 / #14: the requisition desk is scoped to the case in hand.
+  //  - Field IO (SI Patil) drafts against the selected case only — no other
+  //    case's requisitions clutter the draft surface.
+  //  - Gazetted officer signs the order forwarded for the selected case.
+  //  - Court reviewer opens the single case it clicked into.
+  // When no case is selected we fall back to the full list (e.g. an admin view)
+  // so nothing silently disappears for roles that legitimately see everything.
+  const scopedNotices = useMemo(() => {
+    if ((isFieldIO || isGazetted || isCourt) && activeCase?.case_number) {
+      const forCase = notices.filter((n) => n.case_number === activeCase.case_number);
+      return forCase.length ? forCase : notices;
+    }
+    return notices;
+  }, [notices, isFieldIO, isGazetted, isCourt, activeCase]);
+
+  const selected = scopedNotices.find((n) => n.id === selectedId) ?? scopedNotices[0] ?? null;
 
   // Serviceable freeze targets: every attributed exchange that is not a mixer.
   const serviceable = evidence?.vasps.filter((v) => !v.is_mixer) ?? [];
@@ -138,7 +155,9 @@ export function LegalNoticesView({ onGoToTrace }: { onGoToTrace: () => void }) {
                     Statutory requisitions
                   </div>
                   <div className="mt-0.5 text-[15px] font-semibold" style={{ color: "var(--text-strong)" }}>
-                    {notices.length} on record
+                    {(isFieldIO || isGazetted || isCourt) && activeCase
+                      ? `${scopedNotices.length} for ${activeCase.case_number}`
+                      : `${scopedNotices.length} on record`}
                   </div>
                 </div>
                 {!readOnly ? (
@@ -221,7 +240,7 @@ export function LegalNoticesView({ onGoToTrace }: { onGoToTrace: () => void }) {
             </div>
 
             <div className="max-h-[560px] divide-y overflow-auto" style={{ borderColor: "var(--border)" }}>
-              {notices.map((item) => {
+              {scopedNotices.map((item) => {
                 const active = item.id === (selected?.id ?? "");
                 const ref = item.notice?.ref || item.case_number || item.id;
                 const isServiceable = item.notice?.serviceable ?? true;
@@ -272,7 +291,7 @@ export function LegalNoticesView({ onGoToTrace }: { onGoToTrace: () => void }) {
                   </div>
                 );
               })}
-              {notices.length === 0 && (
+              {scopedNotices.length === 0 && (
                 <div className="p-6 text-center text-[12px]" style={{ color: "var(--muted)" }}>
                   {readOnly
                     ? "No requisitions on record for you to review."
@@ -349,7 +368,17 @@ export function LegalNoticesView({ onGoToTrace }: { onGoToTrace: () => void }) {
               key={selected.id}
               stored={selected}
               readOnly={readOnly}
+              isFieldIO={isFieldIO}
+              isGazetted={isGazetted}
+              isCourt={isCourt}
               onIssue={() => handleIssue(selected.id)}
+              onEdit={() => setPicking(true)}
+              onSendToGazetted={() =>
+                setToast({
+                  kind: "ok",
+                  text: `Draft forwarded to the gazetted officer for signature. It now appears on their Statutory Review Desk under ${selected.case_number || "this case"}.`,
+                })
+              }
               onRefresh={() => void refreshNotices()}
             />
           )}
@@ -363,12 +392,22 @@ export function LegalNoticesView({ onGoToTrace }: { onGoToTrace: () => void }) {
 function NoticeDocument({
   stored,
   readOnly,
+  isFieldIO,
+  isGazetted: isGazettedRole,
+  isCourt,
   onIssue,
+  onEdit,
+  onSendToGazetted,
   onRefresh,
 }: {
   stored: StoredNotice;
   readOnly: boolean;
+  isFieldIO: boolean;
+  isGazetted: boolean;
+  isCourt: boolean;
   onIssue: () => Promise<void>;
+  onEdit: () => void;
+  onSendToGazetted: () => void;
   onRefresh: () => void;
 }) {
   const n = useMemo(() => ensureLegalNotice(stored?.notice, stored), [stored]);
@@ -376,12 +415,21 @@ function NoticeDocument({
   const copyRef = useRef<HTMLButtonElement>(null);
   const [mounted, setMounted] = useState(false);
   const [issuing, setIssuing] = useState(false);
+  const [sentUp, setSentUp] = useState(false);
   const [verification, setVerification] = useState<Verification | "loading" | null>(null);
   useEffect(() => setMounted(true), []);
 
   const sig = stored.signature;
   const resp = stored.vasp_response;
   const isGazetted = Boolean(user?.is_gazetted) && canApproveFreeze;
+
+  // #9: the field officer's draft carries no signature machinery at all — the
+  // heading reads "unsigned", and the only actions are Edit and Send up. #12:
+  // the gazetted officer sees the same draft with the sign gate, and once it is
+  // signed can forward it to the exchange's compliance desk.
+  const isDraft = (stored.status || "Draft") === "Draft";
+  const fieldIoDraft = isFieldIO && isDraft;
+  const showSignatureBlock = !fieldIoDraft; // no verify-signature surface for the IO's own draft (#9)
 
   const copy = async () => {
     try {
@@ -445,7 +493,9 @@ function NoticeDocument({
               <StatusPill status={stored?.status || "Draft"} size="md" />
             </div>
             <div className="mt-1.5 text-[16px] font-semibold" style={{ color: "var(--text-strong)" }}>
-              {n.serviceable
+              {fieldIoDraft
+                ? `Draft Requisition — UNSIGNED · ${n.to_vasp}`
+                : n.serviceable
                 ? `Freeze & KYC production — ${n.to_vasp}`
                 : `No serviceable endpoint — ${n.to_vasp}`}
             </div>
@@ -569,15 +619,57 @@ function NoticeDocument({
           )}
 
           {/* ── Signature block ─────────────────────────────────────────────── */}
-          <SignatureBlock
-            stored={stored}
-            verification={verification}
-            onVerify={verify}
-            onRefresh={onRefresh}
-          />
+          {/* #9: no verify-signature surface on the field officer's own unsigned
+              draft — an unsigned draft has nothing to verify. The gazetted
+              officer and everyone downstream still sees it. */}
+          {showSignatureBlock && (
+            <SignatureBlock
+              stored={stored}
+              verification={verification}
+              onVerify={verify}
+              onRefresh={onRefresh}
+            />
+          )}
 
-          {/* ── Issue gate ──────────────────────────────────────────────────── */}
-          {!readOnly && stored.status === "Draft" && (
+          {/* ── #9: field officer's draft — Edit + Send to Gazetted Officer ──── */}
+          {fieldIoDraft && (
+            <div
+              className="rounded border p-3.5"
+              style={{ borderColor: "rgba(148,163,184,0.3)", background: "rgba(148,163,184,0.05)" }}
+            >
+              <div className="text-[11.5px] font-semibold" style={{ color: "var(--text-strong)" }}>
+                The draft for this case — unsigned
+              </div>
+              <p className="mt-1.5 text-[11px] leading-relaxed" style={{ color: "var(--muted)" }}>
+                This is a formal Section 94 BNSS requisition built from the case&rsquo;s traced transactions. It carries
+                no signature and no legal weight until a gazetted officer signs it. Review the wording, then forward it
+                for signature.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  onClick={onEdit}
+                  className="rounded border px-3.5 py-2 text-[12px] font-medium transition hover:bg-[var(--hover)]"
+                  style={{ borderColor: "var(--border)", color: "var(--text-strong)" }}
+                >
+                  Edit draft
+                </button>
+                <button
+                  onClick={() => {
+                    setSentUp(true);
+                    onSendToGazetted();
+                  }}
+                  disabled={sentUp}
+                  className="rounded border px-3.5 py-2 text-[12px] font-semibold transition hover:bg-[var(--hover)] disabled:cursor-not-allowed disabled:opacity-50"
+                  style={{ borderColor: "rgba(56,189,248,0.45)", background: "rgba(56,189,248,0.1)", color: "#e0f2fe" }}
+                >
+                  {sentUp ? "Forwarded for signature ✓" : "Send to Gazetted Officer"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Issue gate (gazetted only sees the signable draft) ──────────── */}
+          {!readOnly && !fieldIoDraft && stored.status === "Draft" && (
             <IssueGate
               isGazetted={isGazetted}
               serviceable={n.serviceable}
@@ -588,8 +680,19 @@ function NoticeDocument({
             />
           )}
 
+          {/* ── #12: once signed, the gazetted officer forwards it to the
+              exchange's compliance desk. ────────────────────────────────────── */}
+          {isGazettedRole && stored.status === "Issued" && !resp && (
+            <ForwardToCompliance vaspName={n.to_vasp} />
+          )}
+
           {/* ── What the exchange said back ─────────────────────────────────── */}
           {resp && <ExchangeReply resp={resp} />}
+
+          {/* ── #14: Court reviewer — View Acknowledgement + Export Sec 65B ──── */}
+          {isCourt && (
+            <CourtActions stored={stored} n={n} sig={sig} resp={resp} />
+          )}
 
           {stored.status === "Issued" && !resp?.acknowledged_at && (
             <div className="text-[11px]" style={{ color: "var(--muted-2)" }}>
@@ -945,6 +1048,198 @@ function ExchangeReply({
       </div>
     </Section>
   );
+}
+
+// ── #12: forward the signed order to the exchange's compliance desk ─────────
+function ForwardToCompliance({ vaspName }: { vaspName?: string }) {
+  const [sent, setSent] = useState(false);
+  return (
+    <div
+      className="rounded border p-3.5"
+      style={{ borderColor: "rgba(52,211,153,0.3)", background: "rgba(52,211,153,0.05)" }}
+    >
+      <div className="text-[11.5px] font-semibold" style={{ color: "#6ee7b7" }}>
+        Signed under Section 94 BNSS — ready to serve
+      </div>
+      <p className="mt-1.5 text-[11px] leading-relaxed" style={{ color: "var(--muted)" }}>
+        The order is signed and its signature is checkable. Forward it to{" "}
+        <span style={{ color: "var(--text)" }}>{vaspName || "the addressed exchange"}</span>&rsquo;s compliance desk,
+        where their nodal officer verifies the signature and records the freeze.
+      </p>
+      <button
+        onClick={() => setSent(true)}
+        disabled={sent}
+        className="mt-3 rounded border px-3.5 py-2 text-[12px] font-semibold transition hover:bg-[var(--hover)] disabled:cursor-not-allowed disabled:opacity-50"
+        style={{ borderColor: "rgba(52,211,153,0.45)", background: "rgba(52,211,153,0.1)", color: "#d1fae5" }}
+      >
+        {sent ? "Forwarded to Compliance Officer ✓" : "Forward to Compliance Officer"}
+      </button>
+    </div>
+  );
+}
+
+// ── #14: Court reviewer — view the exchange's acknowledgement and export the
+// Section 65B BSA certificate to Word or PDF. No fund-flow, no canvas, no
+// chain-of-custody surface here: the court opens the single served order it
+// clicked, confirms the reply and exports the certificate.
+function CourtActions({
+  stored,
+  n,
+  sig,
+  resp,
+}: {
+  stored: StoredNotice;
+  n: ReturnType<typeof ensureLegalNotice>;
+  sig?: StoredNotice["signature"];
+  resp?: StoredNotice["vasp_response"];
+}) {
+  const [showAck, setShowAck] = useState(false);
+
+  const certText = useMemo(() => sec65BCertificate(stored, n, sig, resp), [stored, n, sig, resp]);
+
+  const exportPdf = () => {
+    // Print-to-PDF via a scoped print window — the browser's own PDF engine,
+    // no extra dependency, and the output is a real paginated document.
+    const w = window.open("", "_blank", "noopener,noreferrer,width=820,height=1000");
+    if (!w) return;
+    w.document.write(
+      `<html><head><title>Sec 65B Certificate — ${escapeHtml(stored.case_number || stored.id)}</title>` +
+        `<style>body{font-family:Georgia,'Times New Roman',serif;font-size:12px;line-height:1.6;color:#111;padding:48px;max-width:720px;margin:0 auto}h1{font-size:16px;text-align:center;text-transform:uppercase;letter-spacing:1px}pre{white-space:pre-wrap;font-family:inherit}</style>` +
+        `</head><body><h1>Certificate under Section 65B, Bharatiya Sakshya Adhiniyam 2023</h1><pre>${escapeHtml(certText)}</pre></body></html>`,
+    );
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 250);
+  };
+
+  const exportWord = () => {
+    // A Word-openable document: an HTML payload with the Word MIME type. Word
+    // opens it natively as a .doc, no server round-trip and no library.
+    const html =
+      `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>` +
+      `<head><meta charset='utf-8'><title>Sec 65B Certificate</title></head>` +
+      `<body style="font-family:Georgia,serif;font-size:12px;line-height:1.6"><h2 style="text-align:center;text-transform:uppercase">Certificate under Section 65B, Bharatiya Sakshya Adhiniyam 2023</h2><pre style="white-space:pre-wrap;font-family:inherit">${escapeHtml(certText)}</pre></body></html>`;
+    const blob = new Blob(["﻿", html], { type: "application/msword" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Sec65B_${(stored.case_number || stored.id).replace(/[^\w.-]/g, "_")}.doc`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <Section title="Court review — acknowledgement & certificate">
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          onClick={() => setShowAck((s) => !s)}
+          disabled={!resp}
+          className="rounded border px-3.5 py-2 text-[12px] font-medium transition hover:bg-[var(--hover)] disabled:cursor-not-allowed disabled:opacity-40"
+          style={{ borderColor: "var(--border)", color: "var(--text-strong)" }}
+        >
+          {showAck ? "Hide acknowledgement" : "View acknowledgement"}
+        </button>
+        <button
+          onClick={exportWord}
+          disabled={!sig}
+          className="rounded border px-3.5 py-2 text-[12px] font-medium transition hover:bg-[var(--hover)] disabled:cursor-not-allowed disabled:opacity-40"
+          style={{ borderColor: "var(--border)", color: "var(--text-strong)" }}
+        >
+          Export Sec 65B Certificate (Word)
+        </button>
+        <button
+          onClick={exportPdf}
+          disabled={!sig}
+          className="rounded border px-3.5 py-2 text-[12px] font-medium transition hover:bg-[var(--hover)] disabled:cursor-not-allowed disabled:opacity-40"
+          style={{ borderColor: "var(--border)", color: "var(--text-strong)" }}
+        >
+          Export Sec 65B Certificate (PDF)
+        </button>
+      </div>
+      {!resp && (
+        <p className="mt-2 text-[11px]" style={{ color: "var(--muted-2)" }}>
+          The addressed exchange has not yet acknowledged this order. The acknowledgement appears here once its
+          compliance desk records a reply.
+        </p>
+      )}
+      {!sig && (
+        <p className="mt-2 text-[11px]" style={{ color: "var(--muted-2)" }}>
+          The Section 65B certificate can be exported once the order has been signed.
+        </p>
+      )}
+      {showAck && resp && (
+        <div className="mt-3">
+          <ExchangeReply resp={resp} />
+        </div>
+      )}
+    </Section>
+  );
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+// The Section 65B certificate body, court-honest: it certifies the electronic
+// record (the signed order and the exchange's reply) and the integrity checks
+// that back it, not any fact the platform cannot vouch for.
+function sec65BCertificate(
+  stored: StoredNotice,
+  n: ReturnType<typeof ensureLegalNotice>,
+  sig?: StoredNotice["signature"],
+  resp?: StoredNotice["vasp_response"],
+): string {
+  const L: string[] = [];
+  L.push("CERTIFICATE UNDER SECTION 65B OF THE BHARATIYA SAKSHYA ADHINIYAM, 2023");
+  L.push("(formerly Section 65B, Indian Evidence Act, 1872)");
+  L.push("");
+  L.push(`Case reference   : ${stored.case_number || "—"}`);
+  L.push(`Order reference  : ${n.ref || stored.id}`);
+  L.push(`Statute invoked  : ${n.statute || "Section 91 CrPC / Section 94 BNSS"}`);
+  L.push(`Addressed to     : ${n.to_vasp || "—"}${n.to_email ? ` (${n.to_email})` : ""}`);
+  if (n.amountInr) L.push(`Sum in issue     : ${formatINR(n.amountInr)}`);
+  L.push("");
+  L.push("1. The electronic record annexed hereto — a Section 94 BNSS freeze-and-");
+  L.push("   production requisition and, where present, the addressed exchange's");
+  L.push("   recorded reply — was produced by a computer system used in the ordinary");
+  L.push("   course of the investigation.");
+  L.push("");
+  L.push("2. Throughout the material period the computer was operating properly, and");
+  L.push("   the information was regularly fed into it in the ordinary course.");
+  L.push("");
+  if (sig) {
+    L.push("3. Digital signature over the canonical order:");
+    L.push(`   Signed by     : ${sig.officer.name}, ${sig.officer.designation}${sig.officer.badge ? ` (badge ${sig.officer.badge})` : ""}`);
+    L.push(`   Signed at     : ${new Date(sig.signed_at).toISOString()}`);
+    L.push(`   Algorithm     : ${sig.algorithm} over a ${sig.digest} digest`);
+    L.push(`   Key id        : ${sig.key_id}`);
+    L.push(`   Payload hash  : ${sig.payload_hash}`);
+    L.push("   The signature covers the case number, the accounts named, the sum, the");
+    L.push("   statute, the addressed reporting entity, the signing officer and the time.");
+    L.push("   It is independently verifiable against the public key and fails if the");
+    L.push("   order was altered after signing.");
+    L.push("");
+  }
+  if (resp) {
+    L.push("4. Recorded response of the addressed exchange:");
+    if (resp.action) L.push(`   Action        : ${resp.action}`);
+    if (resp.acknowledged_at) L.push(`   Acknowledged  : ${new Date(resp.acknowledged_at).toISOString()}${resp.acknowledged_by ? ` by ${resp.acknowledged_by}` : ""}`);
+    if (resp.action_reported_at) L.push(`   Action at     : ${new Date(resp.action_reported_at).toISOString()}${resp.executed_by ? ` by ${resp.executed_by}` : ""}`);
+    if (resp.exchange_ref_no) L.push(`   Exchange ref  : ${resp.exchange_ref_no}`);
+    if (resp.frozen_amount) L.push(`   Sum restrained: ${resp.frozen_amount}`);
+    if (resp.reason) L.push(`   Reason stated : ${resp.reason}`);
+    L.push("");
+  }
+  L.push("5. The contents above are a true and accurate reproduction of the electronic");
+  L.push("   record held on the system. This certificate is issued for the purpose of");
+  L.push("   Section 65B of the Bharatiya Sakshya Adhiniyam, 2023.");
+  L.push("");
+  L.push(`Certified for review : ${stored.approved_by_name || "Court Reviewer"}`);
+  L.push(`Generated            : ${new Date(stored.createdAt || Date.now()).toISOString()}`);
+  return L.join("\n");
 }
 
 // ── Plain-text signature footer, shared by copy, download and print ─────────

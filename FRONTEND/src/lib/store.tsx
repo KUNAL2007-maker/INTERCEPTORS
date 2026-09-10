@@ -77,8 +77,10 @@ type TraceStore = {
   refreshing: boolean;
   newTxHashes: string[];
 
-  // Actions
-  runTrace: (seed: string, linkedCase?: StoredCase) => Promise<void>;
+  // Actions. runTrace resolves to the freshly-built TraceResult so a caller can
+  // use it in the same turn (e.g. the chat re-tracing the selected case before
+  // sending it as context) without waiting for the store's async state update.
+  runTrace: (seed: string, linkedCase?: StoredCase) => Promise<TraceResult | null>;
   loadDemo: () => Promise<void>;
   clearTrace: () => void;
   setCaseMeta: (patch: Partial<CaseMeta>) => void;
@@ -221,9 +223,9 @@ export function TraceStoreProvider({ children }: { children: ReactNode }) {
     };
   }, [user?.id, user?.role, user?.jurisdiction_code, clearTrace]);
 
-  const runTrace = useCallback(async (seed: string, linkedCase?: StoredCase) => {
+  const runTrace = useCallback(async (seed: string, linkedCase?: StoredCase): Promise<TraceResult | null> => {
     const s = seed.trim();
-    if (!s) return;
+    if (!s) return null;
     setStatus("tracing");
     setError(null);
     setTraceNote(null);
@@ -274,7 +276,7 @@ export function TraceStoreProvider({ children }: { children: ReactNode }) {
         setStatus("error");
         setError(res?.error || "Trace request failed.");
         setTraceNote(res?.note || res?.hint || null);
-        return;
+        return null;
       }
 
       const traceResult = (res.trace || res) as TraceResult;
@@ -318,14 +320,17 @@ export function TraceStoreProvider({ children }: { children: ReactNode }) {
           // Non-blocking
         }
       }
+
+      return traceResult;
     } catch (err: any) {
       setStatus("error");
       setError(err?.message || "Failed to reach tracing engine.");
+      return null;
     }
   }, [activeCase, user?.name, loadCases]);
 
   const loadDemo = useCallback(async () => {
-    return runTrace("demo");
+    await runTrace("demo");
   }, [runTrace]);
 
 

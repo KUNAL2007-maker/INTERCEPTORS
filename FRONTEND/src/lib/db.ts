@@ -182,102 +182,15 @@ const memoryStore = {
     { id: 3, name: 'CoinDCX', code: 'COINDCX', contact_email: 'nodal@coindcx.com' }
   ],
   // --------------------------------------------------------------------------
-  // Seed cases. Deliberately three, not six.
-  //
-  // MH-CYBER-2026-0842 is the one case that travels the full workflow:
-  // complaint -> supervisor allocation -> trace -> gazetted signature ->
-  // exchange reply -> victim milestone -> judicial review. It is seeded
-  // UNASSIGNED and PENDING_TRACING because the supervisor's allocation is a
-  // real step, not a formality; pre-assigning it (as three code paths used to)
-  // left the supervisor nothing to do and made the assign control look inert.
-  //
-  // The two remaining records exist only so two specific denials and one
-  // correlation have something real to fire against, and carry no narrative of
-  // their own:
-  //   KA-CYBER-2026-1104 shares the suspect wallet -> national correlation,
-  //                      and POL-04 jurisdiction denial for a Maharashtra IO.
-  //   DL-CYBER-2026-0319 second state, different wallet -> proves correlation
-  //                      is matching on the wallet and not on "any other case".
+  // No seeded cases. Every officer tab (supervisor triage, IO "My Cases",
+  // gazetted review desk, court dossier, national correlation) starts empty so
+  // the operator can load one curated demo case live for the showcase, rather
+  // than opening onto pre-populated fixtures (#17). The automated e2e and
+  // security suites no longer rely on seeds either - each provisions the exact
+  // cases its assertions need through the API (see e2e-flow-test.mjs and
+  // security-test.mjs), which honours body.jurisdiction_code for LEA callers.
   // --------------------------------------------------------------------------
-  cases: [
-    {
-      id: 1,
-      case_number: 'MH-CYBER-2026-0842',
-      victim_id: 5,
-      victim_name: 'Rajesh Verma',
-      victim_email: 'victim.verma@example.demo',
-      victim_phone: '+91-98200-11842',
-      workspace_id: 1,
-      jurisdiction_code: 'MH-CYBER-01',
-      assigned_investigator_id: null,
-      assigned_investigator_name: undefined,
-      suspect_wallet_address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F',
-      blockchain_network: 'Ethereum',
-      loss_amount_inr: 350000.0,
-      token_symbol: 'USDT',
-      crime_type: 'Task-based Fake Part-Time Job Scam',
-      incident_date: '2026-09-05',
-      target_vasp: 'Binance International',
-      vasp_id: 1,
-      classification: 'CONFIDENTIAL',
-      status: 'PENDING_TRACING',
-      priority: 'HIGH',
-      tx_hashes: ['0x3a1b49e8d3840291f09e81b37492c019d3847291a0293b89c2'],
-      notes:
-        'Complainant recruited via Telegram group offering paid hotel-review tasks. Transferred USDT in four tranches to the suspect deposit wallet after being shown fabricated earnings.',
-      created_at: '2026-09-05T09:15:00.000Z'
-    },
-    {
-      id: 2,
-      case_number: 'KA-CYBER-2026-1104',
-      victim_id: 89,
-      victim_name: 'Sunil Rao',
-      victim_email: 'sunil.rao@example.demo',
-      victim_phone: '+91-99860-33017',
-      workspace_id: 4,
-      jurisdiction_code: 'KA-CYBER-03',
-      assigned_investigator_id: null,
-      suspect_wallet_address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F',
-      blockchain_network: 'Ethereum',
-      loss_amount_inr: 1800000.0,
-      token_symbol: 'USDT',
-      crime_type: 'Task-based Fake Part-Time Job Scam',
-      incident_date: '2026-08-22',
-      target_vasp: 'Binance International',
-      vasp_id: 1,
-      classification: 'CONFIDENTIAL',
-      status: 'PENDING_TRACING',
-      priority: 'HIGH',
-      tx_hashes: [],
-      notes: 'Karnataka intake. Same suspect deposit wallet as the Maharashtra complaint.',
-      created_at: '2026-08-22T16:00:00.000Z'
-    },
-    {
-      id: 3,
-      case_number: 'DL-CYBER-2026-0319',
-      victim_id: 99,
-      victim_name: 'Aakash Sharma',
-      victim_email: 'aakash.sharma@example.demo',
-      victim_phone: '+91-98110-77265',
-      workspace_id: 2,
-      jurisdiction_code: 'DL-CYBER-02',
-      assigned_investigator_id: null,
-      suspect_wallet_address: '0x1928aBc849102c98Dfe10293bC8419280918234A',
-      blockchain_network: 'Polygon',
-      loss_amount_inr: 850000.0,
-      token_symbol: 'MATIC',
-      crime_type: 'Fake Exchange Phishing',
-      incident_date: '2026-08-20',
-      target_vasp: 'WazirX India',
-      vasp_id: 2,
-      classification: 'RESTRICTED',
-      status: 'PENDING_TRACING',
-      priority: 'MEDIUM',
-      tx_hashes: [],
-      notes: 'Delhi intake. Unrelated wallet; present so wallet correlation can be shown to discriminate.',
-      created_at: '2026-08-20T11:30:00.000Z'
-    }
-  ] as StoredCase[],
+  cases: [] as StoredCase[],
   // No seeded notices. The Section 94 BNSS order is produced during the
   // walkthrough by the officer who drafts it and signed by the gazetted
   // officer who approves it - a pre-signed order in the seed would show a
